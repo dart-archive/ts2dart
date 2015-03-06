@@ -13,6 +13,9 @@
     },
     "node/node.d.ts": {
       "commit": "69bdfb0884020e41f17a1dd80ad4c77de2636874"
+    },
+    "typescript/typescript.d.ts": {
+      "commit": "69bdfb0884020e41f17a1dd80ad4c77de2636874"
     }
   }
 }

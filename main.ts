@@ -74,9 +74,9 @@ export function translateProgram(program: ts.Program): string {
         visitEach(classDecl.typeParameters);
       }
       if (classDecl.heritageClauses) {
-        emit('extends');
         visitEach(classDecl.heritageClauses);
       }
+
       if (classDecl.members) {
         emit('{\n');
         visitEach(classDecl.members);
@@ -86,6 +86,12 @@ export function translateProgram(program: ts.Program): string {
 
     case ts.SyntaxKind.HeritageClause:
       var heritageClause = <ts.HeritageClause>node;
+      if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
+        emit('extends');
+      } else {
+        emit('implements');
+      }
+      // Can only have one member for extends clauses.
       visitList(heritageClause.types);
       break;
 

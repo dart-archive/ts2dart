@@ -27,6 +27,12 @@ describe('transpile to dart', function() {
     it('should support extends', function() {
       expectTranslate("class X extends Y {}").to.equal(" class X extends Y {\n }\n");
     })
+    it('should support implements', function() {
+      expectTranslate("class X implements Y, Z {}").to.equal(" class X implements Y , Z {\n }\n");
+    })
+    it('should support implements', function() {
+      expectTranslate("class X extends Y implements Z {}").to.equal(" class X extends Y implements Z {\n }\n");
+    })
   });
 });
 

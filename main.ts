@@ -29,95 +29,90 @@ export function translateProgram(program: ts.Program): string {
     }
   }
 
-        case ts.SyntaxKind.FunctionDeclaration:
-          var funcDecl= <ts.FunctionDeclaration>node;
-          visit(funcDecl.type);
-          visit(funcDecl.name);
-          result += '(';
-          result += ') {';
-          result += '}';
-          break;
-
-        case ts.SyntaxKind.NumberKeyword:
-          result += ' num';
-          break;
-        case ts.SyntaxKind.VoidKeyword:
-          result += ' void';
-          break;
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
     switch (node.kind) {
-    case ts.SyntaxKind.SourceFile:
-    case ts.SyntaxKind.EndOfFileToken:
-      ts.forEachChild(node, visit);
-      break;
+      case ts.SyntaxKind.SourceFile:
+      case ts.SyntaxKind.EndOfFileToken:
+        ts.forEachChild(node, visit);
+        break;
 
-    case ts.SyntaxKind.VariableDeclaration:
-      var varDecl = <ts.VariableDeclaration>node;
-      visit(varDecl.type);
-      visit(varDecl.name);
-      if (varDecl.initializer) {
-        emit('=');
-        visit(varDecl.initializer);
-      }
-      break;
+      case ts.SyntaxKind.VariableDeclaration:
+        var varDecl = <ts.VariableDeclaration>node;
+        visit(varDecl.type);
+        visit(varDecl.name);
+        if (varDecl.initializer) {
+          emit('=');
+          visit(varDecl.initializer);
+        }
+        break;
 
-    case ts.SyntaxKind.NumberKeyword:
-      emit('num');
-      break;
+      case ts.SyntaxKind.NumberKeyword:
+        emit('num');
+        break;
+      case ts.SyntaxKind.VoidKeyword:
+        emit('void');
+        break;
 
-    case ts.SyntaxKind.VariableStatement:
-      ts.forEachChild(node, visit);
-      emit(';\n');
-      break;
+      case ts.SyntaxKind.VariableStatement:
+        ts.forEachChild(node, visit);
+        emit(';\n');
+        break;
 
-    case ts.SyntaxKind.FirstAssignment:
-    case ts.SyntaxKind.FirstLiteralToken:
-    case ts.SyntaxKind.Identifier:
-      emit(node.getText());
-      break;
+      case ts.SyntaxKind.FirstAssignment:
+      case ts.SyntaxKind.FirstLiteralToken:
+      case ts.SyntaxKind.Identifier:
+        emit(node.getText());
+        break;
 
-    case ts.SyntaxKind.TypeReference:
-      var typeRef = <ts.TypeReferenceNode>node;
-      visit(typeRef.typeName);
-      if (typeRef.typeArguments) {
-        visitEach(typeRef.typeArguments);
-        default:
-          throw new Error("Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
-      }
-      break;
+      case ts.SyntaxKind.TypeReference:
+        var typeRef = <ts.TypeReferenceNode>node;
+        visit(typeRef.typeName);
+        if (typeRef.typeArguments) {
+          visitEach(typeRef.typeArguments);
+        }
+        break;
 
-    case ts.SyntaxKind.ClassDeclaration:
-      var classDecl = <ts.ClassDeclaration>node;
-      emit('class');
-      visit(classDecl.name);
-      if (classDecl.typeParameters) {
-        visitEach(classDecl.typeParameters);
-      }
-      if (classDecl.heritageClauses) {
-        visitEach(classDecl.heritageClauses);
-      }
+      case ts.SyntaxKind.ClassDeclaration:
+        var classDecl = <ts.ClassDeclaration>node;
+        emit('class');
+        visit(classDecl.name);
+        if (classDecl.typeParameters) {
+          visitEach(classDecl.typeParameters);
+        }
+        if (classDecl.heritageClauses) {
+          visitEach(classDecl.heritageClauses);
+        }
 
-      if (classDecl.members) {
-        emit('{\n');
-        visitEach(classDecl.members);
-        emit('}\n');
-      }
-      break;
+        if (classDecl.members) {
+          emit('{\n');
+          visitEach(classDecl.members);
+          emit('}\n');
+        }
+        break;
 
-    case ts.SyntaxKind.HeritageClause:
-      var heritageClause = <ts.HeritageClause>node;
-      if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
-        emit('extends');
-      } else {
-        emit('implements');
-      }
-      // Can only have one member for extends clauses.
-      visitList(heritageClause.types);
-      break;
+      case ts.SyntaxKind.HeritageClause:
+        var heritageClause = <ts.HeritageClause>node;
+        if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
+          emit('extends');
+        } else {
+          emit('implements');
+        }
+        // Can only have one member for extends clauses.
+        visitList(heritageClause.types);
+        break;
 
-    default:
-      throw new Error("Unsupported node type " + node.kind);
+      case ts.SyntaxKind.FunctionDeclaration:
+        var funcDecl= <ts.FunctionDeclaration>node;
+        visit(funcDecl.type);
+        visit(funcDecl.name);
+        result += '(';
+        result += ') {';
+        result += '}';
+        break;
+
+      default:
+        throw new Error("Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
     }
   }
   function emitDart(sourceFile: ts.SourceFile) {

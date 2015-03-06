@@ -11,6 +11,10 @@
   },
   "devDependencies": {
     "chai": "^2.1.1",
+    "gulp": "^3.8.11",
+    "gulp-mocha": "^2.0.0",
+    "gulp-typescript": "^2.4.2",
+    "merge2": "^0.3.1",
     "typescript": "^1.4.1"
   },
   "scripts": {

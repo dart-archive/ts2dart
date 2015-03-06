@@ -46,7 +46,7 @@ export function translateProgram(program: ts.Program): string {
           break;
 
         default:
-          throw new Error("Unsupported node type " + ts.SyntaxKind[node.kind]);
+          throw new Error("Unsupported node type " + node.kind); //ts.SyntaxKind[node.kind]);
       }
     }
   }

@@ -1,18 +1,32 @@
+/// <reference path="../typings/chai/chai.d.ts"/>
+
 import chai = require("chai");
 import main = require("../main");
 import ts = require("typescript");
 
 describe('transpile to dart', function() {
 
+  function expectTranslate(tsCode: string) {
+    var result = translateSource(tsCode);
+    return chai.expect(result);
+  }
+
   describe('variables', function() {
-    it('should print variable declaration with initializer', function () {
-      var result = translateSource("var a:number = 1;");
-      chai.expect(result).to.equal(" num a = 1;\n");
+    it('should print variable declaration with initializer', function() {
+      expectTranslate("var a:number = 1;").to.equal(" num a = 1 ;\n");
     });
     it('should print variable declaration', function () {
-      var result = translateSource("var a:number;");
-      chai.expect(result).to.equal(" num a;\n");
+      expectTranslate("var a:number;").to.equal(" num a ;\n");
     });
+  });
+
+  describe('classes', function() {
+    it('should translate classes', function() {
+      expectTranslate("class X {}").to.equal(" class X {\n }\n");
+    })
+    it('should support extends', function() {
+      expectTranslate("class X extends Y {}").to.equal(" class X extends Y {\n }\n");
+    })
   });
 });
 
@@ -23,6 +37,8 @@ export function translateSource(contents: string): string {
     getSourceFile: function (filename, languageVersion) {
       if (filename === "file.ts")
         return ts.createSourceFile(filename, contents, compilerOptions.target, "0");
+      if (filename === "lib.d.ts")
+        return ts.createSourceFile(filename, '', compilerOptions.target, "0");
       return undefined;
     },
     writeFile: function (name, text, writeByteOrderMark) {
@@ -36,5 +52,10 @@ export function translateSource(contents: string): string {
   };
   // Create a program from inputs
   var program = ts.createProgram(["file.ts"], compilerOptions, compilerHost);
+  if (program.getDiagnostics().length > 0) {
+    // Throw first error.
+    var first = program.getDiagnostics()[0];
+    throw new Error(`${first.start}: ${first.messageText}`);
+  }
   return main.translateProgram(program);
 }

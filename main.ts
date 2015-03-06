@@ -1,5 +1,5 @@
 /// <reference path="typings/node/node.d.ts" />
-
+/// <reference path="typings/typescript/typescript.d.ts" />
 import ts = require("typescript");
 
 export function translateProgram(program: ts.Program): string {
@@ -9,46 +9,92 @@ export function translateProgram(program: ts.Program): string {
       .forEach(emitDart);
   return result;
 
+  function emit(str: string) {
+    result += ' ';
+    result += str;
+  }
+
+  function visitEach(nodes) {
+    nodes.forEach(visit);
+  }
+
+  function visitList(nodes: ts.NodeArray<ts.Node> ) {
+    for (var i = 0; i < nodes.length; i++) {
+      visit(nodes[i]);
+      if (i < nodes.length - 1) emit(',');
+    }
+  }
+
+  function visit(node: ts.Node) {
+    // console.log(`Node kind: ${node.kind} ${node.getText()}`);
+    switch (node.kind) {
+    case ts.SyntaxKind.SourceFile:
+    case ts.SyntaxKind.EndOfFileToken:
+      ts.forEachChild(node, visit);
+      break;
+
+    case ts.SyntaxKind.VariableDeclaration:
+      var varDecl = <ts.VariableDeclaration>node;
+      visit(varDecl.type);
+      visit(varDecl.name);
+      if (varDecl.initializer) {
+        emit('=');
+        visit(varDecl.initializer);
+      }
+      break;
+
+    case ts.SyntaxKind.NumberKeyword:
+      emit('num');
+      break;
+
+    case ts.SyntaxKind.VariableStatement:
+      ts.forEachChild(node, visit);
+      emit(';\n');
+      break;
+
+    case ts.SyntaxKind.FirstAssignment:
+    case ts.SyntaxKind.FirstLiteralToken:
+    case ts.SyntaxKind.Identifier:
+      emit(node.getText());
+      break;
+
+    case ts.SyntaxKind.TypeReference:
+      var typeRef = <ts.TypeReferenceNode>node;
+      visit(typeRef.typeName);
+      if (typeRef.typeArguments) {
+        visitEach(typeRef.typeArguments);
+      }
+      break;
+
+    case ts.SyntaxKind.ClassDeclaration:
+      var classDecl = <ts.ClassDeclaration>node;
+      emit('class');
+      visit(classDecl.name);
+      if (classDecl.typeParameters) {
+        visitEach(classDecl.typeParameters);
+      }
+      if (classDecl.heritageClauses) {
+        emit('extends');
+        visitEach(classDecl.heritageClauses);
+      }
+      if (classDecl.members) {
+        emit('{\n');
+        visitEach(classDecl.members);
+        emit('}\n');
+      }
+      break;
+
+    case ts.SyntaxKind.HeritageClause:
+      var heritageClause = <ts.HeritageClause>node;
+      visitList(heritageClause.types);
+      break;
+
+    default:
+      throw new Error("Unsupported node type " + node.kind);
+    }
+  }
   function emitDart(sourceFile: ts.SourceFile) {
     visit(sourceFile);
-
-    function visit(node: ts.Node) {
-      //console.log(`${ts.SyntaxKind[node.kind]}: ${node.getText()}`);
-      switch (node.kind) {
-        case ts.SyntaxKind.SourceFile:
-        case ts.SyntaxKind.EndOfFileToken:
-          ts.forEachChild(node, visit);
-          break;
-
-        case ts.SyntaxKind.VariableDeclaration:
-          var varDecl = <ts.VariableDeclaration>node;
-          visit(varDecl.type);
-          visit(varDecl.name);
-          if (varDecl.initializer) {
-            result += ' =';
-            visit(varDecl.initializer);
-          }
-          break;
-
-        case ts.SyntaxKind.NumberKeyword:
-          result += ' num';
-          break;
-
-        case ts.SyntaxKind.VariableStatement:
-          ts.forEachChild(node, visit);
-          result += ';\n';
-          break;
-
-        case ts.SyntaxKind.FirstAssignment:
-        case ts.SyntaxKind.FirstLiteralToken:
-        case ts.SyntaxKind.Identifier:
-          result += ` ${node.getText() }`;
-          break;
-
-        default:
-          throw new Error("Unsupported node type " + node.kind); //ts.SyntaxKind[node.kind]);
-      }
-    }
   }
 }
 

@@ -1,5 +1,9 @@
 /// <reference path="typings/node/node.d.ts" />
 
+// not needed by tsc since we require typescript external module,
+// but the editor/IDE doesn't give completions without it
+/// <reference path="typings/typescript/typescript.d.ts" />
+
 import ts = require("typescript");
 
 export function translateProgram(program: ts.Program): string {
@@ -13,7 +17,7 @@ export function translateProgram(program: ts.Program): string {
     visit(sourceFile);
 
     function visit(node: ts.Node) {
-      //console.log(`${ts.SyntaxKind[node.kind]}: ${node.getText()}`);
+      //console.log(`${(<any>ts).SyntaxKind[node.kind]}: ${node.getText()}`);
       switch (node.kind) {
         case ts.SyntaxKind.SourceFile:
         case ts.SyntaxKind.EndOfFileToken:
@@ -30,8 +34,20 @@ export function translateProgram(program: ts.Program): string {
           }
           break;
 
+        case ts.SyntaxKind.FunctionDeclaration:
+          var funcDecl= <ts.FunctionDeclaration>node;
+          visit(funcDecl.type);
+          visit(funcDecl.name);
+          result += '(';
+          result += ') {';
+          result += '}';
+          break;
+
         case ts.SyntaxKind.NumberKeyword:
           result += ' num';
+          break;
+        case ts.SyntaxKind.VoidKeyword:
+          result += ' void';
           break;
 
         case ts.SyntaxKind.VariableStatement:
@@ -46,14 +62,18 @@ export function translateProgram(program: ts.Program): string {
           break;
 
         default:
-          throw new Error("Unsupported node type " + node.kind); //ts.SyntaxKind[node.kind]);
+          throw new Error("Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
       }
     }
   }
 }
 
-var fileNames = process.argv.slice(2);
-var options: ts.CompilerOptions = { target: ts.ScriptTarget.ES6, module: ts.ModuleKind.CommonJS };
-var host = ts.createCompilerHost(options);
-var program = ts.createProgram(fileNames, options, host);
-translateProgram(program);
+export function translateFiles(fileNames: string[]): string {
+  var options: ts.CompilerOptions = { target: ts.ScriptTarget.ES6, module: ts.ModuleKind.CommonJS };
+  var host = ts.createCompilerHost(options);
+  var program = ts.createProgram(fileNames, options, host);
+  return translateProgram(program);
+}
+
+// CLI entry point
+translateFiles(process.argv.slice(2));

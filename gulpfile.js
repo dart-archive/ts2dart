@@ -2,6 +2,7 @@ var gulp = require('gulp');
 var merge = require('merge2');
 var ts = require('gulp-typescript');
 var mocha = require('gulp-mocha');
+var formatter = require('../gulp-tsformat');
 
 var TSC_OPTIONS = {
   module: "commonjs",
@@ -10,6 +11,11 @@ var TSC_OPTIONS = {
   noEmitOnError: true
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
+
+gulp.task('check-format', function() {
+  return gulp.src('*.ts')
+      .pipe(formatter.checkFormat());
+});
 
 gulp.task('compile', function() {
   var tsResult = gulp.src(['*.ts', 'typings/**/*'])

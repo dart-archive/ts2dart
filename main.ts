@@ -58,6 +58,29 @@ export function translateProgram(program: ts.Program): string {
         ts.forEachChild(node, visit);
         emit(';\n');
         break;
+      case ts.SyntaxKind.ExpressionStatement:
+        var expr = <ts.ExpressionStatement>node;
+        visit(expr.expression);
+        emit(';');
+        break;
+
+      // Literals.
+      case ts.SyntaxKind.StringLiteral:
+        var sLit = <ts.StringLiteralExpression>node;
+        emit(JSON.stringify(sLit.text));
+        break;
+      case ts.SyntaxKind.TrueKeyword:
+        emit('true');
+        break;
+      case ts.SyntaxKind.FalseKeyword:
+        emit('false');
+        break;
+      case ts.SyntaxKind.NullKeyword:
+        emit('null');
+        break;
+      case ts.SyntaxKind.RegularExpressionLiteral:
+        emit((<ts.LiteralExpression>node).text);
+        break;
 
       case ts.SyntaxKind.FirstAssignment:
       case ts.SyntaxKind.FirstLiteralToken:

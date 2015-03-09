@@ -80,6 +80,33 @@ describe('transpile to dart', function() {
           .to.throw('rest parameters are unsupported');
     });
   });
+
+  describe('literals', function() {
+    it('translates string literals', function() {
+      expectTranslate(`'hello\\\\' "world'`).to.equal(` "hello' \\\\"world" ;`);
+      expectTranslate(`"hello\\\\" 'world"`).to.equal(` "hello\\\\" 'world" ;`);
+    });
+
+    it('translates boolean literals', function() {
+      expectTranslate('true').to.equal(' true ;');
+      expectTranslate('false').to.equal(' false ;');
+    });
+
+    it('translates the null literal', function() {
+      expectTranslate('null').to.equal(' null ;');
+    });
+
+    it('translates number literals', function() {
+      // Negative numbers are handled by unary minus expressions.
+      expectTranslate('1234').to.equal(' 1234 ;');
+      expectTranslate('12.34').to.equal(' 12.34 ;');
+      expectTranslate('1.23e-4').to.equal(' 1.23e-4 ;');
+    });
+
+    it('translates regexp literals', function() {
+      expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {
@@ -107,7 +134,7 @@ export function translateSource(contents: string): string {
   if (program.getDiagnostics().length > 0) {
     // Throw first error.
     var first = program.getDiagnostics()[0];
-    throw new Error(`${first.start}: ${first.messageText}`);
+    throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
   return main.translateProgram(program);
 }

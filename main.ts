@@ -50,6 +50,9 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.NumberKeyword:
         emit('num');
         break;
+      case ts.SyntaxKind.StringKeyword:
+        emit('String');
+        break;
       case ts.SyntaxKind.VoidKeyword:
         emit('void');
         break;
@@ -118,30 +121,44 @@ export function translateProgram(program: ts.Program): string {
         if (methodDecl.type) visit(methodDecl.type);
         visit(methodDecl.name);
         emit('(');
-        visitEach(methodDecl.parameters);
+        visitList(methodDecl.parameters);
         emit(')');
         visit(methodDecl.body);
         break;
 
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
-        visit(funcDecl.type);
+        if (funcDecl.type) visit(funcDecl.type);
         visit(funcDecl.name);
-        result += '(';
-        result += ') {';
-        result += '}';
+        emit('(');
+        visitList(funcDecl.parameters);
+        emit(')');
+        visit(funcDecl.body);
         break;
 
-      case ts.SyntaxKind.Block:
-        emit('{');
-        visitEach((<ts.Block>node).statements);
-        emit('}');
+      case ts.SyntaxKind.Parameter:
+        var paramDecl = <ts.ParameterDeclaration>node;
+        if (paramDecl.dotDotDotToken) throw 'rest parameters are unsupported';
+        if (paramDecl.initializer) emit('[');
+        if (paramDecl.type) visit(paramDecl.type);
+        visit(paramDecl.name);
+        if (paramDecl.initializer) {
+          emit('=');
+          visit(paramDecl.initializer);
+          emit(']');
+        }
         break;
 
       case ts.SyntaxKind.ReturnStatement:
         emit('return');
         visit((<ts.ReturnStatement>node).expression);
         emit(';');
+        break;
+
+      case ts.SyntaxKind.Block:
+        emit('{');
+        visitEach((<ts.Block>node).statements);
+        emit('}');
         break;
 
       default:

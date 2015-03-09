@@ -58,6 +58,11 @@ describe('transpile to dart', function() {
         expectTranslate('class X { x( a : number, b : string ) { return 42; } }')
             .to.equal(' class X {\n x ( num a , String b ) { return 42 ; } }\n');
       });
+
+      it('supports constructors', function() {
+        expectTranslate('class X { constructor() { } }')
+            .to.equal(' class X {\n X ( ) { } }\n');
+      });
     });
   });
 

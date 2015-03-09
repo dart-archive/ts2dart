@@ -29,6 +29,20 @@ export function translateProgram(program: ts.Program): string {
     }
   }
 
+  function visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
+    emit('(');
+    visitList(fn.parameters);
+    emit(')');
+    visit(fn.body);
+  }
+
+  function reportError(n: ts.Node, message: string) {
+    var file = n.getSourceFile();
+    var start = n.getStart();
+    var pos = file.getLineAndCharacterFromPosition(start);
+    throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
+  }
+
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
     switch (node.kind) {
@@ -105,6 +119,21 @@ export function translateProgram(program: ts.Program): string {
         visitList(heritageClause.types);
         break;
 
+      case ts.SyntaxKind.Constructor:
+        var ctorDecl = <ts.ConstructorDeclaration>node;
+        // Find containing class name.
+        var className;
+        for (var parent = ctorDecl.parent; parent; parent = parent.parent) {
+          if (parent.kind == ts.SyntaxKind.ClassDeclaration) {
+            className = (<ts.ClassDeclaration>parent).name;
+            break;
+          }
+        }
+        if (!className) reportError(ctorDecl, 'cannot find outer class node');
+        visit(className);
+        visitFunctionLike(ctorDecl);
+        break;
+
       case ts.SyntaxKind.Property:
         var propertyDecl = <ts.PropertyDeclaration>node;
         visit(propertyDecl.type);
@@ -120,25 +149,19 @@ export function translateProgram(program: ts.Program): string {
         var methodDecl = <ts.MethodDeclaration>node;
         if (methodDecl.type) visit(methodDecl.type);
         visit(methodDecl.name);
-        emit('(');
-        visitList(methodDecl.parameters);
-        emit(')');
-        visit(methodDecl.body);
+        visitFunctionLike(methodDecl);
         break;
 
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
         if (funcDecl.type) visit(funcDecl.type);
         visit(funcDecl.name);
-        emit('(');
-        visitList(funcDecl.parameters);
-        emit(')');
-        visit(funcDecl.body);
+        visitFunctionLike(funcDecl);
         break;
 
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration>node;
-        if (paramDecl.dotDotDotToken) throw 'rest parameters are unsupported';
+        if (paramDecl.dotDotDotToken) reportError(node, 'rest parameters are unsupported');
         if (paramDecl.initializer) emit('[');
         if (paramDecl.type) visit(paramDecl.type);
         visit(paramDecl.name);
@@ -162,7 +185,8 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       default:
-        throw new Error("Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        reportError(node, "Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        break;
     }
   }
   function emitDart(sourceFile: ts.SourceFile) {

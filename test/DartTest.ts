@@ -34,10 +34,6 @@ describe('transpile to dart', function() {
       expectTranslate("class X extends Y implements Z {}")
           .to.equal(" class X extends Y implements Z {\n }\n");
     });
-    it('should support implements', function() {
-      expectTranslate("class X extends Y implements Z {}")
-          .to.equal(" class X extends Y implements Z {\n }\n");
-    });
 
     describe('members', function() {
       it('supports fields', function() {

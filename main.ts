@@ -99,6 +99,17 @@ export function translateProgram(program: ts.Program): string {
         emit('default :');
         visitEach((<ts.DefaultClause>node).statements);
         break;
+      case ts.SyntaxKind.IfStatement:
+        var ifStmt = <ts.IfStatement>node;
+        emit('if (');
+        visit(ifStmt.expression);
+        emit(')');
+        visit(ifStmt.thenStatement);
+        if (ifStmt.elseStatement) {
+          emit('else');
+          visit(ifStmt.elseStatement);
+        }
+        break;
 
       case ts.SyntaxKind.BreakStatement:
         emit('break ;');

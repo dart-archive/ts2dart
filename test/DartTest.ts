@@ -113,6 +113,13 @@ describe('transpile to dart', function() {
       expectTranslate('switch(x) { case 1: break; case 2: break; default: break; }')
           .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
     });
+
+    it('translates if/then/else', function() {
+      expectTranslate('if (x) { 1 }').to.equal(' if ( x ) { 1 ; }');
+      expectTranslate('if (x) { 1 } else { 2 }').to.equal(' if ( x ) { 1 ; } else { 2 ; }');
+      expectTranslate('if (x) 1;').to.equal(' if ( x ) 1 ;');
+      expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
+    });
   });
 });
 

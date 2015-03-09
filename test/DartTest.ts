@@ -80,21 +80,6 @@ describe('transpile to dart', function() {
           .to.throw('rest parameters are unsupported');
     });
   });
-
-  describe('functions', function() {
-    it('supports declarations', function() {
-      expectTranslate('function x() {}')
-          .to.equal(' x ( ) { }');
-    });
-    it('supports param default values', function() {
-      expectTranslate('function x(a = 42) { return 42; }')
-          .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
-    });
-    it('does not support var args', function() {
-      chai.expect(() => translateSource('function x(...a: number) { return 42; }'))
-          .to.throw('rest parameters are unsupported');
-    });
-  });
 });
 
 export function translateSource(contents: string): string {

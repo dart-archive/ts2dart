@@ -61,6 +61,13 @@ describe('transpile to dart', function() {
       expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;');
     });
   });
+
+  describe('control structures', function() {
+    it('translates switch', function() {
+      expectTranslate('switch(x) { case 1: break; case 2: break; default: break; }')
+          .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

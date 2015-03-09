@@ -22,7 +22,7 @@ export function translateProgram(program: ts.Program): string {
     nodes.forEach(visit);
   }
 
-  function visitList(nodes: ts.NodeArray<ts.Node> ) {
+  function visitList(nodes: ts.NodeArray<ts.Node>) {
     for (var i = 0; i < nodes.length; i++) {
       visit(nodes[i]);
       if (i < nodes.length - 1) emit(',');
@@ -79,6 +79,29 @@ export function translateProgram(program: ts.Program): string {
         var expr = <ts.ExpressionStatement>node;
         visit(expr.expression);
         emit(';');
+        break;
+      case ts.SyntaxKind.SwitchStatement:
+        var switchStmt = <ts.SwitchStatement>node;
+        emit('switch (');
+        visit(switchStmt.expression);
+        emit(') {');
+        visitEach(switchStmt.clauses);
+        emit('}');
+        break;
+      case ts.SyntaxKind.CaseClause:
+        var caseClause = <ts.CaseClause>node;
+        emit('case');
+        visit(caseClause.expression);
+        emit(':');
+        visitEach(caseClause.statements);
+        break;
+      case ts.SyntaxKind.DefaultClause:
+        emit('default :');
+        visitEach((<ts.DefaultClause>node).statements);
+        break;
+
+      case ts.SyntaxKind.BreakStatement:
+        emit('break ;');
         break;
 
       // Literals.

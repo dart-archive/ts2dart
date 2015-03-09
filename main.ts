@@ -36,6 +36,13 @@ export function translateProgram(program: ts.Program): string {
     visit(fn.body);
   }
 
+  function reportError(n: ts.Node, message: string) {
+    var file = n.getSourceFile();
+    var start = n.getStart();
+    var pos = file.getLineAndCharacterFromPosition(start);
+    throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
+  }
+
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
     switch (node.kind) {
@@ -122,7 +129,7 @@ export function translateProgram(program: ts.Program): string {
             break;
           }
         }
-        if (!className) throw new Error('cannot find outer class node');
+        if (!className) reportError(ctorDecl, 'cannot find outer class node');
         visit(className);
         visitFunctionLike(ctorDecl);
         break;
@@ -154,7 +161,7 @@ export function translateProgram(program: ts.Program): string {
 
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration>node;
-        if (paramDecl.dotDotDotToken) throw 'rest parameters are unsupported';
+        if (paramDecl.dotDotDotToken) reportError(node, 'rest parameters are unsupported');
         if (paramDecl.initializer) emit('[');
         if (paramDecl.type) visit(paramDecl.type);
         visit(paramDecl.name);
@@ -178,7 +185,8 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       default:
-        throw new Error("Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        reportError(node, "Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        break;
     }
   }
   function emitDart(sourceFile: ts.SourceFile) {

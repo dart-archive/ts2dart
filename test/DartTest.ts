@@ -23,16 +23,38 @@ describe('transpile to dart', function() {
   describe('classes', function() {
     it('should translate classes', function() {
       expectTranslate("class X {}").to.equal(" class X {\n }\n");
-    })
+    });
     it('should support extends', function() {
       expectTranslate("class X extends Y {}").to.equal(" class X extends Y {\n }\n");
-    })
+    });
     it('should support implements', function() {
       expectTranslate("class X implements Y, Z {}").to.equal(" class X implements Y , Z {\n }\n");
-    })
+    });
     it('should support implements', function() {
-      expectTranslate("class X extends Y implements Z {}").to.equal(" class X extends Y implements Z {\n }\n");
-    })
+      expectTranslate("class X extends Y implements Z {}")
+          .to.equal(" class X extends Y implements Z {\n }\n");
+    });
+    it('should support implements', function() {
+      expectTranslate("class X extends Y implements Z {}")
+          .to.equal(" class X extends Y implements Z {\n }\n");
+    });
+
+    describe('members', function() {
+      it('supports fields', function() {
+        expectTranslate("class X { x: number; }").to.equal(" class X {\n num x ; }\n");
+      });
+      it('supports field initializers', function() {
+        expectTranslate("class X { x: number = 42; }").to.equal(" class X {\n num x = 42 ; }\n");
+      });
+      it('supports methods', function() {
+        expectTranslate("class X { x() { return 42; } }")
+            .to.equal(" class X {\n x ( ) { return 42 ; } }\n");
+      });
+      it('supports method return types', function() {
+        expectTranslate("class X { x(): number { return 42; } }")
+            .to.equal(" class X {\n num x ( ) { return 42 ; } }\n");
+      });
+    });
   });
 });
 

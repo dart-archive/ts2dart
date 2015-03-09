@@ -102,13 +102,46 @@ export function translateProgram(program: ts.Program): string {
         visitList(heritageClause.types);
         break;
 
+      case ts.SyntaxKind.Property:
+        var propertyDecl = <ts.PropertyDeclaration>node;
+        visit(propertyDecl.type);
+        visit(propertyDecl.name);
+        if (propertyDecl.initializer) {
+          emit('=');
+          visit(propertyDecl.initializer);
+        }
+        emit(';');
+        break;
+
+      case ts.SyntaxKind.Method:
+        var methodDecl = <ts.MethodDeclaration>node;
+        if (methodDecl.type) visit(methodDecl.type);
+        visit(methodDecl.name);
+        emit('(');
+        visitEach(methodDecl.parameters);
+        emit(')');
+        visit(methodDecl.body);
+        break;
+
       case ts.SyntaxKind.FunctionDeclaration:
-        var funcDecl= <ts.FunctionDeclaration>node;
+        var funcDecl = <ts.FunctionDeclaration>node;
         visit(funcDecl.type);
         visit(funcDecl.name);
         result += '(';
         result += ') {';
         result += '}';
+        break;
+
+      case ts.SyntaxKind.Block:
+        emit('{');
+        visitEach((<ts.Block>node).statements);
+        emit('}');
+        break;
+
+      case ts.SyntaxKind.ReturnStatement:
+        emit('return');
+        visit((<ts.ReturnStatement>node).expression);
+        emit(';');
         break;
 
       default:

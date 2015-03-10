@@ -169,6 +169,21 @@ export function translateProgram(program: ts.Program): string {
         emit(')');
         visit(forInStmt.statement);
         break;
+      case ts.SyntaxKind.WhileStatement:
+        var whileStmt = <ts.WhileStatement>node;
+        emit('while (');
+        visit(whileStmt.expression);
+        emit(')');
+        visit(whileStmt.statement);
+        break;
+      case ts.SyntaxKind.DoStatement:
+        var doStmt = <ts.DoStatement>node;
+        emit('do');
+        visit(doStmt.statement);
+        emit('while (');
+        visit(doStmt.expression);
+        emit(') ;');
+        break;
 
       case ts.SyntaxKind.BreakStatement:
         emit('break ;');

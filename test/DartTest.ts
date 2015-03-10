@@ -235,6 +235,12 @@ describe('transpile to dart', function() {
           .to.throw('void operator is unsupported');
     });
   });
+
+  describe('expressions', function() {
+    it('translates parens', function() {
+      expectTranslate('(1)').to.equal(' ( 1 ) ;');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

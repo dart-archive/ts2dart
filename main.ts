@@ -128,6 +128,9 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.RegularExpressionLiteral:
         emit((<ts.LiteralExpression>node).text);
         break;
+      case ts.SyntaxKind.ThisKeyword:
+        emit('this');
+        break;
 
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
@@ -148,6 +151,39 @@ export function translateProgram(program: ts.Program): string {
         break;
       case ts.SyntaxKind.CallExpression:
         visitCall(<ts.CallExpression>node);
+        break;
+      case ts.SyntaxKind.BinaryExpression:
+        var binExpr = <ts.BinaryExpression>node;
+        visit(binExpr.left);
+        emit(ts.tokenToString(binExpr.operator));
+        visit(binExpr.right);
+        break;
+      case ts.SyntaxKind.PrefixUnaryExpression:
+        var prefixUnary = <ts.PrefixUnaryExpression>node;
+        emit(ts.tokenToString(prefixUnary.operator));
+        visit(prefixUnary.operand);
+        break;
+      case ts.SyntaxKind.PostfixUnaryExpression:
+        var postfixUnary = <ts.PostfixUnaryExpression>node;
+        visit(postfixUnary.operand);
+        emit(ts.tokenToString(postfixUnary.operator));
+        break;
+      case ts.SyntaxKind.ConditionalExpression:
+        var conditional = <ts.ConditionalExpression>node;
+        visit(conditional.condition);
+        emit('?');
+        visit(conditional.whenTrue);
+        emit(':');
+        visit(conditional.whenFalse);
+        break;
+      case ts.SyntaxKind.DeleteExpression:
+        reportError(node, 'delete operator is unsupported');
+        break;
+      case ts.SyntaxKind.VoidExpression:
+        reportError(node, 'void operator is unsupported');
+        break;
+      case ts.SyntaxKind.TypeOfExpression:
+        reportError(node, 'typeof operator is unsupported');
         break;
 
       case ts.SyntaxKind.FirstAssignment:

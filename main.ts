@@ -1,15 +1,13 @@
 /// <reference path="typings/node/node.d.ts" />
-
-// not needed by tsc since we require typescript external module,
-// but the editor/IDE doesn't give completions without it
-/// <reference path="typings/typescript/typescript.d.ts" />
+// Use HEAD version of typescript, installed by npm
+/// <reference path="node_modules/typescript/bin/typescript.d.ts" />
 
 import ts = require("typescript");
 
 export function translateProgram(program: ts.Program): string {
   var result: string = "";
   program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.filename.indexOf(".d.ts") < 0)
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
       .forEach(emitDart);
   return result;
 
@@ -37,10 +35,11 @@ export function translateProgram(program: ts.Program): string {
   }
 
   function reportError(n: ts.Node, message: string) {
-    var file = n.getSourceFile();
-    var start = n.getStart();
-    var pos = file.getLineAndCharacterFromPosition(start);
-    throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
+    // FIXME: restore this error reporting
+    //var file = n.getSourceFile();
+    //var start = n.getStart();
+    //var pos = file.getLineAndCharacterOfPosition(start);
+    throw new Error(`${message}`);
   }
 
   function visit(node: ts.Node) {
@@ -49,6 +48,11 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
         ts.forEachChild(node, visit);
+        break;
+
+      case ts.SyntaxKind.VariableDeclarationList:
+        var varDeclList = <ts.VariableDeclarationList>node;
+        visitEach(varDeclList.declarations);
         break;
 
       case ts.SyntaxKind.VariableDeclaration:
@@ -105,8 +109,13 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       // Literals.
+      case ts.SyntaxKind.NumericLiteral:
+        var sLit = <ts.LiteralExpression>node;
+        emit(sLit.text);
+        break;
+
       case ts.SyntaxKind.StringLiteral:
-        var sLit = <ts.StringLiteralExpression>node;
+        var sLit = <ts.LiteralExpression>node;
         emit(JSON.stringify(sLit.text));
         break;
       case ts.SyntaxKind.TrueKeyword:
@@ -122,10 +131,8 @@ export function translateProgram(program: ts.Program): string {
         emit((<ts.LiteralExpression>node).text);
         break;
 
-      case ts.SyntaxKind.FirstAssignment:
-      case ts.SyntaxKind.FirstLiteralToken:
       case ts.SyntaxKind.Identifier:
-        emit(node.getText());
+        emit((<ts.Identifier>node).text);
         break;
 
       case ts.SyntaxKind.TypeReference:
@@ -180,7 +187,7 @@ export function translateProgram(program: ts.Program): string {
         visitFunctionLike(ctorDecl);
         break;
 
-      case ts.SyntaxKind.Property:
+      case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         visit(propertyDecl.type);
         visit(propertyDecl.name);
@@ -191,7 +198,7 @@ export function translateProgram(program: ts.Program): string {
         emit(';');
         break;
 
-      case ts.SyntaxKind.Method:
+      case ts.SyntaxKind.MethodDeclaration:
         var methodDecl = <ts.MethodDeclaration>node;
         if (methodDecl.type) visit(methodDecl.type);
         visit(methodDecl.name);

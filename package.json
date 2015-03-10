@@ -7,15 +7,15 @@
     "test": "test"
   },
   "dependencies": {
-    "typescript": "^1.4.1"
+    "typescript": "Microsoft/TypeScript"
   },
   "devDependencies": {
     "chai": "^2.1.1",
     "gulp": "^3.8.11",
     "gulp-mocha": "^2.0.0",
-    "gulp-typescript": "^2.4.2",
+    "gulp-typescript": "ivogabe/gulp-typescript",
     "merge2": "^0.3.1",
-    "typescript": "^1.4.1",
+    "typescript": "Microsoft/TypeScript",
     "which": "^1.0.9"
   },
   "scripts": {

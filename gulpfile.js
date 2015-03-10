@@ -9,7 +9,11 @@ var fs = require('fs');
 
 var TSC_OPTIONS = {
   module: "commonjs",
-  noExternalResolve: true,
+  // allow pulling in files from node_modules
+  // until TS 1.5 is in tsd / DefinitelyTyped
+  // (the alternative is to include node_modules paths
+  // in the src arrays below for compilation)
+  noExternalResolve: false,
   definitionFiles: true,
   noEmitOnError: true
 };

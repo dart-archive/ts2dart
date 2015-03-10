@@ -122,15 +122,15 @@ export function translateSource(contents: string): string {
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function (filename, languageVersion) {
       if (filename === 'file.ts')
-        return ts.createSourceFile(filename, contents, compilerOptions.target, '0');
+        return ts.createSourceFile(filename, contents, compilerOptions.target, false);
       if (filename === 'lib.d.ts')
-        return ts.createSourceFile(filename, '', compilerOptions.target, '0');
+        return ts.createSourceFile(filename, '', compilerOptions.target, false);
       return undefined;
     },
     writeFile: function (name, text, writeByteOrderMark) {
       result = text;
     },
-    getDefaultLibFilename: function () { return 'lib.d.ts'; },
+    getDefaultLibFileName: function () { return 'lib.d.ts'; },
     useCaseSensitiveFileNames: function () { return false; },
     getCanonicalFileName: function (filename) { return filename; },
     getCurrentDirectory: function () { return ''; },
@@ -138,9 +138,11 @@ export function translateSource(contents: string): string {
   };
   // Create a program from inputs
   var program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
-  if (program.getDiagnostics().length > 0) {
+  // FIXME: there are now four methods to get diagnostics. See comment at
+  // https://github.com/ivogabe/gulp-typescript/pull/76/files#diff-943b2deadb12bedd212191054a2706d1R31
+  if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
-    var first = program.getDiagnostics()[0];
+    var first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
   return main.translateProgram(program);

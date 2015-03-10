@@ -139,7 +139,7 @@ describe('transpile to dart', function() {
       expectTranslate('for (var x in 1) { 2 }').to.equal(' for ( var x in 1 ) { 2 ; }');
       expectTranslate('for (x in 1) { 2 }').to.equal(' for ( x in 1 ) { 2 ; }');
     });
-    it('tranlates while loops', function() {
+    it('translates while loops', function() {
       expectTranslate('while (1) { 2 }').to.equal(' while ( 1 ) { 2 ; }');
       expectTranslate('do 1; while (2);').to.equal(' do 1 ; while ( 2 ) ;');
     });

@@ -131,7 +131,18 @@ describe('transpile to dart', function() {
       expectTranslate('switch(x) { case 1: break; case 2: break; default: break; }')
           .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
     });
-
+    it('translates for loops', function() {
+      expectTranslate('for (1; 2; 3) { 4 }').to.equal(' for ( 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x = 1; 2; 3) { 4 }').to.equal(' for ( var x = 1 ; 2 ; 3 ) { 4 ; }');
+    });
+    it('translates for-in loops', function() {
+      expectTranslate('for (var x in 1) { 2 }').to.equal(' for ( var x in 1 ) { 2 ; }');
+      expectTranslate('for (x in 1) { 2 }').to.equal(' for ( x in 1 ) { 2 ; }');
+    });
+    it('tranlates while loops', function() {
+      expectTranslate('while (1) { 2 }').to.equal(' while ( 1 ) { 2 ; }');
+      expectTranslate('do 1; while (2);').to.equal(' do 1 ; while ( 2 ) ;');
+    });
     it('translates if/then/else', function() {
       expectTranslate('if (x) { 1 }').to.equal(' if ( x ) { 1 ; }');
       expectTranslate('if (x) { 1 } else { 2 }').to.equal(' if ( x ) { 1 ; } else { 2 ; }');

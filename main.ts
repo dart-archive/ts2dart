@@ -76,7 +76,11 @@ export function translateProgram(program: ts.Program): string {
 
       case ts.SyntaxKind.VariableDeclaration:
         var varDecl = <ts.VariableDeclaration>node;
-        visit(varDecl.type);
+        if (varDecl.type) {
+          visit(varDecl.type);
+        } else {
+          emit('var');
+        }
         visit(varDecl.name);
         if (varDecl.initializer) {
           emit('=');
@@ -139,6 +143,46 @@ export function translateProgram(program: ts.Program): string {
           emit('else');
           visit(ifStmt.elseStatement);
         }
+        break;
+
+      case ts.SyntaxKind.ForStatement:
+        var forStmt = <ts.ForStatement>node;
+        emit('for (');
+        if (forStmt.declarations) visitList(forStmt.declarations);
+        if (forStmt.initializer) visit(forStmt.initializer);
+        emit(';');
+        if (forStmt.condition) visit(forStmt.condition);
+        emit(';');
+        if (forStmt.iterator) visit(forStmt.iterator);
+        emit(')');
+        visit(forStmt.statement);
+        break;
+      case ts.SyntaxKind.ForInStatement:
+        // TODO(martinprobst): Dart's for-in loops actually have different semantics, they are more
+        // like for-of loops, iterating over collections.
+        var forInStmt = <ts.ForInStatement>node;
+        emit ('for (');
+        if (forInStmt.declarations) visitList(forInStmt.declarations);
+        if (forInStmt.variable) visit(forInStmt.variable);
+        emit('in');
+        visit(forInStmt.expression);
+        emit(')');
+        visit(forInStmt.statement);
+        break;
+      case ts.SyntaxKind.WhileStatement:
+        var whileStmt = <ts.WhileStatement>node;
+        emit('while (');
+        visit(whileStmt.expression);
+        emit(')');
+        visit(whileStmt.statement);
+        break;
+      case ts.SyntaxKind.DoStatement:
+        var doStmt = <ts.DoStatement>node;
+        emit('do');
+        visit(doStmt.statement);
+        emit('while (');
+        visit(doStmt.expression);
+        emit(') ;');
         break;
 
       case ts.SyntaxKind.BreakStatement:

@@ -241,6 +241,13 @@ describe('transpile to dart', function() {
       expectTranslate('(1)').to.equal(' ( 1 ) ;');
     });
   });
+
+  describe('comments', () => {
+    it('keeps leading comments', () => {
+      expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
+      expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

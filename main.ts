@@ -6,37 +6,39 @@
 
 import ts = require("typescript");
 
-export function translateProgram(program: ts.Program): string {
-  var result: string = "";
-  program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.filename.indexOf(".d.ts") < 0)
-      .forEach(emitDart);
-  return result;
+class Translator {
+  result: string = '';
+  lastCommentIdx: number = -1;
 
-  function emit(str: string) {
-    result += ' ';
-    result += str;
+  translate(sourceFile: ts.SourceFile) {
+    this.visit(sourceFile);
+    return this.result;
   }
 
-  function visitEach(nodes) {
-    nodes.forEach(visit);
+  emit(str: string) {
+    this.result += ' ';
+    this.result += str;
   }
 
-  function visitList(nodes: ts.NodeArray<ts.Node>) {
+  visitEach(nodes: ts.Node[]) {
+    nodes.forEach((n) => this.visit(n));
+  }
+
+  visitList(nodes: ts.NodeArray<ts.Node>) {
     for (var i = 0; i < nodes.length; i++) {
-      visit(nodes[i]);
-      if (i < nodes.length - 1) emit(',');
+      this.visit(nodes[i]);
+      if (i < nodes.length - 1) this.emit(',');
     }
   }
 
-  function visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
-    emit('(');
-    visitList(fn.parameters);
-    emit(')');
-    visit(fn.body);
+  visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
+    this.emit('(');
+    this.visitList(fn.parameters);
+    this.emit(')');
+    this.visit(fn.body);
   }
 
-  function reportError(n: ts.Node, message: string) {
+  reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile();
     var start = n.getStart();
     var pos = file.getLineAndCharacterFromPosition(start);
@@ -46,139 +48,138 @@ export function translateProgram(program: ts.Program): string {
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
   // offset to avoid printing comments multiple times.
   // TODO(martinprobst): Refactor this.
-  var lastCommentIdx;
 
-  function visit(node: ts.Node) {
+  visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
     var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
     if (comments) {
       comments.forEach((c) => {
-        if (c.pos <= lastCommentIdx) return;
-        lastCommentIdx = c.pos;
+        if (c.pos <= this.lastCommentIdx) return;
+        this.lastCommentIdx = c.pos;
         var text = node.getSourceFile().text.substring(c.pos, c.end);
-        emit(text);
-        if (c.hasTrailingNewLine) result += '\n';
+        this.emit(text);
+        if (c.hasTrailingNewLine) this.result += '\n';
       });
     }
 
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
-        ts.forEachChild(node, visit);
+        ts.forEachChild(node, this.visit.bind(this));
         break;
 
       case ts.SyntaxKind.VariableDeclaration:
         var varDecl = <ts.VariableDeclaration>node;
-        visit(varDecl.type);
-        visit(varDecl.name);
+        this.visit(varDecl.type);
+        this.visit(varDecl.name);
         if (varDecl.initializer) {
-          emit('=');
-          visit(varDecl.initializer);
+          this.emit('=');
+          this.visit(varDecl.initializer);
         }
         break;
 
       case ts.SyntaxKind.NumberKeyword:
-        emit('num');
+        this.emit('num');
         break;
       case ts.SyntaxKind.StringKeyword:
-        emit('String');
+        this.emit('String');
         break;
       case ts.SyntaxKind.VoidKeyword:
-        emit('void');
+        this.emit('void');
         break;
 
       case ts.SyntaxKind.VariableStatement:
-        ts.forEachChild(node, visit);
-        emit(';\n');
+        ts.forEachChild(node, this.visit.bind(this));
+        this.emit(';\n');
         break;
       case ts.SyntaxKind.ExpressionStatement:
         var expr = <ts.ExpressionStatement>node;
-        visit(expr.expression);
-        emit(';');
+        this.visit(expr.expression);
+        this.emit(';');
         break;
       case ts.SyntaxKind.SwitchStatement:
         var switchStmt = <ts.SwitchStatement>node;
-        emit('switch (');
-        visit(switchStmt.expression);
-        emit(') {');
-        visitEach(switchStmt.clauses);
-        emit('}');
+        this.emit('switch (');
+        this.visit(switchStmt.expression);
+        this.emit(') {');
+        this.visitEach(switchStmt.clauses);
+        this.emit('}');
         break;
       case ts.SyntaxKind.CaseClause:
         var caseClause = <ts.CaseClause>node;
-        emit('case');
-        visit(caseClause.expression);
-        emit(':');
-        visitEach(caseClause.statements);
+        this.emit('case');
+        this.visit(caseClause.expression);
+        this.emit(':');
+        this.visitEach(caseClause.statements);
         break;
       case ts.SyntaxKind.DefaultClause:
-        emit('default :');
-        visitEach((<ts.DefaultClause>node).statements);
+        this.emit('default :');
+        this.visitEach((<ts.DefaultClause>node).statements);
         break;
 
       case ts.SyntaxKind.BreakStatement:
-        emit('break ;');
+        this.emit('break ;');
         break;
 
       // Literals.
       case ts.SyntaxKind.StringLiteral:
         var sLit = <ts.StringLiteralExpression>node;
-        emit(JSON.stringify(sLit.text));
+        this.emit(JSON.stringify(sLit.text));
         break;
       case ts.SyntaxKind.TrueKeyword:
-        emit('true');
+        this.emit('true');
         break;
       case ts.SyntaxKind.FalseKeyword:
-        emit('false');
+        this.emit('false');
         break;
       case ts.SyntaxKind.NullKeyword:
-        emit('null');
+        this.emit('null');
         break;
       case ts.SyntaxKind.RegularExpressionLiteral:
-        emit((<ts.LiteralExpression>node).text);
+        this.emit((<ts.LiteralExpression>node).text);
         break;
 
       case ts.SyntaxKind.FirstAssignment:
       case ts.SyntaxKind.FirstLiteralToken:
       case ts.SyntaxKind.Identifier:
-        emit(node.getText());
+        this.emit(node.getText());
         break;
 
       case ts.SyntaxKind.TypeReference:
         var typeRef = <ts.TypeReferenceNode>node;
-        visit(typeRef.typeName);
+        this.visit(typeRef.typeName);
         if (typeRef.typeArguments) {
-          visitEach(typeRef.typeArguments);
+          this.visitEach(typeRef.typeArguments);
         }
         break;
 
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
-        emit('class');
-        visit(classDecl.name);
+        this.emit('class');
+        this.visit(classDecl.name);
         if (classDecl.typeParameters) {
-          visitEach(classDecl.typeParameters);
+          this.visitEach(classDecl.typeParameters);
         }
         if (classDecl.heritageClauses) {
-          visitEach(classDecl.heritageClauses);
+          this.visitEach(classDecl.heritageClauses);
         }
 
         if (classDecl.members) {
-          emit('{\n');
-          visitEach(classDecl.members);
-          emit('}\n');
+          this.emit('{\n');
+          this.visitEach(classDecl.members);
+          this.emit('}\n');
         }
         break;
 
       case ts.SyntaxKind.HeritageClause:
         var heritageClause = <ts.HeritageClause>node;
         if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
-          emit('extends');
+          this.emit('extends');
         } else {
-          emit('implements');
+          this.emit('implements');
         }
         // Can only have one member for extends clauses.
-        visitList(heritageClause.types);
+        this.visitList(heritageClause.types);
         break;
 
       case ts.SyntaxKind.Constructor:
@@ -191,70 +192,78 @@ export function translateProgram(program: ts.Program): string {
             break;
           }
         }
-        if (!className) reportError(ctorDecl, 'cannot find outer class node');
-        visit(className);
-        visitFunctionLike(ctorDecl);
+        if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
+        this.visit(className);
+        this.visitFunctionLike(ctorDecl);
         break;
 
       case ts.SyntaxKind.Property:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        visit(propertyDecl.type);
-        visit(propertyDecl.name);
+        this.visit(propertyDecl.type);
+        this.visit(propertyDecl.name);
         if (propertyDecl.initializer) {
-          emit('=');
-          visit(propertyDecl.initializer);
+          this.emit('=');
+          this.visit(propertyDecl.initializer);
         }
-        emit(';');
+        this.emit(';');
         break;
 
       case ts.SyntaxKind.Method:
         var methodDecl = <ts.MethodDeclaration>node;
-        if (methodDecl.type) visit(methodDecl.type);
-        visit(methodDecl.name);
-        visitFunctionLike(methodDecl);
+        if (methodDecl.type) this.visit(methodDecl.type);
+        this.visit(methodDecl.name);
+        this.visitFunctionLike(methodDecl);
         break;
 
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
-        if (funcDecl.type) visit(funcDecl.type);
-        visit(funcDecl.name);
-        visitFunctionLike(funcDecl);
+        if (funcDecl.type) this.visit(funcDecl.type);
+        this.visit(funcDecl.name);
+        this.visitFunctionLike(funcDecl);
         break;
 
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration>node;
-        if (paramDecl.dotDotDotToken) reportError(node, 'rest parameters are unsupported');
-        if (paramDecl.initializer) emit('[');
-        if (paramDecl.type) visit(paramDecl.type);
-        visit(paramDecl.name);
+        if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
+        if (paramDecl.initializer) this.emit('[');
+        if (paramDecl.type) this.visit(paramDecl.type);
+        this.visit(paramDecl.name);
         if (paramDecl.initializer) {
-          emit('=');
-          visit(paramDecl.initializer);
-          emit(']');
+          this.emit('=');
+          this.visit(paramDecl.initializer);
+          this.emit(']');
         }
         break;
 
       case ts.SyntaxKind.ReturnStatement:
-        emit('return');
-        visit((<ts.ReturnStatement>node).expression);
-        emit(';');
+        this.emit('return');
+        this.visit((<ts.ReturnStatement>node).expression);
+        this.emit(';');
         break;
 
       case ts.SyntaxKind.Block:
-        emit('{');
-        visitEach((<ts.Block>node).statements);
-        emit('}');
+        this.emit('{');
+        this.visitEach((<ts.Block>node).statements);
+        this.emit('}');
         break;
 
       default:
-        reportError(node, "Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        this.reportError(node, "Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
         break;
     }
   }
-  function emitDart(sourceFile: ts.SourceFile) {
-    lastCommentIdx = -1;
-    visit(sourceFile);
-  }
+}
+
+export function translateProgram(program: ts.Program): string {
+  var result = program.getSourceFiles()
+      .filter((sourceFile: ts.SourceFile) => sourceFile.filename.indexOf(".d.ts") < 0)
+      .forEach((f) => {
+        var tr = new Translator();
+        return tr.translate(f);
+      })
+      .join('');
+  return result;
+
 }
 
 export function translateFiles(fileNames: string[]): string {

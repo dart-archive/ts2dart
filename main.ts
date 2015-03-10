@@ -36,6 +36,13 @@ export function translateProgram(program: ts.Program): string {
     visit(fn.body);
   }
 
+  function visitCall(c: ts.CallExpression) {
+    visit(c.expression);
+    emit('(');
+    visitList(c.arguments);
+    emit(')');
+  }
+
   function reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile();
     var start = n.getStart();
@@ -120,6 +127,27 @@ export function translateProgram(program: ts.Program): string {
         break;
       case ts.SyntaxKind.RegularExpressionLiteral:
         emit((<ts.LiteralExpression>node).text);
+        break;
+
+      case ts.SyntaxKind.PropertyAccessExpression:
+        var propAccess = <ts.PropertyAccessExpression>node;
+        visit(propAccess.expression);
+        emit('.');
+        visit(propAccess.name);
+        break;
+      case ts.SyntaxKind.ElementAccessExpression:
+        var elemAccess = <ts.ElementAccessExpression>node;
+        visit(elemAccess.expression);
+        emit('[');
+        visit(elemAccess.argumentExpression);
+        emit(']');
+        break;
+      case ts.SyntaxKind.NewExpression:
+        emit('new');
+        visitCall(<ts.NewExpression>node);
+        break;
+      case ts.SyntaxKind.CallExpression:
+        visitCall(<ts.CallExpression>node);
         break;
 
       case ts.SyntaxKind.FirstAssignment:

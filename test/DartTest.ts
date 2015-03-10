@@ -114,6 +114,13 @@ describe('transpile to dart', function() {
           .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
     });
   });
+
+  describe('comments', () => {
+    it('keeps leading comments', () => {
+      expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
+      expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

@@ -43,8 +43,24 @@ export function translateProgram(program: ts.Program): string {
     throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
   }
 
+  // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
+  // offset to avoid printing comments multiple times.
+  // TODO(martinprobst): Refactor this.
+  var lastCommentIdx;
+
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
+    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
+    if (comments) {
+      comments.forEach((c) => {
+        if (c.pos <= lastCommentIdx) return;
+        lastCommentIdx = c.pos;
+        var text = node.getSourceFile().text.substring(c.pos, c.end);
+        emit(text);
+        if (c.hasTrailingNewLine) result += '\n';
+      });
+    }
+
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
@@ -236,6 +252,7 @@ export function translateProgram(program: ts.Program): string {
     }
   }
   function emitDart(sourceFile: ts.SourceFile) {
+    lastCommentIdx = -1;
     visit(sourceFile);
   }
 }

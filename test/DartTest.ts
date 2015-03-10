@@ -79,6 +79,14 @@ describe('transpile to dart', function() {
       chai.expect(() => translateSource('function x(...a: number) { return 42; }'))
           .to.throw('rest parameters are unsupported');
     });
+    it('translates calls', function() {
+      expectTranslate('foo();').to.equal(' foo ( ) ;');
+      expectTranslate('foo(1, 2);').to.equal(' foo ( 1 , 2 ) ;');
+    });
+    it('translates new calls', function() {
+      expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
+      expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
+    });
   });
 
   describe('literals', function() {
@@ -119,6 +127,13 @@ describe('transpile to dart', function() {
       expectTranslate('if (x) { 1 } else { 2 }').to.equal(' if ( x ) { 1 ; } else { 2 ; }');
       expectTranslate('if (x) 1;').to.equal(' if ( x ) 1 ;');
       expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
+    });
+  });
+
+  describe('property expressions', function() {
+    it('translates property paths', function() {
+      expectTranslate('foo.bar;').to.equal(' foo . bar ;');
+      expectTranslate('foo[bar];').to.equal(' foo [ bar ] ;');
     });
   });
 });

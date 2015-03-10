@@ -1,4 +1,8 @@
-/// <reference path='../typings/chai/chai.d.ts'/>
+/// <reference path="../typings/chai/chai.d.ts"/>
+/// <reference path="../typings/source-map-support/source-map-support.d.ts"/>
+
+import sms = require('source-map-support');
+sms.install();
 
 import chai = require('chai');
 import main = require('../main');

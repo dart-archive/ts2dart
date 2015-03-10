@@ -114,6 +114,12 @@ describe('transpile to dart', function() {
           .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
     });
   });
+
+  describe('expressions', function() {
+    it('translates parens', function() {
+      expectTranslate('(1)').to.equal(' ( 1 ) ;');
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

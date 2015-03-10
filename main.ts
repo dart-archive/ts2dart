@@ -71,6 +71,13 @@ export function translateProgram(program: ts.Program): string {
         emit('void');
         break;
 
+      case ts.SyntaxKind.ParenthesizedExpression:
+        var parenExpr = <ts.ParenthesizedExpression>node;
+        emit('(');
+        visit(parenExpr.expression);
+        emit(')');
+        break;
+
       case ts.SyntaxKind.VariableStatement:
         ts.forEachChild(node, visit);
         emit(';\n');

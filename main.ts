@@ -42,11 +42,10 @@ export function translateProgram(program: ts.Program): string {
   }
 
   function reportError(n: ts.Node, message: string) {
-    // FIXME: restore this error reporting
-    //var file = n.getSourceFile();
-    //var start = n.getStart();
-    //var pos = file.getLineAndCharacterOfPosition(start);
-    throw new Error(`${message}`);
+    var file = n.getSourceFile();
+    var start = n.getStart();
+    var pos = file.getLineAndCharacterOfPosition(start);
+    throw new Error(`${file.fileName}:${pos.line}:${pos.character}: ${message}`);
   }
 
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
@@ -56,20 +55,17 @@ export function translateProgram(program: ts.Program): string {
 
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
-    var source = node.getSourceFile();
-    if (source) {
-      var comments = ts.getLeadingCommentRanges(source.text, node.getFullStart());
-      if (comments) {
-        comments.forEach((c) => {
-          if (c.pos <= lastCommentIdx) return;
-          lastCommentIdx = c.pos;
-          var text = source.text.substring(c.pos, c.end);
-          emit(text);
-          if (c.hasTrailingNewLine) result += '\n';
-        });
-      }
+    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
+    if (comments) {
+      comments.forEach((c) => {
+        if (c.pos <= lastCommentIdx) return;
+        lastCommentIdx = c.pos;
+        var text = node.getSourceFile().text.substring(c.pos, c.end);
+        emit(text);
+        if (c.hasTrailingNewLine) result += '\n';
+      });
     }
-      
+
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
@@ -155,7 +151,6 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.ForStatement:
         var forStmt = <ts.ForStatement>node;
         emit('for (');
-        //if (forStmt.statement.declarationList) visitList(forStmt.declarationList);
         if (forStmt.initializer) visit(forStmt.initializer);
         emit(';');
         if (forStmt.condition) visit(forStmt.condition);
@@ -169,7 +164,6 @@ export function translateProgram(program: ts.Program): string {
         // like for-of loops, iterating over collections.
         var forInStmt = <ts.ForInStatement>node;
         emit ('for (');
-        //if (forInStmt.declarations) visitList(forInStmt.declarations);
         if (forInStmt.initializer) visit(forInStmt.initializer);
         emit('in');
         visit(forInStmt.expression);
@@ -276,7 +270,7 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       case ts.SyntaxKind.Identifier:
-        emit((<ts.Identifier>node).text);
+        emit(node.getText());
         break;
 
       case ts.SyntaxKind.TypeReference:

@@ -278,28 +278,17 @@ export function translateSource(contents: string): string {
     writeFile: function (name, text, writeByteOrderMark) {
       result = text;
     },
-
-    getDefaultLibFileName: function() { return 'lib.d.ts'; },
-    useCaseSensitiveFileNames: function () { return false; },
-    getCanonicalFileName: function (filename) { return filename; },
-    getCurrentDirectory: function () { return ''; },
-    getNewLine: function () { return '\n'; }
+    getDefaultLibFileName: () => 'lib.d.ts',
+    useCaseSensitiveFileNames: () => false,
+    getCanonicalFileName: (filename) => filename,
+    getCurrentDirectory: () => '',
+    getNewLine: () => '\n'
   };
   // Create a program from inputs
   var program: ts.Program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
-  // FIXME: there are now four methods to get diagnostics. See comment at
-  // https://github.com/ivogabe/gulp-typescript/pull/76/files#diff-943b2deadb12bedd212191054a2706d1R31
-  
-  var diagnostics: ts.Diagnostic[] = [];
-  
-  diagnostics = diagnostics.concat(program.getSyntacticDiagnostics());
-  //diagnostics = diagnostics.concat(program.getGlobalDiagnostics());
-  //diagnostics = diagnostics.concat(program.getSemanticDiagnostics());
-  //diagnostics = diagnostics.concat(program.getDeclarationDiagnostics());
-
-  if (diagnostics.length > 0) {
+  if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
-    var first = diagnostics[0];
+    var first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
   return main.translateProgram(program);

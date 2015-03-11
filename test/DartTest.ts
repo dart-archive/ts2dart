@@ -280,6 +280,10 @@ export function translateSource(contents: string): string {
     },
 
     getDefaultLibFileName: function() { return 'lib.d.ts'; },
+    useCaseSensitiveFileNames: function () { return false; },
+    getCanonicalFileName: function (filename) { return filename; },
+    getCurrentDirectory: function () { return ''; },
+    getNewLine: function () { return '\n'; }
   };
   // Create a program from inputs
   var program: ts.Program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);

@@ -101,8 +101,8 @@ describe('transpile to dart', function() {
 
   describe('literals', function() {
     it('translates string literals', function() {
-      expectTranslate(`'hello\\\\' "world'`).to.equal(` "hello' \\\\"world" ;`);
-      expectTranslate(`"hello\\\\" 'world"`).to.equal(` "hello\\\\" 'world" ;`);
+      expectTranslate(`'hello\\' "world'`).to.equal(` "hello' \\"world" ;`);
+      expectTranslate(`"hello\\" 'world"`).to.equal(` "hello\\" 'world" ;`);
     });
 
     it('translates boolean literals', function() {
@@ -267,9 +267,9 @@ export function translateSource(contents: string): string {
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function (filename, languageVersion) {
       if (filename === 'file.ts')
-        return ts.createSourceFile(filename, contents, compilerOptions.target, false);
+        return ts.createSourceFile(filename, contents, compilerOptions.target, true);
       if (filename === 'lib.d.ts')
-        return ts.createSourceFile(filename, '', compilerOptions.target, false);
+        return ts.createSourceFile(filename, '', compilerOptions.target, true);
       return undefined;
     },
     writeFile: function (name, text, writeByteOrderMark) {
@@ -282,12 +282,20 @@ export function translateSource(contents: string): string {
     getNewLine: function () { return '\n'; }
   };
   // Create a program from inputs
-  var program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
+  var program: ts.Program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
   // FIXME: there are now four methods to get diagnostics. See comment at
   // https://github.com/ivogabe/gulp-typescript/pull/76/files#diff-943b2deadb12bedd212191054a2706d1R31
-  if (program.getSyntacticDiagnostics().length > 0) {
+  
+  var diagnostics: ts.Diagnostic[] = [];
+  
+  diagnostics = diagnostics.concat(program.getSyntacticDiagnostics());
+  //diagnostics = diagnostics.concat(program.getGlobalDiagnostics());
+  //diagnostics = diagnostics.concat(program.getSemanticDiagnostics());
+  //diagnostics = diagnostics.concat(program.getDeclarationDiagnostics());
+
+  if (diagnostics.length > 0) {
     // Throw first error.
-    var first = program.getSyntacticDiagnostics()[0];
+    var first = diagnostics[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
   return main.translateProgram(program);

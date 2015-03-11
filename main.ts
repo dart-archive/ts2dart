@@ -56,17 +56,20 @@ export function translateProgram(program: ts.Program): string {
 
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
-    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
-    if (comments) {
-      comments.forEach((c) => {
-        if (c.pos <= lastCommentIdx) return;
-        lastCommentIdx = c.pos;
-        var text = node.getSourceFile().text.substring(c.pos, c.end);
-        emit(text);
-        if (c.hasTrailingNewLine) result += '\n';
-      });
+    var source = node.getSourceFile();
+    if (source) {
+      var comments = ts.getLeadingCommentRanges(source.text, node.getFullStart());
+      if (comments) {
+        comments.forEach((c) => {
+          if (c.pos <= lastCommentIdx) return;
+          lastCommentIdx = c.pos;
+          var text = source.text.substring(c.pos, c.end);
+          emit(text);
+          if (c.hasTrailingNewLine) result += '\n';
+        });
+      }
     }
-
+      
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
@@ -152,7 +155,7 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.ForStatement:
         var forStmt = <ts.ForStatement>node;
         emit('for (');
-        if (forStmt.declarations) visitList(forStmt.declarations);
+        //if (forStmt.statement.declarationList) visitList(forStmt.declarationList);
         if (forStmt.initializer) visit(forStmt.initializer);
         emit(';');
         if (forStmt.condition) visit(forStmt.condition);
@@ -166,8 +169,8 @@ export function translateProgram(program: ts.Program): string {
         // like for-of loops, iterating over collections.
         var forInStmt = <ts.ForInStatement>node;
         emit ('for (');
-        if (forInStmt.declarations) visitList(forInStmt.declarations);
-        if (forInStmt.variable) visit(forInStmt.variable);
+        //if (forInStmt.declarations) visitList(forInStmt.declarations);
+        if (forInStmt.initializer) visit(forInStmt.initializer);
         emit('in');
         visit(forInStmt.expression);
         emit(')');
@@ -196,9 +199,8 @@ export function translateProgram(program: ts.Program): string {
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
         var sLit = <ts.LiteralExpression>node;
-        emit(sLit.text);
+        emit(sLit.getText());
         break;
-
       case ts.SyntaxKind.StringLiteral:
         var sLit = <ts.LiteralExpression>node;
         emit(JSON.stringify(sLit.text));
@@ -242,7 +244,7 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
         visit(binExpr.left);
-        emit(ts.tokenToString(binExpr.operator));
+        emit(ts.tokenToString(binExpr.operatorToken.kind));
         visit(binExpr.right);
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:

@@ -1,15 +1,13 @@
 /// <reference path="typings/node/node.d.ts" />
-
-// not needed by tsc since we require typescript external module,
-// but the editor/IDE doesn't give completions without it
-/// <reference path="typings/typescript/typescript.d.ts" />
+// Use HEAD version of typescript, installed by npm
+/// <reference path="node_modules/typescript/bin/typescript.d.ts" />
 
 import ts = require("typescript");
 
 export function translateProgram(program: ts.Program): string {
   var result: string = "";
   program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.filename.indexOf(".d.ts") < 0)
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
       .forEach(emitDart);
   return result;
 
@@ -46,8 +44,8 @@ export function translateProgram(program: ts.Program): string {
   function reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile();
     var start = n.getStart();
-    var pos = file.getLineAndCharacterFromPosition(start);
-    throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
+    var pos = file.getLineAndCharacterOfPosition(start);
+    throw new Error(`${file.fileName}:${pos.line}:${pos.character}: ${message}`);
   }
 
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
@@ -72,6 +70,11 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
         ts.forEachChild(node, visit);
+        break;
+
+      case ts.SyntaxKind.VariableDeclarationList:
+        var varDeclList = <ts.VariableDeclarationList>node;
+        visitEach(varDeclList.declarations);
         break;
 
       case ts.SyntaxKind.VariableDeclaration:
@@ -148,7 +151,6 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.ForStatement:
         var forStmt = <ts.ForStatement>node;
         emit('for (');
-        if (forStmt.declarations) visitList(forStmt.declarations);
         if (forStmt.initializer) visit(forStmt.initializer);
         emit(';');
         if (forStmt.condition) visit(forStmt.condition);
@@ -162,8 +164,7 @@ export function translateProgram(program: ts.Program): string {
         // like for-of loops, iterating over collections.
         var forInStmt = <ts.ForInStatement>node;
         emit ('for (');
-        if (forInStmt.declarations) visitList(forInStmt.declarations);
-        if (forInStmt.variable) visit(forInStmt.variable);
+        if (forInStmt.initializer) visit(forInStmt.initializer);
         emit('in');
         visit(forInStmt.expression);
         emit(')');
@@ -190,8 +191,12 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       // Literals.
+      case ts.SyntaxKind.NumericLiteral:
+        var sLit = <ts.LiteralExpression>node;
+        emit(sLit.getText());
+        break;
       case ts.SyntaxKind.StringLiteral:
-        var sLit = <ts.StringLiteralExpression>node;
+        var sLit = <ts.LiteralExpression>node;
         emit(JSON.stringify(sLit.text));
         break;
       case ts.SyntaxKind.TrueKeyword:
@@ -233,7 +238,7 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
         visit(binExpr.left);
-        emit(ts.tokenToString(binExpr.operator));
+        emit(ts.tokenToString(binExpr.operatorToken.kind));
         visit(binExpr.right);
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:
@@ -264,8 +269,6 @@ export function translateProgram(program: ts.Program): string {
         reportError(node, 'typeof operator is unsupported');
         break;
 
-      case ts.SyntaxKind.FirstAssignment:
-      case ts.SyntaxKind.FirstLiteralToken:
       case ts.SyntaxKind.Identifier:
         emit(node.getText());
         break;
@@ -322,7 +325,7 @@ export function translateProgram(program: ts.Program): string {
         visitFunctionLike(ctorDecl);
         break;
 
-      case ts.SyntaxKind.Property:
+      case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         visit(propertyDecl.type);
         visit(propertyDecl.name);
@@ -333,7 +336,7 @@ export function translateProgram(program: ts.Program): string {
         emit(';');
         break;
 
-      case ts.SyntaxKind.Method:
+      case ts.SyntaxKind.MethodDeclaration:
         var methodDecl = <ts.MethodDeclaration>node;
         if (methodDecl.type) visit(methodDecl.type);
         visit(methodDecl.name);

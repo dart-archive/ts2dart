@@ -101,8 +101,8 @@ describe('transpile to dart', () => {
 
   describe('literals', () => {
     it('translates string literals', () => {
-      expectTranslate(`'hello\\\\' "world'`).to.equal(` "hello' \\\\"world" ;`);
-      expectTranslate(`"hello\\\\" 'world"`).to.equal(` "hello\\\\" 'world" ;`);
+      expectTranslate(`'hello\\' "world'`).to.equal(` "hello' \\"world" ;`);
+      expectTranslate(`"hello\\" 'world"`).to.equal(` "hello\\" 'world" ;`);
     });
 
     it('translates boolean literals', () => {
@@ -270,25 +270,25 @@ export function translateSource(contents: string): string {
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function (filename, languageVersion) {
       if (filename === 'file.ts')
-        return ts.createSourceFile(filename, contents, compilerOptions.target, '0');
+        return ts.createSourceFile(filename, contents, compilerOptions.target, true);
       if (filename === 'lib.d.ts')
-        return ts.createSourceFile(filename, '', compilerOptions.target, '0');
+        return ts.createSourceFile(filename, '', compilerOptions.target, true);
       return undefined;
     },
     writeFile: function (name, text, writeByteOrderMark) {
       result = text;
     },
-    getDefaultLibFilename: function() { return 'lib.d.ts'; },
-    useCaseSensitiveFileNames: function() { return false; },
-    getCanonicalFileName: function(filename) { return filename; },
-    getCurrentDirectory: function() { return ''; },
-    getNewLine: function() { return '\n'; }
+    getDefaultLibFileName: () => 'lib.d.ts',
+    useCaseSensitiveFileNames: () => false,
+    getCanonicalFileName: (filename) => filename,
+    getCurrentDirectory: () => '',
+    getNewLine: () => '\n'
   };
   // Create a program from inputs
-  var program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
-  if (program.getDiagnostics().length > 0) {
+  var program: ts.Program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
+  if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
-    var first = program.getDiagnostics()[0];
+    var first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
   return main.translateProgram(program);

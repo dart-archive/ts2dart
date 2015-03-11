@@ -34,6 +34,13 @@ export function translateProgram(program: ts.Program): string {
     visit(fn.body);
   }
 
+  function visitCall(c: ts.CallExpression) {
+    visit(c.expression);
+    emit('(');
+    visitList(c.arguments);
+    emit(')');
+  }
+
   function reportError(n: ts.Node, message: string) {
     // FIXME: restore this error reporting
     //var file = n.getSourceFile();
@@ -42,8 +49,24 @@ export function translateProgram(program: ts.Program): string {
     throw new Error(`${message}`);
   }
 
+  // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
+  // offset to avoid printing comments multiple times.
+  // TODO(martinprobst): Refactor this.
+  var lastCommentIdx;
+
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
+    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
+    if (comments) {
+      comments.forEach((c) => {
+        if (c.pos <= lastCommentIdx) return;
+        lastCommentIdx = c.pos;
+        var text = node.getSourceFile().text.substring(c.pos, c.end);
+        emit(text);
+        if (c.hasTrailingNewLine) result += '\n';
+      });
+    }
+
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
       case ts.SyntaxKind.EndOfFileToken:
@@ -57,7 +80,11 @@ export function translateProgram(program: ts.Program): string {
 
       case ts.SyntaxKind.VariableDeclaration:
         var varDecl = <ts.VariableDeclaration>node;
-        visit(varDecl.type);
+        if (varDecl.type) {
+          visit(varDecl.type);
+        } else {
+          emit('var');
+        }
         visit(varDecl.name);
         if (varDecl.initializer) {
           emit('=');
@@ -73,6 +100,13 @@ export function translateProgram(program: ts.Program): string {
         break;
       case ts.SyntaxKind.VoidKeyword:
         emit('void');
+        break;
+
+      case ts.SyntaxKind.ParenthesizedExpression:
+        var parenExpr = <ts.ParenthesizedExpression>node;
+        emit('(');
+        visit(parenExpr.expression);
+        emit(')');
         break;
 
       case ts.SyntaxKind.VariableStatement:
@@ -103,6 +137,57 @@ export function translateProgram(program: ts.Program): string {
         emit('default :');
         visitEach((<ts.DefaultClause>node).statements);
         break;
+      case ts.SyntaxKind.IfStatement:
+        var ifStmt = <ts.IfStatement>node;
+        emit('if (');
+        visit(ifStmt.expression);
+        emit(')');
+        visit(ifStmt.thenStatement);
+        if (ifStmt.elseStatement) {
+          emit('else');
+          visit(ifStmt.elseStatement);
+        }
+        break;
+
+      case ts.SyntaxKind.ForStatement:
+        var forStmt = <ts.ForStatement>node;
+        emit('for (');
+        if (forStmt.declarations) visitList(forStmt.declarations);
+        if (forStmt.initializer) visit(forStmt.initializer);
+        emit(';');
+        if (forStmt.condition) visit(forStmt.condition);
+        emit(';');
+        if (forStmt.iterator) visit(forStmt.iterator);
+        emit(')');
+        visit(forStmt.statement);
+        break;
+      case ts.SyntaxKind.ForInStatement:
+        // TODO(martinprobst): Dart's for-in loops actually have different semantics, they are more
+        // like for-of loops, iterating over collections.
+        var forInStmt = <ts.ForInStatement>node;
+        emit ('for (');
+        if (forInStmt.declarations) visitList(forInStmt.declarations);
+        if (forInStmt.variable) visit(forInStmt.variable);
+        emit('in');
+        visit(forInStmt.expression);
+        emit(')');
+        visit(forInStmt.statement);
+        break;
+      case ts.SyntaxKind.WhileStatement:
+        var whileStmt = <ts.WhileStatement>node;
+        emit('while (');
+        visit(whileStmt.expression);
+        emit(')');
+        visit(whileStmt.statement);
+        break;
+      case ts.SyntaxKind.DoStatement:
+        var doStmt = <ts.DoStatement>node;
+        emit('do');
+        visit(doStmt.statement);
+        emit('while (');
+        visit(doStmt.expression);
+        emit(') ;');
+        break;
 
       case ts.SyntaxKind.BreakStatement:
         emit('break ;');
@@ -129,6 +214,63 @@ export function translateProgram(program: ts.Program): string {
         break;
       case ts.SyntaxKind.RegularExpressionLiteral:
         emit((<ts.LiteralExpression>node).text);
+        break;
+      case ts.SyntaxKind.ThisKeyword:
+        emit('this');
+        break;
+
+      case ts.SyntaxKind.PropertyAccessExpression:
+        var propAccess = <ts.PropertyAccessExpression>node;
+        visit(propAccess.expression);
+        emit('.');
+        visit(propAccess.name);
+        break;
+      case ts.SyntaxKind.ElementAccessExpression:
+        var elemAccess = <ts.ElementAccessExpression>node;
+        visit(elemAccess.expression);
+        emit('[');
+        visit(elemAccess.argumentExpression);
+        emit(']');
+        break;
+      case ts.SyntaxKind.NewExpression:
+        emit('new');
+        visitCall(<ts.NewExpression>node);
+        break;
+      case ts.SyntaxKind.CallExpression:
+        visitCall(<ts.CallExpression>node);
+        break;
+      case ts.SyntaxKind.BinaryExpression:
+        var binExpr = <ts.BinaryExpression>node;
+        visit(binExpr.left);
+        emit(ts.tokenToString(binExpr.operator));
+        visit(binExpr.right);
+        break;
+      case ts.SyntaxKind.PrefixUnaryExpression:
+        var prefixUnary = <ts.PrefixUnaryExpression>node;
+        emit(ts.tokenToString(prefixUnary.operator));
+        visit(prefixUnary.operand);
+        break;
+      case ts.SyntaxKind.PostfixUnaryExpression:
+        var postfixUnary = <ts.PostfixUnaryExpression>node;
+        visit(postfixUnary.operand);
+        emit(ts.tokenToString(postfixUnary.operator));
+        break;
+      case ts.SyntaxKind.ConditionalExpression:
+        var conditional = <ts.ConditionalExpression>node;
+        visit(conditional.condition);
+        emit('?');
+        visit(conditional.whenTrue);
+        emit(':');
+        visit(conditional.whenFalse);
+        break;
+      case ts.SyntaxKind.DeleteExpression:
+        reportError(node, 'delete operator is unsupported');
+        break;
+      case ts.SyntaxKind.VoidExpression:
+        reportError(node, 'void operator is unsupported');
+        break;
+      case ts.SyntaxKind.TypeOfExpression:
+        reportError(node, 'typeof operator is unsupported');
         break;
 
       case ts.SyntaxKind.Identifier:
@@ -243,6 +385,7 @@ export function translateProgram(program: ts.Program): string {
     }
   }
   function emitDart(sourceFile: ts.SourceFile) {
+    lastCommentIdx = -1;
     visit(sourceFile);
   }
 }

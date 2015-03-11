@@ -1,4 +1,8 @@
-/// <reference path='../typings/chai/chai.d.ts'/>
+/// <reference path="../typings/chai/chai.d.ts"/>
+/// <reference path="../typings/source-map-support/source-map-support.d.ts"/>
+
+import sms = require('source-map-support');
+sms.install();
 
 import chai = require('chai');
 import main = require('../main');
@@ -9,6 +13,12 @@ describe('transpile to dart', function() {
   function expectTranslate(tsCode: string) {
     var result = translateSource(tsCode);
     return chai.expect(result);
+  }
+
+  function expectTranslates(cases: any) {
+    for (var tsCode in cases) {
+      expectTranslate(tsCode).to.equal(cases[tsCode]);
+    }
   }
 
   describe('variables', function() {
@@ -79,6 +89,14 @@ describe('transpile to dart', function() {
       chai.expect(() => translateSource('function x(...a: number) { return 42; }'))
           .to.throw('rest parameters are unsupported');
     });
+    it('translates calls', function() {
+      expectTranslate('foo();').to.equal(' foo ( ) ;');
+      expectTranslate('foo(1, 2);').to.equal(' foo ( 1 , 2 ) ;');
+    });
+    it('translates new calls', function() {
+      expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
+      expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
+    });
   });
 
   describe('literals', function() {
@@ -112,6 +130,133 @@ describe('transpile to dart', function() {
     it('translates switch', function() {
       expectTranslate('switch(x) { case 1: break; case 2: break; default: break; }')
           .to.equal(' switch ( x ) { case 1 : break ; case 2 : break ; default : break ; }');
+    });
+    it('translates for loops', function() {
+      expectTranslate('for (1; 2; 3) { 4 }').to.equal(' for ( 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x = 1; 2; 3) { 4 }').to.equal(' for ( var x = 1 ; 2 ; 3 ) { 4 ; }');
+    });
+    it('translates for-in loops', function() {
+      expectTranslate('for (var x in 1) { 2 }').to.equal(' for ( var x in 1 ) { 2 ; }');
+      expectTranslate('for (x in 1) { 2 }').to.equal(' for ( x in 1 ) { 2 ; }');
+    });
+    it('translates while loops', function() {
+      expectTranslate('while (1) { 2 }').to.equal(' while ( 1 ) { 2 ; }');
+      expectTranslate('do 1; while (2);').to.equal(' do 1 ; while ( 2 ) ;');
+    });
+    it('translates if/then/else', function() {
+      expectTranslate('if (x) { 1 }').to.equal(' if ( x ) { 1 ; }');
+      expectTranslate('if (x) { 1 } else { 2 }').to.equal(' if ( x ) { 1 ; } else { 2 ; }');
+      expectTranslate('if (x) 1;').to.equal(' if ( x ) 1 ;');
+      expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
+    });
+  });
+
+  describe('property expressions', function() {
+    it('translates property paths', function() {
+      expectTranslate('foo.bar;').to.equal(' foo . bar ;');
+      expectTranslate('foo[bar];').to.equal(' foo [ bar ] ;');
+    });
+  });
+
+  describe('basic expressions', function() {
+    it('does math', function() {
+      expectTranslates({
+        '1 + 2': ' 1 + 2 ;',
+        '1 - 2': ' 1 - 2 ;',
+        '1 * 2': ' 1 * 2 ;',
+        '1 / 2': ' 1 / 2 ;',
+        '1 % 2': ' 1 % 2 ;',
+        'x++': ' x ++ ;',
+        'x--': ' x -- ;',
+        '++x': ' ++ x ;',
+        '--x': ' -- x ;',
+        '-x': ' - x ;',
+      });
+    });
+    it('assigns', function() {
+      expectTranslates({
+        'x += 1': ' x += 1 ;',
+        'x -= 1': ' x -= 1 ;',
+        'x *= 1': ' x *= 1 ;',
+        'x /= 1': ' x /= 1 ;',
+        'x %= 1': ' x %= 1 ;',
+        'x <<= 1': ' x <<= 1 ;',
+        'x >>= 1': ' x >>= 1 ;',
+        'x >>>= 1': ' x >>>= 1 ;',
+        'x &= 1': ' x &= 1 ;',
+        'x ^= 1': ' x ^= 1 ;',
+        'x |= 1': ' x |= 1 ;',
+      });
+    });
+    it('compares', function() {
+      expectTranslates({
+        '1 == 2': ' 1 == 2 ;',
+        '1 === 2': ' 1 === 2 ;',
+        '1 != 2': ' 1 != 2 ;',
+        '1 !== 2': ' 1 !== 2 ;',
+        '1 > 2': ' 1 > 2 ;',
+        '1 < 2': ' 1 < 2 ;',
+        '1 >= 2': ' 1 >= 2 ;',
+        '1 <= 2': ' 1 <= 2 ;',
+      });
+    });
+    it('bit fiddles', function() {
+      expectTranslates({
+        '1 & 2': ' 1 & 2 ;',
+        '1 | 2': ' 1 | 2 ;',
+        '1 ^ 2': ' 1 ^ 2 ;',
+        '~ 1': ' ~ 1 ;',
+        '1 << 2': ' 1 << 2 ;',
+        '1 >> 2': ' 1 >> 2 ;',
+        '1 >>> 2': ' 1 >>> 2 ;',
+      });
+    });
+    it('translates logic', function() {
+      expectTranslates({
+        '1 && 2': ' 1 && 2 ;',
+        '1 || 2': ' 1 || 2 ;',
+        '!1': ' ! 1 ;',
+      });
+    });
+    it('translates ternary', function() {
+      expectTranslate('1 ? 2 : 3').to.equal(' 1 ? 2 : 3 ;');
+    });
+    it('translates the comma operator', function() {
+      expectTranslate('1 , 2').to.equal(' 1 , 2 ;');
+    });
+    it('translates "in"', function() {
+      expectTranslate('1 in 2').to.equal(' 1 in 2 ;');
+    });
+    it('translates "instanceof"', function() {
+      expectTranslate('1 instanceof 2').to.equal(' 1 instanceof 2 ;');
+    });
+    it('translates "this"', function() {
+      expectTranslate('this.x').to.equal(' this . x ;');
+    });
+    it('translates "delete"', function() {
+      chai.expect(() => translateSource('delete x[y];'))
+          .to.throw('delete operator is unsupported');
+    });
+    it('translates "typeof"', function() {
+      chai.expect(() => translateSource('typeof x;'))
+          .to.throw('typeof operator is unsupported');
+    });
+    it('translates "void"', function() {
+      chai.expect(() => translateSource('void x;'))
+          .to.throw('void operator is unsupported');
+    });
+  });
+
+  describe('expressions', function() {
+    it('translates parens', function() {
+      expectTranslate('(1)').to.equal(' ( 1 ) ;');
+    });
+  });
+
+  describe('comments', () => {
+    it('keeps leading comments', () => {
+      expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
+      expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
     });
   });
 });

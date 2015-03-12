@@ -3,6 +3,7 @@ require('source-map-support').install();
 var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
+var gutil = require('gulp-util');
 var merge = require('merge2');
 var mocha = require('gulp-mocha');
 var sourcemaps = require('gulp-sourcemaps');
@@ -27,10 +28,17 @@ gulp.task('check-format', function() {
       .pipe(formatter.checkFormat('file'));
 });
 
+var hasCompileError;
+var onCompileError = function(err) {
+  hasCompileError = true;
+}
+
 gulp.task('compile', function() {
+  hasCompileError = false;
   var tsResult = gulp.src(['*.ts', 'typings/**/*'])
       .pipe(sourcemaps.init())
-      .pipe(ts(tsProject));
+      .pipe(ts(tsProject))
+      .on('error', onCompileError);
   return merge([
     tsResult.dts.pipe(gulp.dest('release/definitions')),
     tsResult.js.pipe(sourcemaps.write()),
@@ -38,15 +46,18 @@ gulp.task('compile', function() {
   ]);
 });
 
-gulp.task('test.compile', ['compile'], function() {
+gulp.task('test.compile', ['compile'], function(done) {
+  if (hasCompileError) {done(); return;}
   return gulp.src(['test/*.ts', '*.ts', 'typings/**/*'])
       .pipe(sourcemaps.init())
-      .pipe(ts(TSC_OPTIONS))
+      .pipe(ts(tsProject))
+      .on('error', onCompileError)
       .js.pipe(sourcemaps.write())
          .pipe(gulp.dest('release/js/test'));
 });
 
-gulp.task('test', ['test.compile'], function() {
+gulp.task('test', ['test.compile'], function(done) {
+  if (hasCompileError) {done(); return;}
   return gulp.src('release/js/test/*.js').pipe(mocha({reporter: 'nyan'}));
 });
 

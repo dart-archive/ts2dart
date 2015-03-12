@@ -272,6 +272,11 @@ describe('transpile to dart', () => {
       expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
     });
   });
+
+  describe('imports', () => {
+    it('translates simple import statements',
+       () => { expectTranslate('import x = require("x");').to.equal(' import "package:x" ;'); });
+  });
 });
 
 export function translateSource(contents: string): string {

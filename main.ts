@@ -394,6 +394,24 @@ class Translator {
         this.emit('}');
         break;
 
+      case ts.SyntaxKind.ImportEqualsDeclaration:
+        var importEqDecl = <ts.ImportEqualsDeclaration> node;
+        this.emit('import');
+        // Dart doesn't allow assigning a different name to the imported module
+        // so this is currently lost in translation.
+        // this.visit(importEqDecl.name);
+        this.visit(importEqDecl.moduleReference);
+        this.emit(';');
+        break;
+
+      case ts.SyntaxKind.ExternalModuleReference:
+        var externalModRef = <ts.ExternalModuleReference> node;
+        // TODO: what if this isn't a string literal?
+        var moduleName = <ts.StringLiteralExpression> externalModRef.expression;
+        moduleName.text = 'package:' + moduleName.text;
+        this.visit(externalModRef.expression);
+        break;
+
       default:
         this.reportError(node, "Unsupported node type " + (<any> ts).SyntaxKind[node.kind]);
         break;

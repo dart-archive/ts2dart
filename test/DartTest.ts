@@ -32,49 +32,84 @@ describe('transpile to dart', () => {
 
   describe('classes', () => {
     it('should translate classes', () => {
-      expectTranslate('class X {}').to.equal(' class X {\n }\n');
+      expectTranslate('class X {}').to.equal(' class X { }');
     });
     it('should support extends', () => {
-      expectTranslate('class X extends Y {}').to.equal(' class X extends Y {\n }\n');
+      expectTranslate('class X extends Y {}').to.equal(' class X extends Y { }');
     });
     it('should support implements', () => {
-      expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z {\n }\n');
+      expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z { }');
     });
     it('should support implements', () => {
       expectTranslate('class X extends Y implements Z {}')
-          .to.equal(' class X extends Y implements Z {\n }\n');
+          .to.equal(' class X extends Y implements Z { }');
+    });
+
+    describe('type arguments', () => {
+      it('should support declaration', () => {
+        expectTranslate('class X<A, B> { a: A; }').to.equal(' class X < A , B > { A a ; }');
+      });
+      it('should support declaration', () => {
+        expectTranslate('class X<A extends B<C>> { }')
+            .to.equal(' class X < A extends B < C > > { }');
+      });
+      it('should support declaration', () => {
+        expectTranslate('class X<A extends A1, B extends B1> { }')
+            .to.equal(' class X < A extends A1 , B extends B1 > { }');
+      });
+      it('should support use', () => {
+        expectTranslate('class X extends Y<A, B> { }').to.equal(' class X extends Y < A , B > { }');
+      });
     });
 
     describe('members', () => {
       it('supports fields', () => {
-        expectTranslate('class X { x: number; }').to.equal(' class X {\n num x ; }\n');
+        expectTranslate('class X { x: number; }').to.equal(' class X { num x ; }');
       });
       it('supports field initializers', () => {
-        expectTranslate('class X { x: number = 42; }').to.equal(' class X {\n num x = 42 ; }\n');
+        expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
       });
       it('supports methods', () => {
         expectTranslate('class X { x() { return 42; } }')
-            .to.equal(' class X {\n x ( ) { return 42 ; } }\n');
+            .to.equal(' class X { x ( ) { return 42 ; } }');
       });
       it('supports method return types', () => {
         expectTranslate('class X { x(): number { return 42; } }')
-            .to.equal(' class X {\n num x ( ) { return 42 ; } }\n');
+            .to.equal(' class X { num x ( ) { return 42 ; } }');
       });
       it('supports method params', () => {
         expectTranslate('class X { x(a, b) { return 42; } }')
-            .to.equal(' class X {\n x ( a , b ) { return 42 ; } }\n');
+            .to.equal(' class X { x ( a , b ) { return 42 ; } }');
       });
       it('supports method return types', () => {
         expectTranslate('class X { x( a : number, b : string ) { return 42; } }')
-            .to.equal(' class X {\n x ( num a , String b ) { return 42 ; } }\n');
+            .to.equal(' class X { x ( num a , String b ) { return 42 ; } }');
       });
 
       it('supports constructors', () => {
         expectTranslate('class X { constructor() { } }')
-            .to.equal(' class X {\n X ( ) { } }\n');
+            .to.equal(' class X { X ( ) { } }');
       });
     });
   });
+
+  describe('interfaces', () => {
+    it('should translate interfaces', () => {
+      expectTranslate('interface X {}').to.equal(' abstract class X { }');
+    });
+    it('should support extends', () => {
+      expectTranslate('interface X extends Y, Z {}')
+          .to.equal(' abstract class X extends Y , Z { }');
+    });
+    it('should support implements', () => {
+      expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z { }');
+    });
+    it('should support implements', () => {
+      expectTranslate('class X extends Y implements Z {}')
+          .to.equal(' class X extends Y implements Z { }');
+    });
+  });
+
 
   describe('functions', () => {
     it('supports declarations', () => {
@@ -88,6 +123,10 @@ describe('transpile to dart', () => {
     it('does not support var args', () => {
       chai.expect(() => translateSource('function x(...a: number) { return 42; }'))
           .to.throw('rest parameters are unsupported');
+    });
+    it('does not support generic functions', () => {
+      chai.expect(() => translateSource('function x<T>() { return 42; }'))
+          .to.throw('generic functions are unsupported');
     });
     it('translates calls', () => {
       expectTranslate('foo();').to.equal(' foo ( ) ;');

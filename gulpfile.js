@@ -23,7 +23,7 @@ var TSC_OPTIONS = {
 var tsProject = ts.createProject(TSC_OPTIONS);
 
 gulp.task('check-format', function() {
-  return gulp.src('*.ts')
+  return gulp.src(['*.ts', 'test/*.ts'])
       .pipe(formatter.checkFormat('file'));
 });
 

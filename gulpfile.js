@@ -1,5 +1,6 @@
 require('source-map-support').install();
 
+var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
 var merge = require('merge2');
@@ -20,6 +21,11 @@ var TSC_OPTIONS = {
   noEmitOnError: true,
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
+
+gulp.task('check-format', function() {
+  return gulp.src('*.ts')
+      .pipe(formatter.checkFormat('file'));
+});
 
 gulp.task('compile', function() {
   var tsResult = gulp.src(['*.ts', 'typings/**/*'])

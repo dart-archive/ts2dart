@@ -34,6 +34,23 @@ export function translateProgram(program: ts.Program): string {
     visit(fn.body);
   }
 
+  function visitClassLike(decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
+    visit(decl.name);
+    if (decl.typeParameters) {
+      emit('<');
+      visitList(decl.typeParameters);
+      emit('>');
+    }
+    if (decl.heritageClauses) {
+      visitEach(decl.heritageClauses);
+    }
+    emit('{');
+    if (decl.members) {
+      visitEach(decl.members);
+    }
+    emit('}');
+  }
+
   function visitCall(c: ts.CallExpression) {
     visit(c.expression);
     emit('(');
@@ -294,21 +311,13 @@ export function translateProgram(program: ts.Program): string {
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
         emit('class');
-        visit(classDecl.name);
-        if (classDecl.typeParameters) {
-          emit('<');
-          visitList(classDecl.typeParameters);
-          emit('>');
-        }
-        if (classDecl.heritageClauses) {
-          visitEach(classDecl.heritageClauses);
-        }
+        visitClassLike(classDecl);
+        break;
 
-        if (classDecl.members) {
-          emit('{');
-          visitEach(classDecl.members);
-          emit('}');
-        }
+      case ts.SyntaxKind.InterfaceDeclaration:
+        var ifDecl = <ts.InterfaceDeclaration>node;
+        emit('abstract class');
+        visitClassLike(ifDecl);
         break;
 
       case ts.SyntaxKind.HeritageClause:

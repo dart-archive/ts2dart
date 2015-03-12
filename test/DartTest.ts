@@ -93,6 +93,24 @@ describe('transpile to dart', () => {
     });
   });
 
+  describe('interfaces', () => {
+    it('should translate interfaces', () => {
+      expectTranslate('interface X {}').to.equal(' abstract class X { }');
+    });
+    it('should support extends', () => {
+      expectTranslate('interface X extends Y, Z {}')
+          .to.equal(' abstract class X extends Y , Z { }');
+    });
+    it('should support implements', () => {
+      expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z { }');
+    });
+    it('should support implements', () => {
+      expectTranslate('class X extends Y implements Z {}')
+          .to.equal(' class X extends Y implements Z { }');
+    });
+  });
+
+
   describe('functions', () => {
     it('supports declarations', () => {
       expectTranslate('function x() {}')

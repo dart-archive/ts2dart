@@ -24,21 +24,20 @@ var TSC_OPTIONS = {
 var tsProject = ts.createProject(TSC_OPTIONS);
 
 gulp.task('check-format', function() {
-  return gulp.src(['*.ts', 'test/*.ts'])
-      .pipe(formatter.checkFormat('file'));
+  return gulp.src(['*.js', '*.ts', 'test/*.ts']).pipe(formatter.checkFormat('file'));
 });
 
 var hasCompileError;
 var onCompileError = function(err) {
   hasCompileError = true;
-}
+};
 
 gulp.task('compile', function() {
   hasCompileError = false;
   var tsResult = gulp.src(['*.ts', 'typings/**/*'])
-      .pipe(sourcemaps.init())
-      .pipe(ts(tsProject))
-      .on('error', onCompileError);
+                     .pipe(sourcemaps.init())
+                     .pipe(ts(tsProject))
+                     .on('error', onCompileError);
   return merge([
     tsResult.dts.pipe(gulp.dest('release/definitions')),
     tsResult.js.pipe(sourcemaps.write()),
@@ -47,28 +46,33 @@ gulp.task('compile', function() {
 });
 
 gulp.task('test.compile', ['compile'], function(done) {
-  if (hasCompileError) {done(); return;}
+  if (hasCompileError) {
+    done();
+    return;
+  }
   return gulp.src(['test/*.ts', '*.ts', 'typings/**/*'])
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
       .on('error', onCompileError)
       .js.pipe(sourcemaps.write())
-         .pipe(gulp.dest('release/js/test'));
+      .pipe(gulp.dest('release/js/test'));
 });
 
 gulp.task('test', ['test.compile'], function(done) {
-  if (hasCompileError) {done(); return;}
+  if (hasCompileError) {
+    done();
+    return;
+  }
   return gulp.src('release/js/test/*.js').pipe(mocha({reporter: 'nyan'}));
 });
 
 gulp.task('test.e2e', ['test.compile'], function(done) {
   var main = require('./main');
-  fs.writeFileSync('test/e2e/helloworld.dart',
-      main.translateFiles(['test/e2e/helloworld.ts']),
-      {encoding:'utf8'});
+  fs.writeFileSync('test/e2e/helloworld.dart', main.translateFiles(['test/e2e/helloworld.ts']),
+                   {encoding: 'utf8'});
   try {
     var dart = which.sync('dart');
-    var process = spawn(dart, ['test/e2e/helloworld.dart'], {stdio:'inherit'});
+    var process = spawn(dart, ['test/e2e/helloworld.dart'], {stdio: 'inherit'});
     process.on('close', done);
   } catch (e) {
     console.log('Dart SDK is not found on the PATH.');
@@ -76,7 +80,4 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   }
 });
 
-gulp.task('watch', ['test'], function() {
-  return gulp.watch('**/*.ts', ['test']);
-});
-
+gulp.task('watch', ['test'], function() { return gulp.watch('**/*.ts', ['test']); });

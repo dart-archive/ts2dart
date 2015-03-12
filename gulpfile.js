@@ -1,6 +1,6 @@
 require('source-map-support').install();
 
-var formatter = require('gulp-tsformat');
+var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
 var merge = require('merge2');

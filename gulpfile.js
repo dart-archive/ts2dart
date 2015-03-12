@@ -24,7 +24,7 @@ var tsProject = ts.createProject(TSC_OPTIONS);
 
 gulp.task('check-format', function() {
   return gulp.src('*.ts')
-      .pipe(formatter.checkFormat());
+      .pipe(formatter.checkFormat('file'));
 });
 
 gulp.task('compile', function() {

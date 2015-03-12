@@ -7,8 +7,7 @@ import ts = require("typescript");
 export function translateProgram(program: ts.Program): string {
   var result: string = "";
   program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) =>
-                  sourceFile.fileName.indexOf(".d.ts") < 0)
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
       .forEach(emitDart);
   return result;
 
@@ -55,8 +54,7 @@ export function translateProgram(program: ts.Program): string {
 
   function visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
-    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text,
-                                              node.getFullStart());
+    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
     if (comments) {
       comments.forEach((c) => {
         if (c.pos <= lastCommentIdx) return;
@@ -354,8 +352,7 @@ export function translateProgram(program: ts.Program): string {
 
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration> node;
-        if (paramDecl.dotDotDotToken)
-          reportError(node, 'rest parameters are unsupported');
+        if (paramDecl.dotDotDotToken) reportError(node, 'rest parameters are unsupported');
         if (paramDecl.initializer) emit('[');
         if (paramDecl.type) visit(paramDecl.type);
         visit(paramDecl.name);
@@ -379,8 +376,7 @@ export function translateProgram(program: ts.Program): string {
         break;
 
       default:
-        reportError(
-            node, "Unsupported node type " + (<any> ts).SyntaxKind[node.kind]);
+        reportError(node, "Unsupported node type " + (<any> ts).SyntaxKind[node.kind]);
         break;
     }
   }

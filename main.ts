@@ -1,13 +1,13 @@
 /// <reference path="typings/node/node.d.ts" />
-
-// not needed by tsc since we require typescript external module,
-// but the editor/IDE doesn't give completions without it
-/// <reference path="typings/typescript/typescript.d.ts" />
+// Use HEAD version of typescript, installed by npm
+/// <reference path="node_modules/typescript/bin/typescript.d.ts" />
 
 import ts = require("typescript");
 
 class Translator {
   result: string = '';
+  // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
+  // offset to avoid printing comments multiple times.
   lastCommentIdx: number = -1;
 
   translate(sourceFile: ts.SourceFile) {
@@ -38,16 +38,36 @@ class Translator {
     this.visit(fn.body);
   }
 
+  visitClassLike(decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
+    this.visit(decl.name);
+    if (decl.typeParameters) {
+      this.emit('<');
+      this.visitList(decl.typeParameters);
+      this.emit('>');
+    }
+    if (decl.heritageClauses) {
+      this.visitEach(decl.heritageClauses);
+    }
+    this.emit('{');
+    if (decl.members) {
+      this.visitEach(decl.members);
+    }
+    this.emit('}');
+  }
+
+  visitCall(c: ts.CallExpression) {
+    this.visit(c.expression);
+    this.emit('(');
+    this.visitList(c.arguments);
+    this.emit(')');
+  }
+
   reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile();
     var start = n.getStart();
-    var pos = file.getLineAndCharacterFromPosition(start);
-    throw new Error(`${file.filename}:${pos.line}:${pos.character}: ${message}`);
+    var pos = file.getLineAndCharacterOfPosition(start);
+    throw new Error(`${file.fileName}:${pos.line}:${pos.character}: ${message}`);
   }
-
-  // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
-  // offset to avoid printing comments multiple times.
-  // TODO(martinprobst): Refactor this.
 
   visit(node: ts.Node) {
     // console.log(`Node kind: ${node.kind} ${node.getText()}`);
@@ -68,9 +88,18 @@ class Translator {
         ts.forEachChild(node, this.visit.bind(this));
         break;
 
+      case ts.SyntaxKind.VariableDeclarationList:
+        var varDeclList = <ts.VariableDeclarationList>node;
+        this.visitEach(varDeclList.declarations);
+        break;
+
       case ts.SyntaxKind.VariableDeclaration:
         var varDecl = <ts.VariableDeclaration>node;
-        this.visit(varDecl.type);
+        if (varDecl.type) {
+          this.visit(varDecl.type);
+        } else {
+          this.emit('var');
+        }
         this.visit(varDecl.name);
         if (varDecl.initializer) {
           this.emit('=');
@@ -86,6 +115,13 @@ class Translator {
         break;
       case ts.SyntaxKind.VoidKeyword:
         this.emit('void');
+        break;
+
+      case ts.SyntaxKind.ParenthesizedExpression:
+        var parenExpr = <ts.ParenthesizedExpression>node;
+        this.emit('(');
+        this.visit(parenExpr.expression);
+        this.emit(')');
         break;
 
       case ts.SyntaxKind.VariableStatement:
@@ -116,14 +152,67 @@ class Translator {
         this.emit('default :');
         this.visitEach((<ts.DefaultClause>node).statements);
         break;
+      case ts.SyntaxKind.IfStatement:
+        var ifStmt = <ts.IfStatement>node;
+        this.emit('if (');
+        this.visit(ifStmt.expression);
+        this.emit(')');
+        this.visit(ifStmt.thenStatement);
+        if (ifStmt.elseStatement) {
+          this.emit('else');
+          this.visit(ifStmt.elseStatement);
+        }
+        break;
+
+      case ts.SyntaxKind.ForStatement:
+        var forStmt = <ts.ForStatement>node;
+        this.emit('for (');
+        if (forStmt.initializer) this.visit(forStmt.initializer);
+        this.emit(';');
+        if (forStmt.condition) this.visit(forStmt.condition);
+        this.emit(';');
+        if (forStmt.iterator) this.visit(forStmt.iterator);
+        this.emit(')');
+        this.visit(forStmt.statement);
+        break;
+      case ts.SyntaxKind.ForInStatement:
+        // TODO(martinprobst): Dart's for-in loops actually have different semantics, they are more
+        // like for-of loops, iterating over collections.
+        var forInStmt = <ts.ForInStatement>node;
+        this.emit ('for (');
+        if (forInStmt.initializer) this.visit(forInStmt.initializer);
+        this.emit('in');
+        this.visit(forInStmt.expression);
+        this.emit(')');
+        this.visit(forInStmt.statement);
+        break;
+      case ts.SyntaxKind.WhileStatement:
+        var whileStmt = <ts.WhileStatement>node;
+        this.emit('while (');
+        this.visit(whileStmt.expression);
+        this.emit(')');
+        this.visit(whileStmt.statement);
+        break;
+      case ts.SyntaxKind.DoStatement:
+        var doStmt = <ts.DoStatement>node;
+        this.emit('do');
+        this.visit(doStmt.statement);
+        this.emit('while (');
+        this.visit(doStmt.expression);
+        this.emit(') ;');
+        break;
 
       case ts.SyntaxKind.BreakStatement:
         this.emit('break ;');
         break;
 
       // Literals.
+      case ts.SyntaxKind.NumericLiteral:
+        var sLit = <ts.LiteralExpression>node;
+        this.emit(sLit.getText());
+        break;
       case ts.SyntaxKind.StringLiteral:
-        var sLit = <ts.StringLiteralExpression>node;
+        var sLit = <ts.LiteralExpression>node;
         this.emit(JSON.stringify(sLit.text));
         break;
       case ts.SyntaxKind.TrueKeyword:
@@ -138,9 +227,64 @@ class Translator {
       case ts.SyntaxKind.RegularExpressionLiteral:
         this.emit((<ts.LiteralExpression>node).text);
         break;
+      case ts.SyntaxKind.ThisKeyword:
+        this.emit('this');
+        break;
 
-      case ts.SyntaxKind.FirstAssignment:
-      case ts.SyntaxKind.FirstLiteralToken:
+      case ts.SyntaxKind.PropertyAccessExpression:
+        var propAccess = <ts.PropertyAccessExpression>node;
+        this.visit(propAccess.expression);
+        this.emit('.');
+        this.visit(propAccess.name);
+        break;
+      case ts.SyntaxKind.ElementAccessExpression:
+        var elemAccess = <ts.ElementAccessExpression>node;
+        this.visit(elemAccess.expression);
+        this.emit('[');
+        this.visit(elemAccess.argumentExpression);
+        this.emit(']');
+        break;
+      case ts.SyntaxKind.NewExpression:
+        this.emit('new');
+        this.visitCall(<ts.NewExpression>node);
+        break;
+      case ts.SyntaxKind.CallExpression:
+        this.visitCall(<ts.CallExpression>node);
+        break;
+      case ts.SyntaxKind.BinaryExpression:
+        var binExpr = <ts.BinaryExpression>node;
+        this.visit(binExpr.left);
+        this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+        this.visit(binExpr.right);
+        break;
+      case ts.SyntaxKind.PrefixUnaryExpression:
+        var prefixUnary = <ts.PrefixUnaryExpression>node;
+        this.emit(ts.tokenToString(prefixUnary.operator));
+        this.visit(prefixUnary.operand);
+        break;
+      case ts.SyntaxKind.PostfixUnaryExpression:
+        var postfixUnary = <ts.PostfixUnaryExpression>node;
+        this.visit(postfixUnary.operand);
+        this.emit(ts.tokenToString(postfixUnary.operator));
+        break;
+      case ts.SyntaxKind.ConditionalExpression:
+        var conditional = <ts.ConditionalExpression>node;
+        this.visit(conditional.condition);
+        this.emit('?');
+        this.visit(conditional.whenTrue);
+        this.emit(':');
+        this.visit(conditional.whenFalse);
+        break;
+      case ts.SyntaxKind.DeleteExpression:
+        this.reportError(node, 'delete operator is unsupported');
+        break;
+      case ts.SyntaxKind.VoidExpression:
+        this.reportError(node, 'void operator is unsupported');
+        break;
+      case ts.SyntaxKind.TypeOfExpression:
+        this.reportError(node, 'typeof operator is unsupported');
+        break;
+
       case ts.SyntaxKind.Identifier:
         this.emit(node.getText());
         break;
@@ -149,26 +293,30 @@ class Translator {
         var typeRef = <ts.TypeReferenceNode>node;
         this.visit(typeRef.typeName);
         if (typeRef.typeArguments) {
-          this.visitEach(typeRef.typeArguments);
+          this.emit('<');
+          this.visitList(typeRef.typeArguments);
+          this.emit('>');
+        }
+        break;
+      case ts.SyntaxKind.TypeParameter:
+        var typeParam = <ts.TypeParameterDeclaration>node;
+        this.visit(typeParam.name);
+        if (typeParam.constraint) {
+          this.emit('extends');
+          this.visit(typeParam.constraint);
         }
         break;
 
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
         this.emit('class');
-        this.visit(classDecl.name);
-        if (classDecl.typeParameters) {
-          this.visitEach(classDecl.typeParameters);
-        }
-        if (classDecl.heritageClauses) {
-          this.visitEach(classDecl.heritageClauses);
-        }
+        this.visitClassLike(classDecl);
+        break;
 
-        if (classDecl.members) {
-          this.emit('{\n');
-          this.visitEach(classDecl.members);
-          this.emit('}\n');
-        }
+      case ts.SyntaxKind.InterfaceDeclaration:
+        var ifDecl = <ts.InterfaceDeclaration>node;
+        this.emit('abstract class');
+        this.visitClassLike(ifDecl);
         break;
 
       case ts.SyntaxKind.HeritageClause:
@@ -197,7 +345,7 @@ class Translator {
         this.visitFunctionLike(ctorDecl);
         break;
 
-      case ts.SyntaxKind.Property:
+      case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         this.visit(propertyDecl.type);
         this.visit(propertyDecl.name);
@@ -208,7 +356,7 @@ class Translator {
         this.emit(';');
         break;
 
-      case ts.SyntaxKind.Method:
+      case ts.SyntaxKind.MethodDeclaration:
         var methodDecl = <ts.MethodDeclaration>node;
         if (methodDecl.type) this.visit(methodDecl.type);
         this.visit(methodDecl.name);
@@ -217,6 +365,7 @@ class Translator {
 
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
+        if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
         if (funcDecl.type) this.visit(funcDecl.type);
         this.visit(funcDecl.name);
         this.visitFunctionLike(funcDecl);
@@ -256,14 +405,13 @@ class Translator {
 
 export function translateProgram(program: ts.Program): string {
   var result = program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.filename.indexOf(".d.ts") < 0)
-      .forEach((f) => {
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+      .map((f) => {
         var tr = new Translator();
         return tr.translate(f);
       })
-      .join('');
+      .join('\n');
   return result;
-
 }
 
 export function translateFiles(fileNames: string[]): string {

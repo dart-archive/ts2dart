@@ -277,7 +277,17 @@ export function translateProgram(program: ts.Program): string {
         var typeRef = <ts.TypeReferenceNode>node;
         visit(typeRef.typeName);
         if (typeRef.typeArguments) {
-          visitEach(typeRef.typeArguments);
+          emit('<');
+          visitList(typeRef.typeArguments);
+          emit('>');
+        }
+        break;
+      case ts.SyntaxKind.TypeParameter:
+        var typeParam = <ts.TypeParameterDeclaration>node;
+        visit(typeParam.name);
+        if (typeParam.constraint) {
+          emit('extends');
+          visit(typeParam.constraint);
         }
         break;
 
@@ -286,16 +296,18 @@ export function translateProgram(program: ts.Program): string {
         emit('class');
         visit(classDecl.name);
         if (classDecl.typeParameters) {
-          visitEach(classDecl.typeParameters);
+          emit('<');
+          visitList(classDecl.typeParameters);
+          emit('>');
         }
         if (classDecl.heritageClauses) {
           visitEach(classDecl.heritageClauses);
         }
 
         if (classDecl.members) {
-          emit('{\n');
+          emit('{');
           visitEach(classDecl.members);
-          emit('}\n');
+          emit('}');
         }
         break;
 
@@ -345,6 +357,7 @@ export function translateProgram(program: ts.Program): string {
 
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
+        if (funcDecl.typeParameters) reportError(node, 'generic functions are unsupported');
         if (funcDecl.type) visit(funcDecl.type);
         visit(funcDecl.name);
         visitFunctionLike(funcDecl);

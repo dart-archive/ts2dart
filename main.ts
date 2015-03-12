@@ -369,6 +369,10 @@ class Translator {
         this.visitFunctionLike(funcDecl);
         break;
 
+      case ts.SyntaxKind.FunctionExpression:
+            var funcExpr = <ts.FunctionExpression> node;
+            this.visitFunctionLike(funcExpr);
+          break;
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration> node;
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');

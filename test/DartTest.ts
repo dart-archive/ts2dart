@@ -127,6 +127,9 @@ describe('transpile to dart', () => {
       expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
       expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
     });
+    it('translates function expressions', () => {
+        expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;\n');
+    });
   });
 
   describe('literals', () => {

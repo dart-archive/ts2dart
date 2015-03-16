@@ -127,9 +127,8 @@ describe('transpile to dart', () => {
       expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
       expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
     });
-    it('translates function expressions', () => {
-        expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;\n');
-    });
+    it('translates function expressions',
+       () => { expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;\n'); });
   });
 
   describe('literals', () => {
@@ -277,8 +276,9 @@ describe('transpile to dart', () => {
   });
 
   describe('imports', () => {
-    it('translates simple import statements',
-       () => { expectTranslate('import x = require("x");').to.equal(' import "package:x" ;'); });
+    it('translates simple import statements', () => {
+      expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" ;');
+    });
   });
 });
 

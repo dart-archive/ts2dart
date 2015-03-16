@@ -1,0 +1,5 @@
+name: e2e  
+description: Transpiled end-to-end tests for ts2dart.  
+
+dependencies:
+  unittest: any

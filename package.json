@@ -17,13 +17,12 @@
     "gulp-mocha": "^2.0.0",
     "gulp-sourcemaps": "^1.5.0",
     "gulp-typescript": "ivogabe/gulp-typescript",
-    "gulp-util": "^3.0.4",
     "merge2": "^0.3.1",
-    "typescript": "Microsoft/TypeScript",
+    "typescript": "Microsoft/TypeScript#be4ff97a6b31f8c0737530d7d508c29aa3da2eb0",
     "which": "^1.0.9"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",

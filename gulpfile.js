@@ -3,11 +3,11 @@ require('source-map-support').install();
 var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
-var gutil = require('gulp-util');
 var merge = require('merge2');
 var mocha = require('gulp-mocha');
 var sourcemaps = require('gulp-sourcemaps');
 var spawn = require('child_process').spawn;
+var tmpdir = require('os').tmpdir;
 var ts = require('gulp-typescript');
 var which = require('which');
 
@@ -58,7 +58,7 @@ gulp.task('test.compile', ['compile'], function(done) {
       .pipe(gulp.dest('release/js/test'));
 });
 
-gulp.task('test', ['test.compile'], function(done) {
+gulp.task('test.unit', ['test.compile'], function(done) {
   if (hasCompileError) {
     done();
     return;
@@ -66,18 +66,37 @@ gulp.task('test', ['test.compile'], function(done) {
   return gulp.src('release/js/test/*.js').pipe(mocha({reporter: 'nyan'}));
 });
 
+// This test transpiles some unittests to dart and runs them in the Dart VM.
 gulp.task('test.e2e', ['test.compile'], function(done) {
-  var main = require('./main');
-  fs.writeFileSync('test/e2e/helloworld.dart', main.translateFiles(['test/e2e/helloworld.ts']),
-                   {encoding: 'utf8'});
+  var main = require('./release/js/main');
+  var testfile = 'helloworld';
+
+  // Set up the test env in a hermetic tmp dir
+  var dir = tmpdir() + '/' + Date.now();
+  fs.mkdirSync(dir);
+  fs.symlinkSync(__dirname + '/test/e2e/pubspec.yaml', dir + '/pubspec.yaml');
+  fs.writeFileSync(dir + '/' + testfile + '.dart',
+                   main.translateFiles(['test/e2e/' + testfile + '.ts']), {encoding: 'utf8'});
+
   try {
-    var dart = which.sync('dart');
-    var process = spawn(dart, ['test/e2e/helloworld.dart'], {stdio: 'inherit'});
-    process.on('close', done);
+    var opts = {
+      stdio: 'inherit',
+      cwd: dir
+    };
+    // Install the unittest packages on every run, using the content of pubspec.yaml
+    // TODO: maybe this could be memoized or served locally?
+    spawn(which.sync('pub'), ['install'], opts)
+        .on('close', function() {
+          // Run the tests using built-in test runner.
+          var process = spawn(which.sync('dart'), [testfile + '.dart'], opts);
+          process.on('close', done);
+        });
   } catch (e) {
     console.log('Dart SDK is not found on the PATH.');
     throw e;
   }
 });
+
+gulp.task('test', ['test.unit', 'test.e2e']);
 
 gulp.task('watch', ['test'], function() { return gulp.watch('**/*.ts', ['test']); });

@@ -9,8 +9,10 @@ class Translator {
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
   // offset to avoid printing comments multiple times.
   lastCommentIdx: number = -1;
+  sourceFileText: string;
 
   translate(sourceFile: ts.SourceFile) {
+    this.sourceFileText = sourceFile.getSourceFile().text;
     this.visit(sourceFile);
     return this.result;
   }
@@ -68,13 +70,12 @@ class Translator {
   }
 
   visit(node: ts.Node) {
-    // console.log(`Node kind: ${node.kind} ${node.getText()}`);
-    var comments = ts.getLeadingCommentRanges(node.getSourceFile().text, node.getFullStart());
+    var comments = ts.getLeadingCommentRanges(this.sourceFileText, node.getFullStart());
     if (comments) {
       comments.forEach((c) => {
         if (c.pos <= this.lastCommentIdx) return;
         this.lastCommentIdx = c.pos;
-        var text = node.getSourceFile().text.substring(c.pos, c.end);
+        var text = this.sourceFileText.substring(c.pos, c.end);
         this.emit(text);
         if (c.hasTrailingNewLine) this.result += '\n';
       });
@@ -284,7 +285,8 @@ class Translator {
         break;
 
       case ts.SyntaxKind.Identifier:
-        this.emit(node.getText());
+        var ident = <ts.Identifier> node;
+        this.emit(ident.text);
         break;
 
       case ts.SyntaxKind.TypeReference:
@@ -368,11 +370,11 @@ class Translator {
         this.visit(funcDecl.name);
         this.visitFunctionLike(funcDecl);
         break;
-
       case ts.SyntaxKind.FunctionExpression:
-            var funcExpr = <ts.FunctionExpression> node;
-            this.visitFunctionLike(funcExpr);
-          break;
+        var funcExpr = <ts.FunctionExpression> node;
+        this.visitFunctionLike(funcExpr);
+        break;
+
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration> node;
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
@@ -412,7 +414,7 @@ class Translator {
         var externalModRef = <ts.ExternalModuleReference> node;
         // TODO: what if this isn't a string literal?
         var moduleName = <ts.StringLiteralExpression> externalModRef.expression;
-        moduleName.text = 'package:' + moduleName.text;
+        moduleName.text = 'package:' + moduleName.text + '.dart';
         this.visit(externalModRef.expression);
         break;
 
@@ -424,15 +426,10 @@ class Translator {
 }
 
 export function translateProgram(program: ts.Program): string {
-  var result = program.getSourceFiles()
-                   .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-                   .map((f) =>
-                        {
-                          var tr = new Translator();
-                          return tr.translate(f);
-                        })
-                   .join('\n');
-  return result;
+  return program.getSourceFiles()
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+      .map((f) => new Translator().translate(f))
+      .join('\n');
 }
 
 export function translateFiles(fileNames: string[]): string {

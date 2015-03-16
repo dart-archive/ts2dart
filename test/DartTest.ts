@@ -22,21 +22,17 @@ describe('transpile to dart', () => {
   }
 
   describe('variables', () => {
-    it('should print variable declaration with initializer', () => {
-      expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;\n');
-    });
-    it('should print variable declaration', () => {
-      expectTranslate('var a:number;').to.equal(' num a ;\n');
-    });
+    it('should print variable declaration with initializer',
+       () => { expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;\n'); });
+    it('should print variable declaration',
+       () => { expectTranslate('var a:number;').to.equal(' num a ;\n'); });
   });
 
   describe('classes', () => {
-    it('should translate classes', () => {
-      expectTranslate('class X {}').to.equal(' class X { }');
-    });
-    it('should support extends', () => {
-      expectTranslate('class X extends Y {}').to.equal(' class X extends Y { }');
-    });
+    it('should translate classes',
+       () => { expectTranslate('class X {}').to.equal(' class X { }'); });
+    it('should support extends',
+       () => { expectTranslate('class X extends Y {}').to.equal(' class X extends Y { }'); });
     it('should support implements', () => {
       expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z { }');
     });
@@ -63,9 +59,8 @@ describe('transpile to dart', () => {
     });
 
     describe('members', () => {
-      it('supports fields', () => {
-        expectTranslate('class X { x: number; }').to.equal(' class X { num x ; }');
-      });
+      it('supports fields',
+         () => { expectTranslate('class X { x: number; }').to.equal(' class X { num x ; }'); });
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
       });
@@ -87,16 +82,14 @@ describe('transpile to dart', () => {
       });
 
       it('supports constructors', () => {
-        expectTranslate('class X { constructor() { } }')
-            .to.equal(' class X { X ( ) { } }');
+        expectTranslate('class X { constructor() { } }').to.equal(' class X { X ( ) { } }');
       });
     });
   });
 
   describe('interfaces', () => {
-    it('should translate interfaces', () => {
-      expectTranslate('interface X {}').to.equal(' abstract class X { }');
-    });
+    it('should translate interfaces',
+       () => { expectTranslate('interface X {}').to.equal(' abstract class X { }'); });
     it('should support extends', () => {
       expectTranslate('interface X extends Y, Z {}')
           .to.equal(' abstract class X extends Y , Z { }');
@@ -112,10 +105,8 @@ describe('transpile to dart', () => {
 
 
   describe('functions', () => {
-    it('supports declarations', () => {
-      expectTranslate('function x() {}')
-          .to.equal(' x ( ) { }');
-    });
+    it('supports declarations',
+       () => { expectTranslate('function x() {}').to.equal(' x ( ) { }'); });
     it('supports param default values', () => {
       expectTranslate('function x(a = 42) { return 42; }')
           .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
@@ -149,9 +140,7 @@ describe('transpile to dart', () => {
       expectTranslate('false').to.equal(' false ;');
     });
 
-    it('translates the null literal', () => {
-      expectTranslate('null').to.equal(' null ;');
-    });
+    it('translates the null literal', () => { expectTranslate('null').to.equal(' null ;'); });
 
     it('translates number literals', () => {
       // Negative numbers are handled by unary minus expressions.
@@ -160,9 +149,8 @@ describe('transpile to dart', () => {
       expectTranslate('1.23e-4').to.equal(' 1.23e-4 ;');
     });
 
-    it('translates regexp literals', () => {
-      expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;');
-    });
+    it('translates regexp literals',
+       () => { expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;'); });
   });
 
   describe('control structures', () => {
@@ -257,39 +245,25 @@ describe('transpile to dart', () => {
         '!1': ' ! 1 ;',
       });
     });
-    it('translates ternary', () => {
-      expectTranslate('1 ? 2 : 3').to.equal(' 1 ? 2 : 3 ;');
-    });
-    it('translates the comma operator', () => {
-      expectTranslate('1 , 2').to.equal(' 1 , 2 ;');
-    });
-    it('translates "in"', () => {
-      expectTranslate('1 in 2').to.equal(' 1 in 2 ;');
-    });
-    it('translates "instanceof"', () => {
-      expectTranslate('1 instanceof 2').to.equal(' 1 instanceof 2 ;');
-    });
-    it('translates "this"', () => {
-      expectTranslate('this.x').to.equal(' this . x ;');
-    });
+    it('translates ternary', () => { expectTranslate('1 ? 2 : 3').to.equal(' 1 ? 2 : 3 ;'); });
+    it('translates the comma operator', () => { expectTranslate('1 , 2').to.equal(' 1 , 2 ;'); });
+    it('translates "in"', () => { expectTranslate('1 in 2').to.equal(' 1 in 2 ;'); });
+    it('translates "instanceof"',
+       () => { expectTranslate('1 instanceof 2').to.equal(' 1 instanceof 2 ;'); });
+    it('translates "this"', () => { expectTranslate('this.x').to.equal(' this . x ;'); });
     it('translates "delete"', () => {
-      chai.expect(() => translateSource('delete x[y];'))
-          .to.throw('delete operator is unsupported');
+      chai.expect(() => translateSource('delete x[y];')).to.throw('delete operator is unsupported');
     });
     it('translates "typeof"', () => {
-      chai.expect(() => translateSource('typeof x;'))
-          .to.throw('typeof operator is unsupported');
+      chai.expect(() => translateSource('typeof x;')).to.throw('typeof operator is unsupported');
     });
     it('translates "void"', () => {
-      chai.expect(() => translateSource('void x;'))
-          .to.throw('void operator is unsupported');
+      chai.expect(() => translateSource('void x;')).to.throw('void operator is unsupported');
     });
   });
 
   describe('expressions', () => {
-    it('translates parens', () => {
-      expectTranslate('(1)').to.equal(' ( 1 ) ;');
-    });
+    it('translates parens', () => { expectTranslate('(1)').to.equal(' ( 1 ) ;'); });
   });
 
   describe('comments', () => {
@@ -307,16 +281,14 @@ export function translateSource(contents: string): string {
     module: ts.ModuleKind.AMD
   };
   var compilerHost: ts.CompilerHost = {
-    getSourceFile: function (filename, languageVersion) {
+    getSourceFile: function(filename, languageVersion) {
       if (filename === 'file.ts')
         return ts.createSourceFile(filename, contents, compilerOptions.target, true);
       if (filename === 'lib.d.ts')
         return ts.createSourceFile(filename, '', compilerOptions.target, true);
       return undefined;
     },
-    writeFile: function (name, text, writeByteOrderMark) {
-      result = text;
-    },
+    writeFile: function(name, text, writeByteOrderMark) { result = text; },
     getDefaultLibFileName: () => 'lib.d.ts',
     useCaseSensitiveFileNames: () => false,
     getCanonicalFileName: (filename) => filename,

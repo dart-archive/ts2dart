@@ -79,17 +79,13 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
                    main.translateFiles(['test/e2e/' + testfile + '.ts']), {encoding: 'utf8'});
 
   try {
-    var opts = {
-      stdio: 'inherit',
-      cwd: dir
-    };
+    var opts = {stdio: 'inherit', cwd: dir};
     // Install the unittest packages on every run, using the content of pubspec.yaml
     // TODO: maybe this could be memoized or served locally?
     spawn(which.sync('pub'), ['install'], opts)
         .on('close', function() {
           // Run the tests using built-in test runner.
-          var process = spawn(which.sync('dart'), [testfile + '.dart'], opts);
-          process.on('close', done);
+          spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
         });
   } catch (e) {
     console.log('Dart SDK is not found on the PATH.');

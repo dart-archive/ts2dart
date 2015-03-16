@@ -277,7 +277,7 @@ describe('transpile to dart', () => {
 
   describe('imports', () => {
     it('translates simple import statements', () => {
-      expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" ;');
+      expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" as x ;');
     });
   });
 });

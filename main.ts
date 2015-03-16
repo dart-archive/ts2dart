@@ -403,10 +403,9 @@ class Translator {
       case ts.SyntaxKind.ImportEqualsDeclaration:
         var importEqDecl = <ts.ImportEqualsDeclaration> node;
         this.emit('import');
-        // Dart doesn't allow assigning a different name to the imported module
-        // so this is currently lost in translation.
-        // this.visit(importEqDecl.name);
         this.visit(importEqDecl.moduleReference);
+        this.emit('as');
+        this.visit(importEqDecl.name);
         this.emit(';');
         break;
 

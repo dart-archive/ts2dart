@@ -1,7 +1,7 @@
-import unittest = require("unittest/unittest");
+import t = require("unittest/unittest");
 
 function main(): void {  
-    test("bigifies text", function() {  
-        expect("hello".toUpperCase(), equals("HELLO"));
+    t.test("bigifies text", function() {
+        t.expect("hello".toUpperCase(), t.equals("HELLO"));
     });
 }

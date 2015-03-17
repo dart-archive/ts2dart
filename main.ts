@@ -9,10 +9,10 @@ class Translator {
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
   // offset to avoid printing comments multiple times.
   lastCommentIdx: number = -1;
-  sourceFileText: string;
+  currentFile: ts.SourceFile;
 
   translate(sourceFile: ts.SourceFile) {
-    this.sourceFileText = sourceFile.getSourceFile().text;
+    this.currentFile = sourceFile.getSourceFile();
     this.visit(sourceFile);
     return this.result;
   }
@@ -63,19 +63,19 @@ class Translator {
   }
 
   reportError(n: ts.Node, message: string) {
-    var file = n.getSourceFile();
-    var start = n.getStart();
+    var file = n.getSourceFile() || this.currentFile;
+    var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);
     throw new Error(`${file.fileName}:${pos.line}:${pos.character}: ${message}`);
   }
 
   visit(node: ts.Node) {
-    var comments = ts.getLeadingCommentRanges(this.sourceFileText, node.getFullStart());
+    var comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
     if (comments) {
       comments.forEach((c) => {
         if (c.pos <= this.lastCommentIdx) return;
         this.lastCommentIdx = c.pos;
-        var text = this.sourceFileText.substring(c.pos, c.end);
+        var text = this.currentFile.text.substring(c.pos, c.end);
         this.emit(text);
         if (c.hasTrailingNewLine) this.result += '\n';
       });
@@ -136,8 +136,12 @@ class Translator {
         var switchStmt = <ts.SwitchStatement>node;
         this.emit('switch (');
         this.visit(switchStmt.expression);
-        this.emit(') {');
-        this.visitEach(switchStmt.clauses);
+        this.emit(')');
+        this.visit(switchStmt.caseBlock);
+        break;
+      case ts.SyntaxKind.CaseBlock:
+        this.emit('{');
+        this.visitEach((<ts.CaseBlock>node).clauses);
         this.emit('}');
         break;
       case ts.SyntaxKind.CaseClause:

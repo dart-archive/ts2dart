@@ -26,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexeagle/ts2dart.git"
+    "url": "https://github.com/angular/ts2dart.git"
   },
   "keywords": [
     "typescript",

@@ -1,9 +1,6 @@
 # Compiled JS
 release
 
-# Type definitions directory
-typings
-
 # Logs
 logs
 *.log

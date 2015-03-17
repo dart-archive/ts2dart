@@ -23,8 +23,8 @@ var TSC_OPTIONS = {
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
 
-gulp.task('check-format', function() {
-  return gulp.src(['*.js', '*.ts', 'test/*.ts']).pipe(formatter.checkFormat('file'));
+gulp.task('test.check-format', function() {
+  return gulp.src(['*.js', '*.ts', 'test/**/*.ts']).pipe(formatter.checkFormat('file'));
 });
 
 var hasCompileError;
@@ -92,6 +92,6 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   }
 });
 
-gulp.task('test', ['test.unit', 'test.e2e']);
+gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);
 
 gulp.task('watch', ['test.unit'], function() { return gulp.watch('**/*.ts', ['test.unit']); });

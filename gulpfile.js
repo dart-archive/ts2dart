@@ -68,15 +68,14 @@ gulp.task('test.unit', ['test.compile'], function(done) {
 
 // This test transpiles some unittests to dart and runs them in the Dart VM.
 gulp.task('test.e2e', ['test.compile'], function(done) {
-  var main = require('./release/js/main');
   var testfile = 'helloworld';
 
   // Set up the test env in a hermetic tmp dir
   var dir = tmpdir() + '/' + Date.now();
   fs.mkdirSync(dir);
   fs.symlinkSync(__dirname + '/test/e2e/pubspec.yaml', dir + '/pubspec.yaml');
-  fs.writeFileSync(dir + '/' + testfile + '.dart',
-                   main.translateFiles(['test/e2e/' + testfile + '.ts']), {encoding: 'utf8'});
+  fs.symlinkSync(__dirname + '/test/e2e/' + testfile + '.ts', dir + '/' + testfile + '.ts');
+  spawn('node', ['release/js/main.js', dir + '/' + testfile + '.ts']);
 
   try {
     var opts = {stdio: 'inherit', cwd: dir};
@@ -88,11 +87,11 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
           spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
         });
   } catch (e) {
-    console.log('Dart SDK is not found on the PATH.');
+    console.log('Dart SDK is not found on the PATH. ' + e.message);
     throw e;
   }
 });
 
 gulp.task('test', ['test.unit', 'test.e2e']);
 
-gulp.task('watch', ['test'], function() { return gulp.watch('**/*.ts', ['test']); });
+gulp.task('watch', ['test.unit'], function() { return gulp.watch('**/*.ts', ['test.unit']); });

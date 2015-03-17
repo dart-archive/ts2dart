@@ -431,11 +431,17 @@ export function translateProgram(program: ts.Program): string {
       .join('\n');
 }
 
-export function translateFiles(fileNames: string[]): string {
+export function translateFiles(fileNames: string[]): void {
   var options: ts.CompilerOptions = {target: ts.ScriptTarget.ES6, module: ts.ModuleKind.CommonJS};
   var host = ts.createCompilerHost(options);
   var program = ts.createProgram(fileNames, options, host);
-  return translateProgram(program);
+  program.getSourceFiles()
+      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+      .forEach(function(f: ts.SourceFile) {
+    var dartCode = new Translator().translate(f);
+    var dartFile = f.fileName.replace(/.ts$/, '.dart');
+    require('fs').writeFileSync(dartFile, dartCode);
+  });
 }
 
 // CLI entry point

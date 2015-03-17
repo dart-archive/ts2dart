@@ -31,7 +31,10 @@
     "typescript",
     "dart"
   ],
-  "author": "Alex Eagle <alexeagle@google.com> (https://angularjs.org/)",
+  "contributors": [
+    "Alex Eagle <alexeagle@google.com> (https://angularjs.org/)",
+    "Martin Probst <martinprobst@google.com> (https://angularjs.org/)"
+  ],
   "license": "Apache 2.0",
   "bugs": {
     "url": "https://github.com/alexeagle/ts2dart/issues"

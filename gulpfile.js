@@ -81,6 +81,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   // Set up the test env in a hermetic tmp dir
   var dir = tmpdir() + '/' + Date.now();
   fs.mkdirSync(dir);
+  gutil.log('E2E test files generated in', dir);
   fs.symlinkSync(__dirname + '/test/e2e/pubspec.yaml', dir + '/pubspec.yaml');
   fs.symlinkSync(__dirname + '/test/e2e/' + testfile + '.ts', dir + '/' + testfile + '.ts');
   spawn('node', ['release/js/main.js', dir + '/' + testfile + '.ts']);

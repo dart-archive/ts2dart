@@ -35,7 +35,7 @@
   "author": "Alex Eagle <alexeagle@google.com> (https://angularjs.org/)",
   "license": "Apache 2.0",
   "bugs": {
-    "url": "https://github.com/alexeagle/ts2dart/issues"
+    "url": "https://github.com/angular/ts2dart/issues"
   },
-  "homepage": "https://github.com/alexeagle/ts2dart"
+  "homepage": "https://github.com/angular/ts2dart"
 }

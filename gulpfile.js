@@ -87,7 +87,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
           spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
         });
   } catch (e) {
-    console.log('Dart SDK is not found on the PATH. ' + e.message);
+    console.log('Dart SDK is not found on the PATH:', e.message);
     throw e;
   }
 });

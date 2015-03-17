@@ -3,6 +3,7 @@ require('source-map-support').install();
 var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var gulp = require('gulp');
+var gutil = require('gulp-util');
 var merge = require('merge2');
 var mocha = require('gulp-mocha');
 var sourcemaps = require('gulp-sourcemaps');
@@ -28,8 +29,14 @@ gulp.task('test.check-format', function() {
 });
 
 var hasCompileError;
+var failOnError = true;
+
 var onCompileError = function(err) {
   hasCompileError = true;
+  gutil.log(err.message);
+  if (failOnError) {
+    process.exit(1);
+  }
 };
 
 gulp.task('compile', function() {
@@ -94,4 +101,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
 
 gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);
 
-gulp.task('watch', ['test.unit'], function() { return gulp.watch('**/*.ts', ['test.unit']); });
+gulp.task('watch', ['test.unit'], function() {
+  failOnError = false;
+  return gulp.watch('**/*.ts', ['test.unit']);
+});

@@ -1,0 +1,5 @@
+typings
+.idea
+.clang-format
+.travis.yml
+tsd.json

@@ -19,7 +19,7 @@ var TSC_OPTIONS = {
   // (the alternative is to include node_modules paths
   // in the src arrays below for compilation)
   noExternalResolve: false,
-  definitionFiles: true,
+  declarationFiles: true,
   noEmitOnError: true,
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
@@ -47,7 +47,8 @@ gulp.task('compile', function() {
                      .on('error', onCompileError);
   return merge([
     tsResult.dts.pipe(gulp.dest('release/definitions')),
-    tsResult.js.pipe(sourcemaps.write()),
+    // Write external sourcemap next to the js file
+    tsResult.js.pipe(sourcemaps.write('.')).pipe(gulp.dest('release/js')),
     tsResult.js.pipe(gulp.dest('release/js')),
   ]);
 });

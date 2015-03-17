@@ -1,6 +1,6 @@
 {
   "name": "ts2dart",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transpile TypeScript code to Dart",
   "main": "release/js/main.js",
   "directories": {
@@ -22,6 +22,7 @@
     "which": "^1.0.9"
   },
   "scripts": {
+    "prepublish": "gulp compile",
     "test": "gulp test"
   },
   "repository": {
@@ -38,7 +39,7 @@
   ],
   "license": "Apache 2.0",
   "bugs": {
-    "url": "https://github.com/alexeagle/ts2dart/issues"
+    "url": "https://github.com/angular/ts2dart/issues"
   },
-  "homepage": "https://github.com/alexeagle/ts2dart"
+  "homepage": "https://github.com/angular/ts2dart"
 }

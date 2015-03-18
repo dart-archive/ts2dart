@@ -26,6 +26,8 @@ describe('transpile to dart', () => {
        () => { expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;\n'); });
     it('should print variable declaration',
        () => { expectTranslate('var a:number;').to.equal(' num a ;\n'); });
+    it('should transpile variable declaration lists',
+       () => { expectTranslate('var a: number, b: string;').to.equal(' num a ; String b ;\n'); });
   });
 
   describe('classes', () => {
@@ -59,8 +61,10 @@ describe('transpile to dart', () => {
     });
 
     describe('members', () => {
-      it('supports fields',
-         () => { expectTranslate('class X { x: number; }').to.equal(' class X { num x ; }'); });
+      it('supports fields', () => {
+        expectTranslate('class X { x: number; y: string; }')
+            .to.equal(' class X { num x ; String y ; }');
+      });
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
       });

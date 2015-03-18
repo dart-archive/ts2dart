@@ -24,10 +24,10 @@ class Translator {
 
   visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 
-  visitList(nodes: ts.NodeArray<ts.Node>) {
+  visitList(nodes: ts.NodeArray<ts.Node>, separator: string = ',') {
     for (var i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
-      if (i < nodes.length - 1) this.emit(',');
+      if (i < nodes.length - 1) this.emit(separator);
     }
   }
 
@@ -99,7 +99,7 @@ class Translator {
 
       case ts.SyntaxKind.VariableDeclarationList:
         var varDeclList = <ts.VariableDeclarationList>node;
-        this.visitEach(varDeclList.declarations);
+        this.visitList(varDeclList.declarations, ';');
         break;
 
       case ts.SyntaxKind.VariableDeclaration:

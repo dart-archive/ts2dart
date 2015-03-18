@@ -392,6 +392,7 @@ class Translator {
         this.visit(funcDecl.name);
         this.visitFunctionLike(funcDecl);
         break;
+      case ts.SyntaxKind.ArrowFunction:
       case ts.SyntaxKind.FunctionExpression:
         var funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);

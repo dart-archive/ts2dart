@@ -115,6 +115,9 @@ class Translator {
       case ts.SyntaxKind.VoidKeyword:
         this.emit('void');
         break;
+      case ts.SyntaxKind.BooleanKeyword:
+        this.emit('bool');
+        break;
 
       case ts.SyntaxKind.ParenthesizedExpression:
         var parenExpr = <ts.ParenthesizedExpression>node;
@@ -436,10 +439,10 @@ export function translateProgram(program: ts.Program): string {
 }
 
 export function translateFile(fileName: string): string {
-    var options: ts.CompilerOptions = { target: ts.ScriptTarget.ES6, module: ts.ModuleKind.CommonJS };
-    var host = ts.createCompilerHost(options);
-    var program = ts.createProgram([fileName], options, host);
-    return translateProgram(program);
+  var options: ts.CompilerOptions = {target: ts.ScriptTarget.ES6, module: ts.ModuleKind.CommonJS};
+  var host = ts.createCompilerHost(options);
+  var program = ts.createProgram([fileName], options, host);
+  return translateProgram(program);
 }
 
 export function translateFiles(fileNames: string[]): void {

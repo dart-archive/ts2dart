@@ -397,6 +397,20 @@ class Translator {
         this.visitFunctionLike(funcDecl);
         break;
       case ts.SyntaxKind.ArrowFunction:
+        var arrowFunc = <ts.FunctionExpression>node;
+        // Dart only allows expressions following the fat arrow operator.
+        // If the body is a block, we have to drop the fat arrow and emit an
+        // anonymous function instead.
+        if (arrowFunc.body.kind == ts.SyntaxKind.Block) {
+          this.visitFunctionLike(arrowFunc);
+        } else {
+          this.emit('(');
+          this.visitList(arrowFunc.parameters);
+          this.emit(')');
+          this.emit('=>');
+          this.visit(arrowFunc.body);
+        }
+        break;
       case ts.SyntaxKind.FunctionExpression:
         var funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);

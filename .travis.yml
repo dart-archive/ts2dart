@@ -3,5 +3,7 @@ node_js:
   - "stable"
 before_script:
     - npm install
+    - npm install tsd
+    - ./node_modules/tsd/build/cli.js update # tsd update
 script:
     - npm test

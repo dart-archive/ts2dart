@@ -154,6 +154,12 @@ describe('transpile to dart', () => {
 
     it('translates regexp literals',
        () => { expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;'); });
+
+    it('translates array literals', () => {
+      expectTranslate('[1,2]').to.equal(' [ 1 , 2 ] ;');
+      expectTranslate('[1,]').to.equal(' [ 1 ] ;');
+      expectTranslate('[]').to.equal(' [ ] ;');
+    });
   });
 
   describe('control structures', () => {

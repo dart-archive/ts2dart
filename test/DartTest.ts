@@ -281,7 +281,7 @@ describe('transpile to dart', () => {
       expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" as x ;');
     });
     it('translates import from statements', () => {
-      expectTranslate('import {x} from "y";').to.equal(' import "package:y.dart" show x ;');
+      expectTranslate('import {x,y} from "z";').to.equal(' import "package:z.dart" show x , y ;');
     });
     it('allows import dart file from relative path', () => {
       expectTranslate('import x = require("./y")').to.equal(' import "./y.dart" as x ;');

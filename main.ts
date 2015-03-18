@@ -436,7 +436,7 @@ class Translator {
         break;
       case ts.SyntaxKind.NamedImports:
       case ts.SyntaxKind.NamedExports:
-        this.visitEach((<ts.NamedImportsOrExports>node).elements);
+        this.visitList((<ts.NamedImportsOrExports>node).elements);
         break;
       case ts.SyntaxKind.ImportSpecifier:
       case ts.SyntaxKind.ExportSpecifier:

@@ -20,6 +20,7 @@
     "gulp-typescript": "ivogabe/gulp-typescript",
     "gulp-util": "^3.0.4",
     "merge2": "^0.3.1",
+    "temp": "^0.8.1",
     "which": "^1.0.9"
   },
   "scripts": {

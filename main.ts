@@ -125,6 +125,9 @@ class Translator {
       case ts.SyntaxKind.VoidKeyword:
         this.emit('void');
         break;
+      case ts.SyntaxKind.BooleanKeyword:
+        this.emit('bool');
+        break;
 
       case ts.SyntaxKind.ParenthesizedExpression:
         var parenExpr = <ts.ParenthesizedExpression>node;

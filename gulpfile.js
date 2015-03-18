@@ -9,6 +9,7 @@ var mocha = require('gulp-mocha');
 var sourcemaps = require('gulp-sourcemaps');
 var spawn = require('child_process').spawn;
 var tmpdir = require('os').tmpdir;
+var temp = require('temp');  //.track();  // track => delete temp files on exit.
 var ts = require('gulp-typescript');
 var which = require('which');
 
@@ -79,8 +80,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   var testfile = 'helloworld';
 
   // Set up the test env in a hermetic tmp dir
-  var dir = tmpdir() + '/' + Date.now();
-  fsx.mkdirSync(dir);
+  var dir = temp.mkdirSync('ts2dart');
   gutil.log('E2E test files generated in', dir);
   fsx.copySync(__dirname + '/test/e2e', dir);
 

@@ -1,5 +1,7 @@
-language: node_js
+language: dart # NodeJS is available everywhere
 node_js:
-  - "0.12"
   - "stable"
-  - "iojs"
+before_script:
+    - npm install
+script:
+    - npm test

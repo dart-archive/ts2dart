@@ -266,7 +266,7 @@ describe('transpile to dart', () => {
     it('translates the comma operator', () => { expectTranslate('1 , 2').to.equal(' 1 , 2 ;'); });
     it('translates "in"', () => { expectTranslate('1 in 2').to.equal(' 1 in 2 ;'); });
     it('translates "instanceof"',
-       () => { expectTranslate('1 instanceof 2').to.equal(' 1 instanceof 2 ;'); });
+       () => { expectTranslate('1 instanceof 2').to.equal(' 1 is 2 ;'); });
     it('translates "this"', () => { expectTranslate('this.x').to.equal(' this . x ;'); });
     it('translates "delete"', () => {
       chai.expect(() => translateSource('delete x[y];')).to.throw('delete operator is unsupported');

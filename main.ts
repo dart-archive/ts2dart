@@ -275,7 +275,11 @@ class Translator {
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
         this.visit(binExpr.left);
-        this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+        if (binExpr.operatorToken.kind == ts.SyntaxKind.InstanceOfKeyword) {
+          this.emit('is');
+        } else {
+          this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+        }
         this.visit(binExpr.right);
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:

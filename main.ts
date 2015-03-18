@@ -416,6 +416,11 @@ class Translator {
         this.visit((<ts.ReturnStatement>node).expression);
         this.emit(';');
         break;
+      case ts.SyntaxKind.ThrowStatement:
+        this.emit('throw');
+        this.visit((<ts.ThrowStatement>node).expression);
+        this.emit(';');
+        break;
 
       case ts.SyntaxKind.Block:
         this.emit('{');

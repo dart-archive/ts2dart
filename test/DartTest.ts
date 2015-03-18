@@ -187,6 +187,8 @@ describe('transpile to dart', () => {
       expectTranslate('if (x) 1;').to.equal(' if ( x ) 1 ;');
       expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
     });
+    it('translates throw', () => {expectTranslate('throw new Error("oops")')
+                                      .to.equal(' throw new Error ( "oops" ) ;')});
   });
 
   describe('property expressions', () => {

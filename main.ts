@@ -231,6 +231,11 @@ class Translator {
         var sLit = <ts.LiteralExpression>node;
         this.emit(JSON.stringify(sLit.text));
         break;
+      case ts.SyntaxKind.ArrayLiteralExpression:
+        this.emit('[');
+        this.visitList((<ts.ArrayLiteralExpression>node).elements);
+        this.emit(']');
+        break;
       case ts.SyntaxKind.TrueKeyword:
         this.emit('true');
         break;
@@ -364,7 +369,7 @@ class Translator {
 
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        this.visit(propertyDecl.type);
+        if (propertyDecl.type) this.visit(propertyDecl.type);
         this.visit(propertyDecl.name);
         if (propertyDecl.initializer) {
           this.emit('=');

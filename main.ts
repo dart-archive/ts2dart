@@ -373,7 +373,11 @@ class Translator {
 
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        if (propertyDecl.type) this.visit(propertyDecl.type);
+        if (propertyDecl.type) {
+          this.visit(propertyDecl.type);
+        } else {
+          this.emit('var');
+        }
         this.visit(propertyDecl.name);
         if (propertyDecl.initializer) {
           this.emit('=');

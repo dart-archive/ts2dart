@@ -1,12 +1,5 @@
 import t = require("unittest/unittest");
-
-class MyClass {
-  field: string;
-
-  MyClass(someVal: string) { this.field = someVal; }
-
-  getField(): string { return this.field + " world"; }
-}
+import {MyClass} from './lib';
 
 function main(): void {
   t.test("handles classes", function() {

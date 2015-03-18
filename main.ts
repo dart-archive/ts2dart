@@ -341,6 +341,28 @@ class Translator {
         this.visitClassLike(ifDecl);
         break;
 
+      case ts.SyntaxKind.EnumDeclaration:
+        var decl = <ts.EnumDeclaration>node;
+        this.emit('enum');
+        this.visit(decl.name);
+        this.emit('{');
+        // Enums can be empty in TS ...
+        if (decl.members.length === 0) {
+          // ... but not in Dart.
+          this.reportError(node, 'empty enums are not supported');
+        }
+        this.visitList(decl.members);
+        this.emit('}');
+        break;
+
+      case ts.SyntaxKind.EnumMember:
+        var member = <ts.EnumMember>node;
+        this.visit(member.name);
+        if (member.initializer) {
+          this.reportError(node, 'enum initializers are not supported');
+        }
+        break;
+
       case ts.SyntaxKind.HeritageClause:
         var heritageClause = <ts.HeritageClause>node;
         if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {

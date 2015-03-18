@@ -1,4 +1,5 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
+/// <reference path="../typings/mocha/mocha.d.ts"/>
 /// <reference path="../typings/source-map-support/source-map-support.d.ts"/>
 
 import sms = require('source-map-support');
@@ -107,6 +108,24 @@ describe('transpile to dart', () => {
     });
   });
 
+  describe('enums', () => {
+    it('should support basic enum declaration', () => {
+      expectTranslate('enum Color { Red, Green, Blue }')
+          .to.equal(' enum Color { Red , Green , Blue }');
+    });
+    it('does not support empty enum', () => {
+      chai.expect(() => translateSource('enum Empty { }'))
+          .to.throw('empty enums are not supported');
+    });
+    it('does not support enum with initializer', () => {
+      chai.expect(() => translateSource('enum Color { Red = 1, Green, Blue = 4 }'))
+          .to.throw('enum initializers are not supported');
+    });
+    it('should support switch over enum', () => {
+      expectTranslate('switch(c) { case Color.Red: break; default: break; }')
+          .to.equal(' switch ( c ) { case Color . Red : break ; default : break ; }');
+    });
+  });
 
   describe('functions', () => {
     it('supports declarations',

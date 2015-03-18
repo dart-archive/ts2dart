@@ -140,6 +140,7 @@ describe('transpile to dart', () => {
     it('translates boolean literals', () => {
       expectTranslate('true').to.equal(' true ;');
       expectTranslate('false').to.equal(' false ;');
+      expectTranslate('var b:boolean = true;').to.equal(' bool b = true ;\n');
     });
 
     it('translates the null literal', () => { expectTranslate('null').to.equal(' null ;'); });

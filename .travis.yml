@@ -2,8 +2,6 @@ language: dart # NodeJS is available everywhere
 node_js:
   - "stable"
 before_script:
-    - npm install tsd
-    - ./node_modules/tsd/build/cli.js update # tsd update
     - npm install
 script:
     - npm test

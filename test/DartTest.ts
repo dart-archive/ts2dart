@@ -129,6 +129,8 @@ describe('transpile to dart', () => {
     });
     it('translates function expressions',
        () => { expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;\n'); });
+    it('translates fat arrow operator',
+       () => { expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;\n'); });
   });
 
   describe('literals', () => {

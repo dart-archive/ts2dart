@@ -1,7 +1,7 @@
 /// <reference path="typings/node/node.d.ts" />
 // Use HEAD version of typescript, installed by npm
 /// <reference path="node_modules/typescript/bin/typescript.d.ts" />
-
+require('source-map-support').install();
 import ts = require("typescript");
 
 class Translator {
@@ -60,6 +60,16 @@ class Translator {
     this.emit('(');
     this.visitList(c.arguments);
     this.emit(')');
+  }
+
+  visitExternalModuleReferenceExpr(expr: ts.Expression) {
+    // TODO: what if this isn't a string literal?
+    var moduleName = <ts.StringLiteralExpression>expr;
+    if (!moduleName.text.match(/^\./)) {
+      moduleName.text = 'package:' + moduleName.text;
+    }
+    moduleName.text += '.dart';
+    this.visit(expr);
   }
 
   reportError(n: ts.Node, message: string) {
@@ -407,6 +417,33 @@ class Translator {
         this.emit('}');
         break;
 
+      case ts.SyntaxKind.ImportDeclaration:
+        var importDecl = <ts.ImportDeclaration>node;
+        this.emit('import');
+        this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
+        if (importDecl.importClause) {
+          this.emit('show');
+          this.visit(importDecl.importClause);
+        } else {
+          this.reportError(importDecl, 'bare import is unsupported');
+        }
+        this.emit(';');
+        break;
+      case ts.SyntaxKind.ImportClause:
+        var importClause = <ts.ImportClause>node;
+        if (importClause.name) this.visit(importClause.name);
+        if (importClause.namedBindings) this.visit(importClause.namedBindings);
+        break;
+      case ts.SyntaxKind.NamedImports:
+      case ts.SyntaxKind.NamedExports:
+        this.visitEach((<ts.NamedImportsOrExports>node).elements);
+        break;
+      case ts.SyntaxKind.ImportSpecifier:
+      case ts.SyntaxKind.ExportSpecifier:
+        var spec = <ts.ImportOrExportSpecifier>node;
+        if (spec.propertyName) this.visit(spec.propertyName);
+        this.visit(spec.name);
+        break;
       case ts.SyntaxKind.ImportEqualsDeclaration:
         var importEqDecl = <ts.ImportEqualsDeclaration>node;
         this.emit('import');
@@ -415,13 +452,8 @@ class Translator {
         this.visit(importEqDecl.name);
         this.emit(';');
         break;
-
       case ts.SyntaxKind.ExternalModuleReference:
-        var externalModRef = <ts.ExternalModuleReference>node;
-        // TODO: what if this isn't a string literal?
-        var moduleName = <ts.StringLiteralExpression>externalModRef.expression;
-        moduleName.text = 'package:' + moduleName.text + '.dart';
-        this.visit(externalModRef.expression);
+        this.visitExternalModuleReferenceExpr((<ts.ExternalModuleReference>node).expression);
         break;
 
       default:

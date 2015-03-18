@@ -277,8 +277,15 @@ describe('transpile to dart', () => {
   });
 
   describe('imports', () => {
-    it('translates simple import statements', () => {
+    it('translates import equals statements', () => {
       expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" as x ;');
+    });
+    it('translates import from statements', () => {
+      expectTranslate('import {x} from "y";').to.equal(' import "package:y.dart" show x ;');
+    });
+    it('allows import dart file from relative path', () => {
+      expectTranslate('import x = require("./y")').to.equal(' import "./y.dart" as x ;');
+      expectTranslate('import {x} from "./y"').to.equal(' import "./y.dart" show x ;');
     });
   });
 });

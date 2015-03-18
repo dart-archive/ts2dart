@@ -1,7 +1,7 @@
 require('source-map-support').install();
 
 var formatter = require('gulp-clang-format');
-var fs = require('fs');
+var fsx = require('fs-extra');
 var gulp = require('gulp');
 var gutil = require('gulp-util');
 var merge = require('merge2');
@@ -82,23 +82,31 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   // Set up the test env in a hermetic tmp dir
   var dir = temp.mkdirSync('ts2dart');
   gutil.log('E2E test files generated in', dir);
-  fs.symlinkSync(__dirname + '/test/e2e/pubspec.yaml', dir + '/pubspec.yaml');
-  fs.symlinkSync(__dirname + '/test/e2e/' + testfile + '.ts', dir + '/' + testfile + '.ts');
-  spawn('node', ['release/js/main.js', dir + '/' + testfile + '.ts']);
+  fsx.copySync(__dirname + '/test/e2e', dir);
 
-  try {
-    var opts = {stdio: 'inherit', cwd: dir};
-    // Install the unittest packages on every run, using the content of pubspec.yaml
-    // TODO: maybe this could be memoized or served locally?
-    spawn(which.sync('pub'), ['install'], opts)
-        .on('close', function() {
-          // Run the tests using built-in test runner.
-          spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
-        });
-  } catch (e) {
-    console.log('Dart SDK is not found on the PATH:', e.message);
-    throw e;
-  }
+  // run node with a shell so we can wildcard all the .ts files
+  spawn('sh', ['-c', 'node release/js/main.js ' + dir + '/*.ts'], {stdio: 'inherit'})
+      .on('close', function(code, signal) {
+        if (code > 0) {
+          onCompileError(new Error("Failed to transpile " + testfile + '.ts'));
+        } else {
+          try {
+            var opts = {stdio: 'inherit', cwd: dir};
+            // Install the unittest packages on every run, using the content of pubspec.yaml
+            // TODO: maybe this could be memoized or served locally?
+            spawn(which.sync('pub'), ['install'], opts)
+                .on('close', function() {
+                  // Run the tests using built-in test runner.
+                  spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
+                });
+          } catch (e) {
+            console.log('Dart SDK is not found on the PATH:', e.message);
+            throw e;
+          }
+        }
+      });
+
+
 });
 
 gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);

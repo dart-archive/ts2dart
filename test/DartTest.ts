@@ -242,6 +242,10 @@ describe('transpile to dart', () => {
       expectTranslate('if (x) 1;').to.equal(' if ( x ) 1 ;');
       expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
     });
+    it('translates try/catch', () => {
+      expectTranslate('try {} catch(e) {} finally {}').to.equal(' try { } catch ( e ) { } finally { }');
+      expectTranslate('try {} catch(e: MyException) {}').to.equal(' try { } on MyException catch ( e ) { }');
+    });
     it('translates throw', () => {
       expectTranslate('throw new Error("oops")').to.equal(' throw new Error ( "oops" ) ;');
     });

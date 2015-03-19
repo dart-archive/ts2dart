@@ -274,6 +274,30 @@ class Translator {
       case ts.SyntaxKind.BreakStatement:
         this.emit('break ;');
         break;
+      case ts.SyntaxKind.TryStatement:
+        var tryStmt = <ts.TryStatement>node;
+        this.emit('try');
+        this.visit(tryStmt.tryBlock);
+        if (tryStmt.catchClause) {
+          this.visit(tryStmt.catchClause);
+        }
+        if (tryStmt.finallyBlock) {
+          this.emit('finally');
+          this.visit(tryStmt.finallyBlock);
+        }
+        break;
+       case ts.SyntaxKind.CatchClause:
+         var ctch = <ts.CatchClause>node;
+         if (ctch.variableDeclaration.type) {
+           this.emit('on');
+           this.visit(ctch.variableDeclaration.type);
+         }
+         this.emit('catch');
+         this.emit('(');
+         this.visit(ctch.variableDeclaration.name);
+         this.emit(')');
+         this.visit(ctch.block);
+         break;
 
       // Literals.
       case ts.SyntaxKind.NumericLiteral:

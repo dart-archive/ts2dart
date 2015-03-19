@@ -554,4 +554,6 @@ export function translateFiles(fileNames: string[]): void {
 }
 
 // CLI entry point
-translateFiles(process.argv.slice(2));
+if (require.main === module) {
+  translateFiles(process.argv.slice(2));
+}

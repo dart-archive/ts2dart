@@ -39,7 +39,11 @@ class Translator {
 
   visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
     this.visitParameters(fn);
-    this.visit(fn.body);
+    if (fn.body) {
+      this.visit(fn.body);
+    } else {
+      this.emit(';');
+    }
   }
 
   visitClassLike(decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
@@ -509,6 +513,14 @@ class Translator {
       case ts.SyntaxKind.FunctionExpression:
         var funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);
+        break;
+
+      case ts.SyntaxKind.MethodSignature:
+        var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
+        this.emit('abstract');
+        if (methodSignatureDecl.modifiers) this.visitEach(methodSignatureDecl.modifiers);
+        this.visit(methodSignatureDecl.name);
+        this.visitFunctionLike(methodSignatureDecl);
         break;
 
       case ts.SyntaxKind.Parameter:

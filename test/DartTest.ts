@@ -24,13 +24,13 @@ describe('transpile to dart', () => {
 
   describe('variables', () => {
     it('should print variable declaration with initializer',
-       () => { expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;\n'); });
+       () => { expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;'); });
     it('should print variable declaration', () => {
-      expectTranslate('var a:number;').to.equal(' num a ;\n');
-      expectTranslate('var a;').to.equal(' var a ;\n');
+      expectTranslate('var a:number;').to.equal(' num a ;');
+      expectTranslate('var a;').to.equal(' var a ;');
     });
     it('should transpile variable declaration lists',
-       () => { expectTranslate('var a: number, b: string;').to.equal(' num a ; String b ;\n'); });
+       () => { expectTranslate('var a: number, b: string;').to.equal(' num a ; String b ;'); });
   });
 
   describe('classes', () => {
@@ -158,10 +158,10 @@ describe('transpile to dart', () => {
       expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
     });
     it('translates function expressions',
-       () => { expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;\n'); });
+       () => { expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;'); });
     it('translates fat arrow operator', () => {
-      expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;\n');
-      expectTranslate('var a = (p) => isBlank(p)').to.equal(' var a = ( p ) => isBlank ( p ) ;\n');
+      expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;');
+      expectTranslate('var a = (p) => isBlank(p)').to.equal(' var a = ( p ) => isBlank ( p ) ;');
     });
   });
 
@@ -174,7 +174,7 @@ describe('transpile to dart', () => {
     it('translates boolean literals', () => {
       expectTranslate('true').to.equal(' true ;');
       expectTranslate('false').to.equal(' false ;');
-      expectTranslate('var b:boolean = true;').to.equal(' bool b = true ;\n');
+      expectTranslate('var b:boolean = true;').to.equal(' bool b = true ;');
     });
 
     it('translates the null literal', () => { expectTranslate('null').to.equal(' null ;'); });
@@ -335,6 +335,19 @@ describe('transpile to dart', () => {
     it('allows import dart file from relative path', () => {
       expectTranslate('import x = require("./y")').to.equal(' import "./y.dart" as x ;');
       expectTranslate('import {x} from "./y"').to.equal(' import "./y.dart" show x ;');
+    });
+  });
+
+  describe('exports', () => {
+    // Dart exports are implicit, everything non-private is exported by the library.
+    it('allows variable exports', () => {
+      expectTranslate('export var x = 12;').to.equal(' var x = 12 ;');
+    });
+    it('allows class exports', () => {
+      expectTranslate('export class X {}').to.equal(' class X { }');
+    });
+    it('allows export declarations', () => {
+      expectTranslate('export * from "X";').to.equal(' export "X" ;');
     });
   });
 });

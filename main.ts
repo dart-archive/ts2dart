@@ -138,8 +138,9 @@ class Translator {
         break;
 
       case ts.SyntaxKind.VariableStatement:
-        ts.forEachChild(node, this.visit.bind(this));
-        this.emit(';\n');
+        var variableStmt = <ts.VariableStatement>node;
+        this.visit(variableStmt.declarationList);
+        this.emit(';');
         break;
       case ts.SyntaxKind.ExpressionStatement:
         var expr = <ts.ExpressionStatement>node;
@@ -514,6 +515,13 @@ class Translator {
         var spec = <ts.ImportOrExportSpecifier>node;
         if (spec.propertyName) this.visit(spec.propertyName);
         this.visit(spec.name);
+        break;
+      case ts.SyntaxKind.ExportDeclaration:
+        var exportDecl = <ts.ExportDeclaration>node;
+        this.emit('export');
+        this.visit(exportDecl.moduleSpecifier);
+        if (exportDecl.exportClause) this.visit(exportDecl.exportClause);
+        this.emit(';');
         break;
       case ts.SyntaxKind.ImportEqualsDeclaration:
         var importEqDecl = <ts.ImportEqualsDeclaration>node;

@@ -72,7 +72,7 @@ gulp.task('test.unit', ['test.compile'], function(done) {
     done();
     return;
   }
-  return gulp.src('release/js/test/*.js').pipe(mocha({reporter: 'nyan'}));
+  return gulp.src('release/js/test/*.js').pipe(mocha());
 });
 
 // This test transpiles some unittests to dart and runs them in the Dart VM.

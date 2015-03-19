@@ -42,7 +42,7 @@ var onCompileError = function(err) {
 
 gulp.task('compile', function() {
   hasCompileError = false;
-  var tsResult = gulp.src(['*.ts', 'typings/**/*'])
+  var tsResult = gulp.src(['*.ts', 'typings/**/*.d.ts'])
                      .pipe(sourcemaps.init())
                      .pipe(ts(tsProject))
                      .on('error', onCompileError);
@@ -59,7 +59,7 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts', '*.ts', 'typings/**/*'])
+  return gulp.src(['test/*.ts', '*.ts', 'typings/**/*.d.ts'])
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
       .on('error', onCompileError)

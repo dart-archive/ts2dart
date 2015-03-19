@@ -282,7 +282,40 @@ class Translator {
         break;
       case ts.SyntaxKind.StringLiteral:
         var sLit = <ts.LiteralExpression>node;
-        this.emit(JSON.stringify(sLit.text));
+        var text = JSON.stringify(sLit.text);
+        // Escape dollar sign since dart will interpolate in double quoted literal
+        var text = text.replace(/\$/, '\\$');
+        this.emit(text);
+        break;
+      case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
+        var text = (<ts.StringLiteralExpression>node).text.replace(/\$/, '\\$');
+        this.emit(`'''${text}'''`);
+        break;
+      case ts.SyntaxKind.TemplateMiddle:
+        var text = (<ts.StringLiteralExpression>node).text.replace(/\$/, '\\$');
+        this.result += text;
+        break;
+      case ts.SyntaxKind.TemplateExpression:
+        var tmpl = <ts.TemplateExpression>node;
+        if (tmpl.head) this.visit(tmpl.head);
+        if (tmpl.templateSpans) this.visitEach(tmpl.templateSpans);
+        break;
+      case ts.SyntaxKind.TemplateHead:
+        this.emit(`'''${(<ts.StringLiteralExpression>node).text}`); //highlighting bug:'
+        break;
+      case ts.SyntaxKind.TemplateTail:
+        this.result += `${
+        (<ts.StringLiteralExpression>node).text}'''`; //highlighting bug:'
+        break;
+      case ts.SyntaxKind.TemplateSpan:
+        var span = <ts.TemplateSpan>node;
+        if (span.expression) {
+        // Do not emit extra whitespace inside the string template
+        this.result += '${';
+        this.visit(span.expression);
+        this.result += '}';
+        }
+        if (span.literal) this.visit(span.literal);
         break;
       case ts.SyntaxKind.ArrayLiteralExpression:
         this.emit('[');
@@ -600,10 +633,10 @@ class Translator {
         break;
 
       default:
-        this.reportError(node, "Unsupported node type " + (<any>ts).SyntaxKind[node.kind]);
+        this.reportError(node, `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
         break;
-    }
   }
+}
 }
 
 export function translateProgram(program: ts.Program): string {

@@ -251,6 +251,9 @@ class Translator {
       case ts.SyntaxKind.ThisKeyword:
         this.emit('this');
         break;
+      case ts.SyntaxKind.StaticKeyword:
+        this.emit('static');
+        break;
 
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
@@ -395,6 +398,7 @@ class Translator {
 
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
+        if (node.modifiers) this.visitEach(node.modifiers);
         if (propertyDecl.type) {
           this.visit(propertyDecl.type);
         } else {

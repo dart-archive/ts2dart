@@ -72,6 +72,10 @@ describe('transpile to dart', () => {
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
       });
+      it('supports static fields', () => {
+        expectTranslate('class X { static x: number = 42; }')
+            .to.equal(' class X { static num x = 42 ; }');
+      });
       it('supports methods', () => {
         expectTranslate('class X { x() { return 42; } }')
             .to.equal(' class X { x ( ) { return 42 ; } }');

@@ -103,18 +103,17 @@ class Translator {
    * Checks whether `callExpr` is a super() call that should be ignored because it was already
    * handled by `maybeEmitSuperInitializer` above.
    */
-  isHandledSuperCall(callExpr: ts.CallExpression): boolean {
+  maybeHandleSuperCall(callExpr: ts.CallExpression): boolean {
     if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) return false;
     // Sanity check that there was indeed a ctor directly above this call.
     var exprStmt = callExpr.parent;
     var ctorBody = exprStmt.parent;
-    // TODO(martinprobst): Warn if exprStmt is not the first element of ctorBody.expressions to call
-    // out the change in semantics?
     var ctor = ctorBody.parent;
     if (ctor.kind !== ts.SyntaxKind.Constructor) {
       this.reportError(callExpr, 'super calls must be immediate children of their constructors');
       return false;
     }
+    this.emit('/* super call moved to initializer */');
     return true;
   }
 
@@ -336,9 +335,7 @@ class Translator {
         break;
       case ts.SyntaxKind.CallExpression:
         var callExpr = <ts.CallExpression>node;
-        if (this.isHandledSuperCall(callExpr)) {
-          this.emit('/* super call moved to initializer */');
-        } else {
+        if (!this.maybeHandleSuperCall(callExpr)) {
           this.visitCall(callExpr);
         }
         break;

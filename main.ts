@@ -536,13 +536,13 @@ var options: ts.CompilerOptions = {
 };
 
 export function translateFile(fileName: string): string {
-  var host = ts.createCompilerHost(options);
+  var host = ts.createCompilerHost(options, /*setParentNodes*/ true);
   var program = ts.createProgram([fileName], options, host);
   return translateProgram(program);
 }
 
 export function translateFiles(fileNames: string[]): void {
-  var host = ts.createCompilerHost(options);
+  var host = ts.createCompilerHost(options, /*setParentNodes*/ true);
   var program = ts.createProgram(fileNames, options, host);
   program.getSourceFiles()
       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)

@@ -137,8 +137,9 @@ class Translator {
         break;
 
       case ts.SyntaxKind.VariableStatement:
-        ts.forEachChild(node, this.visit.bind(this));
-        this.emit(';\n');
+        var variableStmt = <ts.VariableStatement>node;
+        this.visit(variableStmt.declarationList);
+        this.emit(';');
         break;
       case ts.SyntaxKind.ExpressionStatement:
         var expr = <ts.ExpressionStatement>node;

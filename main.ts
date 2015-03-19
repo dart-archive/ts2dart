@@ -31,10 +31,14 @@ class Translator {
     }
   }
 
-  visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
+  visitParameters(fn: ts.FunctionLikeDeclaration) {
     this.emit('(');
     this.visitList(fn.parameters);
     this.emit(')');
+  }
+
+  visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
+    this.visitParameters(fn);
     this.visit(fn.body);
   }
 
@@ -70,6 +74,44 @@ class Translator {
     }
     moduleName.text += '.dart';
     this.visit(expr);
+  }
+
+  /** Searches for super() calls and emits an initializer for it if found. */
+  maybeEmitInitializerListForSuperCall(body: ts.Block) {
+    if (!body || body.statements.length === 0) return;
+
+    var findSuperCalls = (stmt: ts.Statement) => {
+      if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) return;
+      var nestedExpr = (<ts.ExpressionStatement>stmt).expression;
+      if (nestedExpr.kind !== ts.SyntaxKind.CallExpression) return;
+      var callExpr = <ts.CallExpression>nestedExpr;
+      if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) return;
+
+      this.emit(': super (');
+      this.visitList(callExpr.arguments);
+      this.emit(')');
+    };
+
+    body.statements.forEach(findSuperCalls);
+  }
+
+  /**
+   * Checks whether `callExpr` is a super() call that should be ignored because it was already
+   * handled by `maybeEmitSuperInitializer` above.
+   */
+  isHandledSuperCall(callExpr: ts.CallExpression): boolean {
+    if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) return false;
+    // Sanity check that there was indeed a ctor directly above this call.
+    var exprStmt = callExpr.parent;
+    var ctorBody = exprStmt.parent;
+    // TODO(martinprobst): Warn if exprStmt is not the first element of ctorBody.expressions to call
+    // out the change in semantics?
+    var ctor = ctorBody.parent;
+    if (ctor.kind !== ts.SyntaxKind.Constructor) {
+      this.reportError(callExpr, 'super calls must be immediate children of their constructors');
+      return false;
+    }
+    return true;
   }
 
   reportError(n: ts.Node, message: string) {
@@ -125,6 +167,9 @@ class Translator {
         break;
       case ts.SyntaxKind.VoidKeyword:
         this.emit('void');
+        break;
+      case ts.SyntaxKind.SuperKeyword:
+        this.emit('super');
         break;
       case ts.SyntaxKind.BooleanKeyword:
         this.emit('bool');
@@ -286,7 +331,12 @@ class Translator {
         this.visitCall(<ts.NewExpression>node);
         break;
       case ts.SyntaxKind.CallExpression:
-        this.visitCall(<ts.CallExpression>node);
+        var callExpr = <ts.CallExpression>node;
+        if (this.isHandledSuperCall(callExpr)) {
+          this.emit('/* super call moved to initializer */');
+        } else {
+          this.visitCall(callExpr);
+        }
         break;
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
@@ -406,7 +456,9 @@ class Translator {
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
         this.visit(className);
-        this.visitFunctionLike(ctorDecl);
+        this.visitParameters(ctorDecl);
+        this.maybeEmitInitializerListForSuperCall(ctorDecl.body);
+        this.visit(ctorDecl.body);
         break;
 
       case ts.SyntaxKind.PropertyDeclaration:

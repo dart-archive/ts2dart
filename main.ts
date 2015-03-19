@@ -24,6 +24,10 @@ class Translator {
 
   visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 
+  visitEachIfPresent(nodes?: ts.Node[]) {
+    if (nodes) this.visitEach(nodes);
+  }
+
   visitList(nodes: ts.NodeArray<ts.Node>, separator: string = ',') {
     for (var i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
@@ -39,7 +43,11 @@ class Translator {
 
   visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
     this.visitParameters(fn);
-    this.visit(fn.body);
+    if (fn.body) {
+      this.visit(fn.body);
+    } else {
+      this.emit(';');
+    }
   }
 
   visitClassLike(decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
@@ -49,13 +57,9 @@ class Translator {
       this.visitList(decl.typeParameters);
       this.emit('>');
     }
-    if (decl.heritageClauses) {
-      this.visitEach(decl.heritageClauses);
-    }
+    this.visitEachIfPresent(decl.heritageClauses);
     this.emit('{');
-    if (decl.members) {
-      this.visitEach(decl.members);
-    }
+    this.visitEachIfPresent(decl.members);
     this.emit('}');
   }
 
@@ -463,7 +467,7 @@ class Translator {
 
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        if (node.modifiers) this.visitEach(node.modifiers);
+        this.visitEachIfPresent(node.modifiers);
         if (propertyDecl.type) {
           this.visit(propertyDecl.type);
         } else {
@@ -509,6 +513,14 @@ class Translator {
       case ts.SyntaxKind.FunctionExpression:
         var funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);
+        break;
+
+      case ts.SyntaxKind.MethodSignature:
+        var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
+        this.emit('abstract');
+        this.visitEachIfPresent(methodSignatureDecl.modifiers);
+        this.visit(methodSignatureDecl.name);
+        this.visitFunctionLike(methodSignatureDecl);
         break;
 
       case ts.SyntaxKind.Parameter:

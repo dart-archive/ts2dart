@@ -113,6 +113,9 @@ describe('transpile to dart', () => {
       expectTranslate('class X extends Y implements Z {}')
           .to.equal(' class X extends Y implements Z { }');
     });
+    it('supports abstract methods', () => {
+      expectTranslate('interface X { x(); }').to.equal(' abstract class X { abstract x ( ) ; }');
+    });
   });
 
   describe('enums', () => {

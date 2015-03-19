@@ -41,11 +41,18 @@ class Translator {
     this.emit(')');
   }
 
-  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor: string = null) {
+  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor?: string) {
     if (fn.type) this.visit(fn.type);
     if (accessor) this.emit(accessor);
     if (fn.name) this.visit(fn.name);
-    this.visitParameters(fn);
+    // Dart does not even allow the parens of an empty param list on getter
+    if (accessor !== 'get') {
+      this.visitParameters(fn);
+    } else {
+      if (fn.parameters && fn.parameters.length > 0) {
+        this.reportError(fn, "getter should not accept parameters");
+      }
+    }
     if (fn.body) {
       this.visit(fn.body);
     } else {

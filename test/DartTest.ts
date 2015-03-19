@@ -95,7 +95,7 @@ describe('transpile to dart', () => {
       });
       it('supports get methods', () => {
         expectTranslate('class X { get y(): number {} }')
-            .to.equal(' class X { num get y ( ) { } }');
+            .to.equal(' class X { num get y { } }');
       });
       it('supports set methods', () => {
         expectTranslate('class X { set y(n: number) {} }')

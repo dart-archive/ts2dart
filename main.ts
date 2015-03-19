@@ -34,7 +34,7 @@ class Translator {
     if (nodes) this.visitEach(nodes);
   }
 
-  visitList(nodes: ts.NodeArray<ts.Node>, separator: string = ',') {
+  visitList(nodes: ts.Node[], separator: string = ',') {
     for (var i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
       if (i < nodes.length - 1) this.emit(separator);
@@ -82,8 +82,42 @@ class Translator {
   visitCall(c: ts.CallExpression) {
     this.visit(c.expression);
     this.emit('(');
-    this.visitList(c.arguments);
+    if (!this.handleNamedParamsCall(c)) {
+      this.visitList(c.arguments);
+    }
     this.emit(')');
+  }
+
+  handleNamedParamsCall(c: ts.CallExpression): boolean {
+    // Preamble: This is all committed in the name of backwards compat with the traceur transpiler.
+
+    // Terrible hack: transform foo(a, b, {c: d}) into foo(a, b, c: d), which is Dart's calling
+    // syntax for named/optional parameters. An alternative would be to transform the method
+    // declaration to take a plain object literal and destructure in the method, but then client
+    // code written against Dart wouldn't get nice named parameters.
+    if (c.arguments.length === 0) return false;
+    var last = c.arguments[c.arguments.length - 1];
+    if (last.kind !== ts.SyntaxKind.ObjectLiteralExpression) return false;
+    var objLit = <ts.ObjectLiteralExpression>last;
+    if (objLit.properties.length === 0) return false;
+    // Even worse: foo(a, b, {'c': d}) is considered to *not* be a named parameters call.
+    var hasNonPropAssignments = objLit.properties.some(
+        (p) => p.kind != ts.SyntaxKind.PropertyAssignment ||
+               (<ts.PropertyAssignment>p).name.kind != ts.SyntaxKind.Identifier);
+    if (hasNonPropAssignments) return false;
+
+    var len = c.arguments.length - 1;
+    this.visitList(c.arguments.slice(0, len));
+    if (len) this.emit(',');
+    var props = objLit.properties;
+    for (var i = 0; i < props.length; i++) {
+      var prop = <ts.PropertyAssignment>props[i];
+      this.emit((<ts.Identifier>prop.name).text);
+      this.emit(':');
+      this.visit(prop.initializer);
+      if (i < objLit.properties.length - 1) this.emit(',');
+    }
+    return true;
   }
 
   visitExternalModuleReferenceExpr(expr: ts.Expression) {
@@ -645,6 +679,20 @@ class Translator {
           this.emit('=');
           this.visit(paramDecl.initializer);
           this.emit(']');
+        }
+        break;
+      case ts.SyntaxKind.ObjectBindingPattern:
+        var bindingPattern = <ts.BindingPattern>node;
+        this.emit('{');
+        this.visitList(bindingPattern.elements);
+        this.emit('}');
+        break;
+      case ts.SyntaxKind.BindingElement:
+        var bindingElement = <ts.BindingElement>node;
+        this.visit(bindingElement.name);
+        if (bindingElement.initializer) {
+          this.emit(':');
+          this.visit(bindingElement.initializer);
         }
         break;
 

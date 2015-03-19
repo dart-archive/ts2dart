@@ -170,6 +170,17 @@ describe('transpile to dart', () => {
       expectTranslate('function x(a = 42) { return 42; }')
           .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
     });
+    it('supports named parameters', () => {
+      expectTranslate('function x({a = "x", b}) { return a + b; }')
+          .to.equal(' x ( { a : "x" , b } ) { return a + b ; }');
+    });
+    it('hacks last object literal parameters into named parameter', () => {
+      expectTranslate(' f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');
+      expectTranslate(' f({a: 12});').to.equal(' f ( a : 12 ) ;');
+      expectTranslate(' f({"a": 12});').to.equal(' f ( { "a" : 12 } ) ;');
+      expectTranslate(' new X(x, {a: 12, b: 4});').to.equal(' new X ( x , a : 12 , b : 4 ) ;');
+      expectTranslate(' f(x, {});').to.equal(' f ( x , { } ) ;');
+    });
     it('does not support var args', () => {
       expectErroneousCode('function x(...a: number) { return 42; }')
           .to.throw('rest parameters are unsupported');

@@ -93,7 +93,14 @@ describe('transpile to dart', () => {
         expectTranslate('class X { x( a : number, b : string ) { return 42; } }')
             .to.equal(' class X { x ( num a , String b ) { return 42 ; } }');
       });
-
+      it('supports get methods', () => {
+        expectTranslate('class X { get y(): number {} }')
+            .to.equal(' class X { num get y ( ) { } }');
+      });
+      it('supports set methods', () => {
+        expectTranslate('class X { set y(n: number) {} }')
+            .to.equal(' class X { set y ( num n ) { } }');
+      });
       it('supports constructors', () => {
         expectTranslate('class X { constructor() { } }').to.equal(' class X { X ( ) { } }');
       });

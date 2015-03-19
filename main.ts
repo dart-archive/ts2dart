@@ -41,7 +41,10 @@ class Translator {
     this.emit(')');
   }
 
-  visitFunctionLike(fn: ts.FunctionLikeDeclaration) {
+  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor: string = null) {
+    if (fn.type) this.visit(fn.type);
+    if (accessor) this.emit(accessor);
+    if (fn.name) this.visit(fn.name);
     this.visitParameters(fn);
     if (fn.body) {
       this.visit(fn.body);
@@ -539,17 +542,17 @@ class Translator {
         break;
 
       case ts.SyntaxKind.MethodDeclaration:
-        var methodDecl = <ts.MethodDeclaration>node;
-        if (methodDecl.type) this.visit(methodDecl.type);
-        this.visit(methodDecl.name);
-        this.visitFunctionLike(methodDecl);
+        this.visitFunctionLike(<ts.MethodDeclaration>node);
         break;
-
+      case ts.SyntaxKind.GetAccessor:
+        this.visitFunctionLike(<ts.AccessorDeclaration>node, 'get');
+        break;
+      case ts.SyntaxKind.SetAccessor:
+        this.visitFunctionLike(<ts.AccessorDeclaration>node, 'set');
+        break;
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
         if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
-        if (funcDecl.type) this.visit(funcDecl.type);
-        this.visit(funcDecl.name);
         this.visitFunctionLike(funcDecl);
         break;
       case ts.SyntaxKind.ArrowFunction:
@@ -576,7 +579,6 @@ class Translator {
         var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
         this.emit('abstract');
         this.visitEachIfPresent(methodSignatureDecl.modifiers);
-        this.visit(methodSignatureDecl.name);
         this.visitFunctionLike(methodSignatureDecl);
         break;
 

@@ -76,7 +76,8 @@ class Translator {
     var file = n.getSourceFile() || this.currentFile;
     var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);
-    throw new Error(`${file.fileName}:${pos.line}:${pos.character}: ${message}`);
+    // Line and character are 0-based.
+    throw new Error(`${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`);
   }
 
   visit(node: ts.Node) {

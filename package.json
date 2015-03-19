@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "source-map-support": "^0.2.9",
-    "typescript": "Microsoft/TypeScript#2bcf84c73bfa21a69c7a0090d2f2f9be482dbe70"
+    "typescript": "mprobst/TypeScript#release"
   },
   "devDependencies": {
     "chai": "^2.1.1",

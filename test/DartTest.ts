@@ -28,6 +28,7 @@ describe('transpile to dart', () => {
     it('should print variable declaration', () => {
       expectTranslate('var a:number;').to.equal(' num a ;');
       expectTranslate('var a;').to.equal(' var a ;');
+      expectTranslate('var a:any;').to.equal(' dynamic a ;');
     });
     it('should transpile variable declaration lists',
        () => { expectTranslate('var a: number, b: string;').to.equal(' num a ; String b ;'); });

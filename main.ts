@@ -177,6 +177,9 @@ class Translator {
       case ts.SyntaxKind.BooleanKeyword:
         this.emit('bool');
         break;
+      case ts.SyntaxKind.AnyKeyword:
+        this.emit('dynamic');
+        break;
 
       case ts.SyntaxKind.ParenthesizedExpression:
         var parenExpr = <ts.ParenthesizedExpression>node;

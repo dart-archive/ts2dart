@@ -6,4 +6,10 @@ function main(): void {
     var mc = new MyClass("hello");
     t.expect(mc.getField().toUpperCase(), t.equals("HELLO WORLD"));
   });
+  t.test("string templates", function() {
+    t.expect("$mc", t.equals("$mc"));
+    var a = "hello";
+    var b = "world";
+    t.expect(`${a} ${b}`, t.equals("hello world"));
+  });
 }

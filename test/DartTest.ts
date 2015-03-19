@@ -174,6 +174,19 @@ describe('transpile to dart', () => {
       expectTranslate(`"hello\\" 'world"`).to.equal(` "hello\\" 'world" ;`);
     });
 
+    it('translates string templates', () => {
+      expectTranslate("`hello \nworld`").to.equal(" '''hello \nworld''' ;");
+      expectTranslate("`hello ${world}`").to.equal(" '''hello ${ world}''' ;");
+      expectTranslate("`${a}$b${$c}`").to.equal(" '''${ a}\\$b${ $c}''' ;");
+      // https://github.com/angular/angular/issues/509
+      expectTranslate('"${a}"').to.equal(' "\\${a}" ;');
+      expectTranslate('"\\${a}"').to.equal(' "\\${a}" ;');
+      expectTranslate("'\\${a}'").to.equal(' "\\${a}" ;');
+      expectTranslate("'$a'").to.equal(' "\\$a" ;');
+      expectTranslate("`$a`").to.equal(" '''\\$a''' ;");
+      expectTranslate("`\\$a`").to.equal(" '''\\$a''' ;");
+    });
+
     it('translates boolean literals', () => {
       expectTranslate('true').to.equal(' true ;');
       expectTranslate('false').to.equal(' false ;');
@@ -357,15 +370,12 @@ describe('transpile to dart', () => {
 
   describe('exports', () => {
     // Dart exports are implicit, everything non-private is exported by the library.
-    it('allows variable exports', () => {
-      expectTranslate('export var x = 12;').to.equal(' var x = 12 ;');
-    });
-    it('allows class exports', () => {
-      expectTranslate('export class X {}').to.equal(' class X { }');
-    });
-    it('allows export declarations', () => {
-      expectTranslate('export * from "X";').to.equal(' export "X" ;');
-    });
+    it('allows variable exports',
+       () => { expectTranslate('export var x = 12;').to.equal(' var x = 12 ;'); });
+    it('allows class exports',
+       () => { expectTranslate('export class X {}').to.equal(' class X { }'); });
+    it('allows export declarations',
+       () => { expectTranslate('export * from "X";').to.equal(' export "X" ;'); });
   });
 });
 

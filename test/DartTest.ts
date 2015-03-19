@@ -312,6 +312,20 @@ describe('transpile to dart', () => {
     it('translates "void"', () => {
       chai.expect(() => translateSource('void x;')).to.throw('void operator is unsupported');
     });
+    it('translates "super()" constructor calls', () => {
+      expectTranslate('class X { constructor() { super(1); } }')
+          .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');
+      chai.expect(() => translateSource('class X { constructor() { if (y) super(1, 2); } }'))
+          .to.throw('super calls must be immediate children of their constructors');
+      expectTranslate('class X { constructor() { a(); super(1); b(); } }')
+          .to.equal(' class X { X ( ) : super ( 1 ) {' +
+                    ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
+                    ' } }');
+    });
+    it('translates "super.x()" super method calls', () => {
+      expectTranslate('class X { y() { super.z(1); } }')
+          .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
+    });
   });
 
   describe('expressions', () => {

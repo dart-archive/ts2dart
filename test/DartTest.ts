@@ -194,6 +194,12 @@ describe('transpile to dart', () => {
       expectTranslate('[1,]').to.equal(' [ 1 ] ;');
       expectTranslate('[]').to.equal(' [ ] ;');
     });
+
+    it('translates object literals', () => {
+      expectTranslate('var x = {a: 1, b: 2}').to.equal(' var x = { a : 1 , b : 2 } ;\n');
+      expectTranslate('var x = {a: 1, }').to.equal(' var x = { a : 1 } ;\n');
+      expectTranslate('var x = {}').to.equal(' var x = { } ;\n');
+    });
   });
 
   describe('control structures', () => {

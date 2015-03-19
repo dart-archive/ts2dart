@@ -340,6 +340,9 @@ describe('transpile to dart', () => {
     it('allows class exports', () => {
       expectTranslate('export class X {}').to.equal(' class X { }');
     });
+    it('allows export declarations', () => {
+      expectTranslate('export * from "X";').to.equal(' export "X" ;');
+    });
   });
 });
 

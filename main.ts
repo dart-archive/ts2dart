@@ -504,6 +504,13 @@ class Translator {
         if (spec.propertyName) this.visit(spec.propertyName);
         this.visit(spec.name);
         break;
+      case ts.SyntaxKind.ExportDeclaration:
+        var exportDecl = <ts.ExportDeclaration>node;
+        this.emit('export');
+        this.visit(exportDecl.moduleSpecifier);
+        if (exportDecl.exportClause) this.visit(exportDecl.exportClause);
+        this.emit(';');
+        break;
       case ts.SyntaxKind.ImportEqualsDeclaration:
         var importEqDecl = <ts.ImportEqualsDeclaration>node;
         this.emit('import');

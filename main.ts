@@ -474,6 +474,11 @@ class Translator {
 
       case ts.SyntaxKind.EnumDeclaration:
         var decl = <ts.EnumDeclaration>node;
+        // The only legal modifier for an enum decl is const.
+        var isConst = decl.modifiers && (decl.modifiers.flags & ts.NodeFlags.Const);
+        if (isConst) {
+          this.reportError(node, 'const enums are not supported');
+        }
         this.emit('enum');
         this.visit(decl.name);
         this.emit('{');

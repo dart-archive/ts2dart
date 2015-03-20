@@ -170,6 +170,8 @@ describe('transpile to dart', () => {
       expectTranslate('function x(a = 42) { return 42; }')
           .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
     });
+    it('supports empty returns',
+       () => { expectTranslate('function x() { return; }').to.equal(' x ( ) { return ; }'); });
     it('supports named parameters', () => {
       expectTranslate('function x({a = "x", b}) { return a + b; }')
           .to.equal(' x ( { a : "x" , b } ) { return a + b ; }');
@@ -286,6 +288,9 @@ describe('transpile to dart', () => {
     });
     it('translates throw', () => {
       expectTranslate('throw new Error("oops")').to.equal(' throw new Error ( "oops" ) ;');
+    });
+    it('translates empty statements', () => {
+      expectTranslate(';').to.equal(' ;');
     });
   });
 

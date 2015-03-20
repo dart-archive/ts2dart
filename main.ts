@@ -699,9 +699,13 @@ class Translator {
         }
         break;
 
+      case ts.SyntaxKind.EmptyStatement:
+        this.emit(';');
+        break;
       case ts.SyntaxKind.ReturnStatement:
+        var retStmt = <ts.ReturnStatement>node;
         this.emit('return');
-        this.visit((<ts.ReturnStatement>node).expression);
+        if (retStmt.expression) this.visit(retStmt.expression);
         this.emit(';');
         break;
       case ts.SyntaxKind.ThrowStatement:

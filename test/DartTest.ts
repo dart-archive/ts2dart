@@ -320,6 +320,11 @@ describe('transpile to dart', () => {
     it('translates empty statements', () => {
       expectTranslate(';').to.equal(' ;');
     });
+    it('translates break & continue', () => {
+      expectTranslate('break;').to.equal(' break ;');
+      expectTranslate('continue;').to.equal(' continue ;');
+      expectTranslate('break foo ;').to.equal(' break foo ;');
+    });
   });
 
   describe('property expressions', () => {

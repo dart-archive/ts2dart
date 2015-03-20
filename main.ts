@@ -10,10 +10,12 @@ class Translator {
   // offset to avoid printing comments multiple times.
   lastCommentIdx: number = -1;
   currentFile: ts.SourceFile;
+  errors: string[] = [];
 
   translate(sourceFile: ts.SourceFile) {
     this.currentFile = sourceFile.getSourceFile();
     this.visit(sourceFile);
+    if (this.errors.length) throw new Error(this.errors.join('\n'));
     return this.result;
   }
 
@@ -140,7 +142,7 @@ class Translator {
     var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);
     // Line and character are 0-based.
-    throw new Error(`${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`);
+    this.errors.push(`${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`)
   }
 
   visit(node: ts.Node) {

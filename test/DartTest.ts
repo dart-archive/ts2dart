@@ -396,6 +396,15 @@ describe('transpile to dart', () => {
     it('allows export declarations',
        () => { expectTranslate('export * from "X";').to.equal(' export "X" ;'); });
   });
+
+  describe('errors', () => {
+    it('reports multiple errors', () => {
+      // Reports both the private field not having an underbar and protected being unsupported.
+      var errorLines = new RegExp('private members must be prefixed with "_"\n' +
+                                  '.*protected declarations are unsupported');
+      expectErroneousCode('class X { private y; protected z; } ').to.throw(errorLines);
+    });
+  });
 });
 
 export function translateSource(contents: string): string {

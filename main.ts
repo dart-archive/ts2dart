@@ -131,6 +131,10 @@ class Translator {
 
   visitDeclarationModifiers(decl: ts.Declaration) {
     this.visitEachIfPresent(decl.modifiers);
+
+    // Temporarily deactivated to make migration of Angular code base easier.
+    return;
+
     if (decl.modifiers && decl.modifiers.flags & ts.NodeFlags.Protected) {
       this.reportError(decl, 'protected declarations are unsupported');
       return;

@@ -77,14 +77,15 @@ describe('transpile to dart', () => {
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
       });
-      it('supports visibility modifiers', () => {
+      // TODO(martinprobst): Re-enable once Angular is migrated to TS.
+      it.skip('supports visibility modifiers', () => {
         expectTranslate('class X { private _x; x; }').to.equal(' class X { var _x ; var x ; }');
         expectErroneousCode('class X { private x; }')
             .to.throw('private members must be prefixed with "_"');
         expectErroneousCode('class X { _x; }')
             .to.throw('public members must not be prefixed with "_"');
       });
-      it('does not support protected', () => {
+      it.skip('does not support protected', () => {
         expectErroneousCode('class X { protected x; }')
             .to.throw('protected declarations are unsupported');
       });
@@ -407,9 +408,9 @@ describe('transpile to dart', () => {
   describe('errors', () => {
     it('reports multiple errors', () => {
       // Reports both the private field not having an underbar and protected being unsupported.
-      var errorLines = new RegExp('private members must be prefixed with "_"\n' +
-                                  '.*protected declarations are unsupported');
-      expectErroneousCode('class X { private y; protected z; } ').to.throw(errorLines);
+      var errorLines = new RegExp('delete operator is unsupported\n' +
+                                  '.*void operator is unsupported');
+      expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
   });
 });

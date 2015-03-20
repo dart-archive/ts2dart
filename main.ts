@@ -674,6 +674,9 @@ class Translator {
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
         if (paramDecl.initializer) this.emit('[');
         if (paramDecl.type) this.visit(paramDecl.type);
+        if (paramDecl.type && paramDecl.name.kind === ts.SyntaxKind.ObjectBindingPattern) {
+          this.reportError(paramDecl.type, 'types on named parameters are unsupported');
+        }
         this.visit(paramDecl.name);
         if (paramDecl.initializer) {
           this.emit('=');

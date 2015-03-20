@@ -173,6 +173,8 @@ describe('transpile to dart', () => {
     it('supports named parameters', () => {
       expectTranslate('function x({a = "x", b}) { return a + b; }')
           .to.equal(' x ( { a : "x" , b } ) { return a + b ; }');
+      chai.expect(() => translateSource('function x({a}: number) { return a + b; }'))
+          .to.throw('types on named parameters are unsupported');
     });
     it('hacks last object literal parameters into named parameter', () => {
       expectTranslate(' f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');

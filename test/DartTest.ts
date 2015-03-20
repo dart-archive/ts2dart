@@ -16,6 +16,10 @@ describe('transpile to dart', () => {
     return chai.expect(result);
   }
 
+  function expectErroneousCode(tsCode: string) {
+    return chai.expect(() => translateSource(tsCode));
+  }
+
   function expectTranslates(cases: any) {
     for (var tsCode in cases) {
       expectTranslate(tsCode).to.equal(cases[tsCode]);
@@ -72,6 +76,17 @@ describe('transpile to dart', () => {
       });
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
+      });
+      it('supports visibility modifiers', () => {
+        expectTranslate('class X { private _x; x; }').to.equal(' class X { var _x ; var x ; }');
+        expectErroneousCode('class X { private x; }')
+            .to.throw('private members must be prefixed with "_"');
+        expectErroneousCode('class X { _x; }')
+            .to.throw('public members must not be prefixed with "_"');
+      });
+      it('does not support protected', () => {
+        expectErroneousCode('class X { protected x; }')
+            .to.throw('protected declarations are unsupported');
       });
       it('supports static fields', () => {
         expectTranslate('class X { static x: number = 42; }')
@@ -131,17 +146,19 @@ describe('transpile to dart', () => {
       expectTranslate('enum Color { Red, Green, Blue }')
           .to.equal(' enum Color { Red , Green , Blue }');
     });
-    it('does not support empty enum', () => {
-      chai.expect(() => translateSource('enum Empty { }'))
-          .to.throw('empty enums are not supported');
-    });
+    it('does not support empty enum',
+       () => { expectErroneousCode('enum Empty { }').to.throw('empty enums are not supported'); });
     it('does not support enum with initializer', () => {
-      chai.expect(() => translateSource('enum Color { Red = 1, Green, Blue = 4 }'))
+      expectErroneousCode('enum Color { Red = 1, Green, Blue = 4 }')
           .to.throw('enum initializers are not supported');
     });
     it('should support switch over enum', () => {
       expectTranslate('switch(c) { case Color.Red: break; default: break; }')
           .to.equal(' switch ( c ) { case Color . Red : break ; default : break ; }');
+    });
+    it('does not support const enum', () => {
+      chai.expect(() => translateSource('const enum Color { Red }'))
+          .to.throw('const enums are not supported');
     });
   });
 
@@ -153,11 +170,11 @@ describe('transpile to dart', () => {
           .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
     });
     it('does not support var args', () => {
-      chai.expect(() => translateSource('function x(...a: number) { return 42; }'))
+      expectErroneousCode('function x(...a: number) { return 42; }')
           .to.throw('rest parameters are unsupported');
     });
     it('does not support generic functions', () => {
-      chai.expect(() => translateSource('function x<T>() { return 42; }'))
+      expectErroneousCode('function x<T>() { return 42; }')
           .to.throw('generic functions are unsupported');
     });
     it('translates calls', () => {
@@ -331,19 +348,16 @@ describe('transpile to dart', () => {
     it('translates "instanceof"',
        () => { expectTranslate('1 instanceof 2').to.equal(' 1 is 2 ;'); });
     it('translates "this"', () => { expectTranslate('this.x').to.equal(' this . x ;'); });
-    it('translates "delete"', () => {
-      chai.expect(() => translateSource('delete x[y];')).to.throw('delete operator is unsupported');
-    });
-    it('translates "typeof"', () => {
-      chai.expect(() => translateSource('typeof x;')).to.throw('typeof operator is unsupported');
-    });
-    it('translates "void"', () => {
-      chai.expect(() => translateSource('void x;')).to.throw('void operator is unsupported');
-    });
+    it('translates "delete"',
+       () => { expectErroneousCode('delete x[y];').to.throw('delete operator is unsupported'); });
+    it('translates "typeof"',
+       () => { expectErroneousCode('typeof x;').to.throw('typeof operator is unsupported'); });
+    it('translates "void"',
+       () => { expectErroneousCode('void x;').to.throw('void operator is unsupported'); });
     it('translates "super()" constructor calls', () => {
       expectTranslate('class X { constructor() { super(1); } }')
           .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');
-      chai.expect(() => translateSource('class X { constructor() { if (y) super(1, 2); } }'))
+      expectErroneousCode('class X { constructor() { if (y) super(1, 2); } }')
           .to.throw('super calls must be immediate children of their constructors');
       expectTranslate('class X { constructor() { a(); super(1); b(); } }')
           .to.equal(' class X { X ( ) : super ( 1 ) {' +
@@ -388,6 +402,15 @@ describe('transpile to dart', () => {
        () => { expectTranslate('export class X {}').to.equal(' class X { }'); });
     it('allows export declarations',
        () => { expectTranslate('export * from "X";').to.equal(' export "X" ;'); });
+  });
+
+  describe('errors', () => {
+    it('reports multiple errors', () => {
+      // Reports both the private field not having an underbar and protected being unsupported.
+      var errorLines = new RegExp('private members must be prefixed with "_"\n' +
+                                  '.*protected declarations are unsupported');
+      expectErroneousCode('class X { private y; protected z; } ').to.throw(errorLines);
+    });
   });
 });
 

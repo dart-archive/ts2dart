@@ -1,5 +1,5 @@
 class MyClass {
-  _field: string;
+  private _field: string;
 
   MyClass(someVal: string) { this._field = someVal; }
 

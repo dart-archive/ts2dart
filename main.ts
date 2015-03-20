@@ -100,7 +100,7 @@ class Translator {
   maybeEmitInitializerListForSuperCall(body: ts.Block) {
     if (!body || body.statements.length === 0) return;
 
-    var findSuperCalls = (stmt: ts.Statement) => {
+    body.statements.forEach((stmt: ts.Statement) => {
       if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) return;
       var nestedExpr = (<ts.ExpressionStatement>stmt).expression;
       if (nestedExpr.kind !== ts.SyntaxKind.CallExpression) return;
@@ -110,9 +110,7 @@ class Translator {
       this.emit(': super (');
       this.visitList(callExpr.arguments);
       this.emit(')');
-    };
-
-    body.statements.forEach(findSuperCalls);
+    });
   }
 
   /**
@@ -709,8 +707,8 @@ class Translator {
       default:
         this.reportError(node, `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
         break;
+    }
   }
-}
 }
 
 export function translateProgram(program: ts.Program): string {

@@ -26,6 +26,11 @@ describe('transpile to dart', () => {
     }
   }
 
+  describe('types', () => {
+    it('supports qualified names',
+       () => { expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
+  });
+
   describe('variables', () => {
     it('should print variable declaration with initializer',
        () => { expectTranslate('var a:number = 1;').to.equal(' num a = 1 ;'); });

@@ -520,6 +520,12 @@ class Translator {
         this.reportError(node, 'typeof operator is unsupported');
         break;
 
+      case ts.SyntaxKind.QualifiedName:
+        var first = <ts.QualifiedName>node;
+        this.visit(first.left);
+        this.emit('.');
+        this.visit(first.right);
+        break;
       case ts.SyntaxKind.Identifier:
         var ident = <ts.Identifier>node;
         this.emit(ident.text);

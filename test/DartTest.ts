@@ -16,6 +16,10 @@ describe('transpile to dart', () => {
     return chai.expect(result);
   }
 
+  function expectErroneousCode(tsCode: string) {
+    return chai.expect(() => translateSource(tsCode));
+  }
+
   function expectTranslates(cases: any) {
     for (var tsCode in cases) {
       expectTranslate(tsCode).to.equal(cases[tsCode]);
@@ -72,6 +76,17 @@ describe('transpile to dart', () => {
       });
       it('supports field initializers', () => {
         expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
+      });
+      it('supports visibility modifiers', () => {
+        expectTranslate('class X { private _x; x; }').to.equal(' class X { var _x ; var x ; }');
+        expectErroneousCode('class X { private x; }')
+            .to.throw('private members must be prefixed with "_"');
+        expectErroneousCode('class X { _x; }')
+            .to.throw('public members must not be prefixed with "_"');
+      });
+      it('does not support protected', () => {
+        expectErroneousCode('class X { protected x; }')
+            .to.throw('protected declarations are unsupported');
       });
       it('supports static fields', () => {
         expectTranslate('class X { static x: number = 42; }')

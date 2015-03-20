@@ -15,7 +15,11 @@ class Translator {
   translate(sourceFile: ts.SourceFile) {
     this.currentFile = sourceFile.getSourceFile();
     this.visit(sourceFile);
-    if (this.errors.length) throw new Error(this.errors.join('\n'));
+    if (this.errors.length) {
+      var e = new Error(this.errors.join('\n'));
+      e.name = 'TS2DartError';
+      throw e;
+    }
     return this.result;
   }
 

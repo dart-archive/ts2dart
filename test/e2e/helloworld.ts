@@ -5,6 +5,8 @@ function main(): void {
   t.test("handles classes", function() {
     var mc = new MyClass("hello");
     t.expect(mc.field.toUpperCase(), t.equals("HELLO WORLD"));
+    t.expect(mc.namedParam({x: '!'}), t.equals("hello!"));
+    t.expect(mc.namedParam(), t.equals("hello?"));
   });
   t.test("string templates", function() {
     t.expect("$mc", t.equals("$mc"));

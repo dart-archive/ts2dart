@@ -13,4 +13,8 @@ class MyClass {
       return "error";
     }
   }
+
+  namedParam({x = "?"}) {
+    return 'hello' + x;
+  }
 }

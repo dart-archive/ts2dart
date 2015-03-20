@@ -389,7 +389,14 @@ class Translator {
         break;
       case ts.SyntaxKind.PropertyAssignment:
         var propAssign = <ts.PropertyAssignment>node;
-        this.visit(propAssign.name);
+        if (propAssign.name.kind === ts.SyntaxKind.Identifier) {
+          // Dart identifiers in Map literals need quoting.
+          this.result += ' "';
+          this.result += (<ts.Identifier>propAssign.name).text;
+          this.result += '"';
+        } else {
+          this.visit(propAssign.name);
+        }
         this.emit(':');
         this.visit(propAssign.initializer);
         break;

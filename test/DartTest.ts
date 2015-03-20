@@ -238,8 +238,8 @@ describe('transpile to dart', () => {
     });
 
     it('translates object literals', () => {
-      expectTranslate('var x = {a: 1, b: 2}').to.equal(' var x = { a : 1 , b : 2 } ;');
-      expectTranslate('var x = {a: 1, }').to.equal(' var x = { a : 1 } ;');
+      expectTranslate('var x = {a: 1, b: 2}').to.equal(' var x = { "a" : 1 , "b" : 2 } ;');
+      expectTranslate('var x = {a: 1, }').to.equal(' var x = { "a" : 1 } ;');
       expectTranslate('var x = {}').to.equal(' var x = { } ;');
     });
   });

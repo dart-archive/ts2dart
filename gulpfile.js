@@ -113,5 +113,6 @@ gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);
 
 gulp.task('watch', ['test.unit'], function() {
   failOnError = false;
-  return gulp.watch('**/*.ts', ['test.unit']);
+  // Avoid watching generated .d.ts in the release (aka output) directory.
+  return gulp.watch(['*.ts', 'test/**/*.ts'], {ignoreInitial: true}, ['test.unit']);
 });

@@ -402,6 +402,9 @@ describe('transpile to dart', () => {
     it('translates import from statements', () => {
       expectTranslate('import {x,y} from "z";').to.equal(' import "package:z.dart" show x , y ;');
     });
+    it('translates import star', () => {
+      expectTranslate('import * as foo from "z";').to.equal(' import "package:z.dart" as foo ;');
+    });
     it('allows import dart file from relative path', () => {
       expectTranslate('import x = require("./y")').to.equal(' import "./y.dart" as x ;');
       expectTranslate('import {x} from "./y"').to.equal(' import "./y.dart" show x ;');
@@ -416,6 +419,8 @@ describe('transpile to dart', () => {
        () => { expectTranslate('export class X {}').to.equal(' class X { }'); });
     it('allows export declarations',
        () => { expectTranslate('export * from "X";').to.equal(' export "X" ;'); });
+    it('allows named export declarations',
+       () => { expectTranslate('export {a, b} from "X";').to.equal(' export "X" show a , b ;'); });
   });
 
   describe('errors', () => {

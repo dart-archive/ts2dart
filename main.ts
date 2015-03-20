@@ -721,7 +721,6 @@ class Translator {
         this.emit('import');
         this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
         if (importDecl.importClause) {
-          this.emit('show');
           this.visit(importDecl.importClause);
         } else {
           this.reportError(importDecl, 'bare import is unsupported');
@@ -731,10 +730,18 @@ class Translator {
       case ts.SyntaxKind.ImportClause:
         var importClause = <ts.ImportClause>node;
         if (importClause.name) this.visit(importClause.name);
-        if (importClause.namedBindings) this.visit(importClause.namedBindings);
+        if (importClause.namedBindings) {
+          this.visit(importClause.namedBindings);
+        }
+        break;
+      case ts.SyntaxKind.NamespaceImport:
+        var nsImport = <ts.NamespaceImport>node;
+        this.emit('as');
+        this.visit(nsImport.name);
         break;
       case ts.SyntaxKind.NamedImports:
       case ts.SyntaxKind.NamedExports:
+        this.emit('show');
         this.visitList((<ts.NamedImportsOrExports>node).elements);
         break;
       case ts.SyntaxKind.ImportSpecifier:

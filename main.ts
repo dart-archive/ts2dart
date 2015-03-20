@@ -117,6 +117,24 @@ class Translator {
     return true;
   }
 
+  visitDeclarationModifiers(decl: ts.Declaration) {
+    this.visitEachIfPresent(decl.modifiers);
+    if (decl.modifiers && decl.modifiers.flags & ts.NodeFlags.Protected) {
+      this.reportError(decl, 'protected declarations are unsupported');
+      return;
+    }
+    if (!decl.name || decl.name.kind !== ts.SyntaxKind.Identifier) return;
+    var name = (<ts.Identifier>decl.name).text;
+    var isPrivate = decl.modifiers && decl.modifiers.flags & ts.NodeFlags.Private;
+    var matchesPrivate = !!name.match(/^_/);
+    if (isPrivate && !matchesPrivate) {
+      this.reportError(decl, 'private members must be prefixed with "_"');
+    }
+    if (!isPrivate && matchesPrivate) {
+      this.reportError(decl, 'public members must not be prefixed with "_"');
+    }
+  }
+
   reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile() || this.currentFile;
     var start = n.getStart(file);
@@ -375,6 +393,12 @@ class Translator {
       case ts.SyntaxKind.StaticKeyword:
         this.emit('static');
         break;
+      case ts.SyntaxKind.PrivateKeyword:
+        // no-op, handled through '_' naming convention in Dart.
+        break;
+      case ts.SyntaxKind.ProtectedKeyword:
+        // Error - handled in `visitDeclarationModifiers` above.
+        break;
 
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
@@ -521,15 +545,16 @@ class Translator {
           }
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
+
+        this.visitDeclarationModifiers(ctorDecl);
         this.visit(className);
         this.visitParameters(ctorDecl);
         this.maybeEmitInitializerListForSuperCall(ctorDecl.body);
         this.visit(ctorDecl.body);
         break;
-
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        this.visitEachIfPresent(node.modifiers);
+        this.visitDeclarationModifiers(propertyDecl);
         if (propertyDecl.type) {
           this.visit(propertyDecl.type);
         } else {
@@ -542,14 +567,13 @@ class Translator {
         }
         this.emit(';');
         break;
-
       case ts.SyntaxKind.MethodDeclaration:
         var methodDecl = <ts.MethodDeclaration>node;
+        this.visitDeclarationModifiers(methodDecl);
         if (methodDecl.type) this.visit(methodDecl.type);
         this.visit(methodDecl.name);
         this.visitFunctionLike(methodDecl);
         break;
-
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
         if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
@@ -557,6 +581,7 @@ class Translator {
         this.visit(funcDecl.name);
         this.visitFunctionLike(funcDecl);
         break;
+
       case ts.SyntaxKind.ArrowFunction:
         var arrowFunc = <ts.FunctionExpression>node;
         // Dart only allows expressions following the fat arrow operator.

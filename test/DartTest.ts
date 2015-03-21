@@ -165,7 +165,7 @@ describe('transpile to dart', () => {
           .to.equal(' switch ( c ) { case Color . Red : break ; default : break ; }');
     });
     it('does not support const enum', () => {
-      chai.expect(() => translateSource('const enum Color { Red }'))
+      expectErroneousCode('const enum Color { Red }')
           .to.throw('const enums are not supported');
     });
   });

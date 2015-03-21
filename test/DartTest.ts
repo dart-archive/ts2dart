@@ -170,6 +170,24 @@ describe('transpile to dart', () => {
     });
   });
 
+  describe('decorators', () => {
+    it('translates plain decorators', () => {
+      expectTranslate('@A class X {}').to.equal(' @ A class X { }');
+    });
+    it('translates arguments', () => {
+      expectTranslate('@A(a, b) class X {}').to.equal(' @ A ( a , b ) class X { }');
+    });
+    it('translates on functions', () => {
+      expectTranslate('@A function f() {}').to.equal(' @ A f ( ) { }');
+    });
+    it('translates on properties', () => {
+      expectTranslate('class X { @A p; }').to.equal(' class X { @ A var p ; }');
+    });
+    it('translates on parameters', () => {
+      expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }');
+    });
+  });
+
   describe('functions', () => {
     it('supports declarations',
        () => { expectTranslate('function x() {}').to.equal(' x ( ) { }'); });

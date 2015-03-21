@@ -66,7 +66,9 @@ class Translator {
     }
   }
 
-  visitClassLike(decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
+  visitClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
+    this.visitEachIfPresent(decl.decorators);
+    this.emit(keyword);
     this.visit(decl.name);
     if (decl.typeParameters) {
       this.emit('<');
@@ -165,7 +167,8 @@ class Translator {
     return true;
   }
 
-  visitDeclarationModifiers(decl: ts.Declaration) {
+  visitDeclarationMetadata(decl: ts.Declaration) {
+    this.visitEachIfPresent(decl.decorators);
     this.visitEachIfPresent(decl.modifiers);
 
     // Temporarily deactivated to make migration of Angular code base easier.
@@ -563,16 +566,22 @@ class Translator {
         }
         break;
 
+      // Decorators
+      case ts.SyntaxKind.Decorator:
+        var dec = <ts.Decorator>node;
+        this.emit('@');
+        this.visit(dec.expression);
+        break;
+
+      // Classes & Interfaces
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
-        this.emit('class');
-        this.visitClassLike(classDecl);
+        this.visitClassLike('class', classDecl);
         break;
 
       case ts.SyntaxKind.InterfaceDeclaration:
         var ifDecl = <ts.InterfaceDeclaration>node;
-        this.emit('abstract class');
-        this.visitClassLike(ifDecl);
+        this.visitClassLike('abstract class', ifDecl);
         break;
 
       case ts.SyntaxKind.EnumDeclaration:
@@ -625,7 +634,7 @@ class Translator {
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
 
-        this.visitDeclarationModifiers(ctorDecl);
+        this.visitDeclarationMetadata(ctorDecl);
         this.visit(className);
         this.visitParameters(ctorDecl);
         this.maybeEmitInitializerListForSuperCall(ctorDecl.body);
@@ -633,7 +642,7 @@ class Translator {
         break;
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
-        this.visitDeclarationModifiers(propertyDecl);
+        this.visitDeclarationMetadata(propertyDecl);
         if (propertyDecl.type) {
           this.visit(propertyDecl.type);
         } else {
@@ -647,7 +656,7 @@ class Translator {
         this.emit(';');
         break;
       case ts.SyntaxKind.MethodDeclaration:
-        this.visitDeclarationModifiers(<ts.MethodDeclaration>node);
+        this.visitDeclarationMetadata(<ts.MethodDeclaration>node);
         this.visitFunctionLike(<ts.MethodDeclaration>node);
         break;
       case ts.SyntaxKind.GetAccessor:
@@ -658,6 +667,7 @@ class Translator {
         break;
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
+        this.visitEachIfPresent(funcDecl.decorators);
         if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
         this.visitFunctionLike(funcDecl);
         break;
@@ -693,6 +703,7 @@ class Translator {
         var paramDecl = <ts.ParameterDeclaration>node;
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
         if (paramDecl.initializer) this.emit('[');
+        this.visitEachIfPresent(paramDecl.decorators);
         if (paramDecl.type) {
           if (paramDecl.name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
             this.visit(paramDecl.type);

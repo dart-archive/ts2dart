@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "source-map-support": "^0.2.9",
-    "typescript": "mprobst/TypeScript#release"
+    "typescript": "mprobst/TypeScript#decorators_min"
   },
   "devDependencies": {
     "chai": "^2.1.1",

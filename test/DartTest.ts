@@ -163,7 +163,7 @@ describe('transpile to dart', () => {
           .to.equal(' switch ( c ) { case Color . Red : break ; default : break ; }');
     });
     it('does not support const enum', () => {
-      chai.expect(() => translateSource('const enum Color { Red }'))
+      expectErroneousCode('const enum Color { Red }')
           .to.throw('const enums are not supported');
     });
   });
@@ -180,7 +180,7 @@ describe('transpile to dart', () => {
     it('supports named parameters', () => {
       expectTranslate('function x({a = "x", b}) { return a + b; }')
           .to.equal(' x ( { a : "x" , b } ) { return a + b ; }');
-      chai.expect(() => translateSource('function x({a}: number) { return a + b; }'))
+      expectErroneousCode('function x({a}: number) { return a + b; }')
           .to.throw('types on named parameters are unsupported');
     });
     it('hacks last object literal parameters into named parameter', () => {

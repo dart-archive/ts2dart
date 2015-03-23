@@ -484,13 +484,23 @@ class Translator {
         break;
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
-        this.visit(binExpr.left);
-        if (binExpr.operatorToken.kind == ts.SyntaxKind.InstanceOfKeyword) {
-          this.emit('is');
+        var operatorKind = binExpr.operatorToken.kind;
+        if (operatorKind === ts.SyntaxKind.EqualsEqualsEqualsToken || operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) {
+          if (operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) this.emit('!');
+          this.emit('identical (');
+          this.visit(binExpr.left);
+          this.emit(',');
+          this.visit(binExpr.right);
+          this.emit(')');
         } else {
-          this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+          this.visit(binExpr.left);
+          if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
+            this.emit('is');
+          } else {
+            this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+          }
+          this.visit(binExpr.right);
         }
-        this.visit(binExpr.right);
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:
         var prefixUnary = <ts.PrefixUnaryExpression>node;

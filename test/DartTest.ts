@@ -339,14 +339,16 @@ describe('transpile to dart', () => {
     it('compares', () => {
       expectTranslates({
         '1 == 2': ' 1 == 2 ;',
-        '1 === 2': ' 1 === 2 ;',
         '1 != 2': ' 1 != 2 ;',
-        '1 !== 2': ' 1 !== 2 ;',
         '1 > 2': ' 1 > 2 ;',
         '1 < 2': ' 1 < 2 ;',
         '1 >= 2': ' 1 >= 2 ;',
         '1 <= 2': ' 1 <= 2 ;',
       });
+    });
+    it('compares identity', () => {
+      expectTranslate('1 === 2').to.equal(' identical ( 1 , 2 ) ;');
+      expectTranslate('1 !== 2').to.equal(' ! identical ( 1 , 2 ) ;');
     });
     it('bit fiddles', () => {
       expectTranslates({

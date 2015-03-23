@@ -458,7 +458,6 @@ class Translator {
       case ts.SyntaxKind.ProtectedKeyword:
         // Error - handled in `visitDeclarationModifiers` above.
         break;
-
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
         this.visit(propAccess.expression);
@@ -539,6 +538,11 @@ class Translator {
       case ts.SyntaxKind.Identifier:
         var ident = <ts.Identifier>node;
         this.emit(ident.text);
+        break;
+
+      case ts.SyntaxKind.TypeLiteral:
+        // Dart doesn't support type literals.
+        this.emit('dynamic');
         break;
 
       case ts.SyntaxKind.TypeReference:

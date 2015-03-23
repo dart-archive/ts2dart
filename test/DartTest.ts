@@ -29,6 +29,8 @@ describe('transpile to dart', () => {
   describe('types', () => {
     it('supports qualified names',
        () => { expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
+    it('drops type literals',
+       () => { expectTranslate('var x: {x: string, y: number};').to.equal(' dynamic x ;'); });
   });
 
   describe('variables', () => {

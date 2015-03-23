@@ -116,3 +116,5 @@ gulp.task('watch', ['test.unit'], function() {
   // Avoid watching generated .d.ts in the release (aka output) directory.
   return gulp.watch(['*.ts', 'test/**/*.ts'], {ignoreInitial: true}, ['test.unit']);
 });
+
+gulp.task('default', ['compile']);

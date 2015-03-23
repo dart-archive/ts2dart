@@ -344,9 +344,6 @@ class Translator {
         this.emit(') ;');
         break;
 
-      case ts.SyntaxKind.BreakStatement:
-        this.emit('break ;');
-        break;
       case ts.SyntaxKind.TryStatement:
         var tryStmt = <ts.TryStatement>node;
         this.emit('try');
@@ -741,6 +738,13 @@ class Translator {
         var retStmt = <ts.ReturnStatement>node;
         this.emit('return');
         if (retStmt.expression) this.visit(retStmt.expression);
+        this.emit(';');
+        break;
+      case ts.SyntaxKind.BreakStatement:
+      case ts.SyntaxKind.ContinueStatement:
+        var breakContinue = <ts.BreakOrContinueStatement>node;
+        this.emit(breakContinue.kind == ts.SyntaxKind.BreakStatement ? 'break' : 'continue');
+        if (breakContinue.label) this.visit(breakContinue.label);
         this.emit(';');
         break;
       case ts.SyntaxKind.ThrowStatement:

@@ -117,8 +117,7 @@ describe('transpile to dart', () => {
             .to.equal(' class X { x ( num a , String b ) { return 42 ; } }');
       });
       it('supports get methods', () => {
-        expectTranslate('class X { get y(): number {} }')
-            .to.equal(' class X { num get y { } }');
+        expectTranslate('class X { get y(): number {} }').to.equal(' class X { num get y { } }');
       });
       it('supports set methods', () => {
         expectTranslate('class X { set y(n: number) {} }')
@@ -165,27 +164,21 @@ describe('transpile to dart', () => {
           .to.equal(' switch ( c ) { case Color . Red : break ; default : break ; }');
     });
     it('does not support const enum', () => {
-      expectErroneousCode('const enum Color { Red }')
-          .to.throw('const enums are not supported');
+      expectErroneousCode('const enum Color { Red }').to.throw('const enums are not supported');
     });
   });
 
   describe('decorators', () => {
-    it('translates plain decorators', () => {
-      expectTranslate('@A class X {}').to.equal(' @ A class X { }');
-    });
-    it('translates arguments', () => {
-      expectTranslate('@A(a, b) class X {}').to.equal(' @ A ( a , b ) class X { }');
-    });
-    it('translates on functions', () => {
-      expectTranslate('@A function f() {}').to.equal(' @ A f ( ) { }');
-    });
-    it('translates on properties', () => {
-      expectTranslate('class X { @A p; }').to.equal(' class X { @ A var p ; }');
-    });
-    it('translates on parameters', () => {
-      expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }');
-    });
+    it('translates plain decorators',
+       () => { expectTranslate('@A class X {}').to.equal(' @ A class X { }'); });
+    it('translates arguments',
+       () => { expectTranslate('@A(a, b) class X {}').to.equal(' @ A ( a , b ) class X { }'); });
+    it('translates on functions',
+       () => { expectTranslate('@A function f() {}').to.equal(' @ A f ( ) { }'); });
+    it('translates on properties',
+       () => { expectTranslate('class X { @A p; }').to.equal(' class X { @ A var p ; }'); });
+    it('translates on parameters',
+       () => { expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }'); });
   });
 
   describe('functions', () => {
@@ -311,15 +304,15 @@ describe('transpile to dart', () => {
       expectTranslate('if (x) 1; else 2;').to.equal(' if ( x ) 1 ; else 2 ;');
     });
     it('translates try/catch', () => {
-      expectTranslate('try {} catch(e) {} finally {}').to.equal(' try { } catch ( e ) { } finally { }');
-      expectTranslate('try {} catch(e: MyException) {}').to.equal(' try { } on MyException catch ( e ) { }');
+      expectTranslate('try {} catch(e) {} finally {}')
+          .to.equal(' try { } catch ( e ) { } finally { }');
+      expectTranslate('try {} catch(e: MyException) {}')
+          .to.equal(' try { } on MyException catch ( e ) { }');
     });
     it('translates throw', () => {
       expectTranslate('throw new Error("oops")').to.equal(' throw new Error ( "oops" ) ;');
     });
-    it('translates empty statements', () => {
-      expectTranslate(';').to.equal(' ;');
-    });
+    it('translates empty statements', () => { expectTranslate(';').to.equal(' ;'); });
     it('translates break & continue', () => {
       expectTranslate('break;').to.equal(' break ;');
       expectTranslate('continue;').to.equal(' continue ;');

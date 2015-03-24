@@ -199,8 +199,10 @@ describe('transpile to dart', () => {
     it('supports declarations',
        () => { expectTranslate('function x() {}').to.equal(' x ( ) { }'); });
     it('supports param default values', () => {
-      expectTranslate('function x(a = 42) { return 42; }')
-          .to.equal(' x ( [ a = 42 ] ) { return 42 ; }');
+      expectTranslate('function x(a = 42, b = 1) { return 42; }')
+          .to.equal(' x ( [ a = 42 , b = 1 ] ) { return 42 ; }');
+      expectTranslate('function x(p1, a = 42, b = 1, p2) { return 42; }')
+          .to.equal(' x ( p1 , [ a = 42 , b = 1 , p2 ] ) { return 42 ; }');
     });
     it('supports empty returns',
        () => { expectTranslate('function x() { return; }').to.equal(' x ( ) { return ; }'); });

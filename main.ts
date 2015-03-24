@@ -122,6 +122,21 @@ class Translator {
     return true;
   }
 
+  visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
+    this.visitEachIfPresent(paramDecl.decorators);
+    if (paramDecl.type) {
+      // TODO(martinprobst): These are currently silently ignored.
+      // this.reportError(paramDecl.type, 'types on named parameters are unsupported');
+    }
+    this.visit(paramDecl.name);
+    if (paramDecl.initializer) {
+      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression
+        || (<ts.ObjectLiteralExpression>paramDecl.initializer).properties.length > 0) {
+        this.reportError(paramDecl, 'initializers for named parameters must be empty object literals');
+      }
+    }
+  }
+
   visitExternalModuleReferenceExpr(expr: ts.Expression) {
     // TODO: what if this isn't a string literal?
     var moduleName = <ts.StringLiteralExpression>expr;
@@ -698,16 +713,13 @@ class Translator {
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration>node;
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
+        if (paramDecl.name.kind === ts.SyntaxKind.ObjectBindingPattern) {
+          this.visitNamedParameter(paramDecl);
+          break;
+        }
         if (paramDecl.initializer) this.emit('[');
         this.visitEachIfPresent(paramDecl.decorators);
-        if (paramDecl.type) {
-          if (paramDecl.name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
-            this.visit(paramDecl.type);
-          } else {
-            // TODO(martinprobst): These are currently silently ignored.
-            // this.reportError(paramDecl.type, 'types on named parameters are unsupported');
-          }
-        }
+        if (paramDecl.type) this.visit(paramDecl.type);
         this.visit(paramDecl.name);
         if (paramDecl.initializer) {
           this.emit('=');

@@ -14,7 +14,5 @@ class MyClass {
     }
   }
 
-  namedParam({x = "?"}) {
-    return 'hello' + x;
-  }
+  namedParam({x = "?"}) { return 'hello' + x; }
 }

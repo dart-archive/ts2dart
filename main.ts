@@ -30,7 +30,7 @@ class Translator {
 
   visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 
-  visitEachIfPresent(nodes?: ts.Node[]) {
+  visitEachIfPresent(nodes ?: ts.Node[]) {
     if (nodes) this.visitEach(nodes);
   }
 
@@ -47,7 +47,7 @@ class Translator {
     this.emit(')');
   }
 
-  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor?: string) {
+  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor ?: string) {
     if (fn.type) this.visit(fn.type);
     if (accessor) this.emit(accessor);
     if (fn.name) this.visit(fn.name);
@@ -356,18 +356,18 @@ class Translator {
           this.visit(tryStmt.finallyBlock);
         }
         break;
-       case ts.SyntaxKind.CatchClause:
-         var ctch = <ts.CatchClause>node;
-         if (ctch.variableDeclaration.type) {
-           this.emit('on');
-           this.visit(ctch.variableDeclaration.type);
-         }
-         this.emit('catch');
-         this.emit('(');
-         this.visit(ctch.variableDeclaration.name);
-         this.emit(')');
-         this.visit(ctch.block);
-         break;
+      case ts.SyntaxKind.CatchClause:
+        var ctch = <ts.CatchClause>node;
+        if (ctch.variableDeclaration.type) {
+          this.emit('on');
+          this.visit(ctch.variableDeclaration.type);
+        }
+        this.emit('catch');
+        this.emit('(');
+        this.visit(ctch.variableDeclaration.name);
+        this.emit(')');
+        this.visit(ctch.block);
+        break;
 
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
@@ -398,16 +398,15 @@ class Translator {
         this.emit(`'''${(<ts.StringLiteralExpression>node).text}`); //highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateTail:
-        this.result += `${
-        (<ts.StringLiteralExpression>node).text}'''`; //highlighting bug:'
+        this.result += `${(<ts.StringLiteralExpression>node).text}'''`; //highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateSpan:
         var span = <ts.TemplateSpan>node;
         if (span.expression) {
-        // Do not emit extra whitespace inside the string template
-        this.result += '${';
-        this.visit(span.expression);
-        this.result += '}';
+          // Do not emit extra whitespace inside the string template
+          this.result += '${';
+          this.visit(span.expression);
+          this.result += '}';
         }
         if (span.literal) this.visit(span.literal);
         break;

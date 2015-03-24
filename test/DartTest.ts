@@ -41,8 +41,22 @@ describe('transpile to dart', () => {
       expectTranslate('var a;').to.equal(' var a ;');
       expectTranslate('var a:any;').to.equal(' dynamic a ;');
     });
-    it('should transpile variable declaration lists',
-       () => { expectTranslate('var a: number, b: string;').to.equal(' num a ; String b ;'); });
+    it('should transpile variable declaration lists', () => {
+      expectTranslate('var a: A;').to.equal(' A a ;');
+      expectTranslate('var a, b;').to.equal(' var a , b ;');
+    });
+    it('should transpile variable declaration lists with initializers', () => {
+      expectTranslate('var a = 0;').to.equal(' var a = 0 ;');
+      expectTranslate('var a, b = 0;').to.equal(' var a , b = 0 ;');
+      expectTranslate('var a = 1, b = 0;').to.equal(' var a = 1 , b = 0 ;');
+    });
+    it('does not support declaration lists containing more than one type (implicit or explicit)', () => {
+      var msg = 'Variables in a declaration list of more than one variable cannot by typed';
+      expectErroneousCode('var a: A, untyped;').to.throw(msg);
+      expectErroneousCode('var untyped, b: B;').to.throw(msg);
+      expectErroneousCode('var n: number, s: string;').to.throw(msg);
+      expectErroneousCode('var untyped, n: number, s: string;').to.throw(msg);
+    });
   });
 
   describe('classes', () => {
@@ -298,6 +312,8 @@ describe('transpile to dart', () => {
     it('translates for loops', () => {
       expectTranslate('for (1; 2; 3) { 4 }').to.equal(' for ( 1 ; 2 ; 3 ) { 4 ; }');
       expectTranslate('for (var x = 1; 2; 3) { 4 }').to.equal(' for ( var x = 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x, y = 1; 2; 3) { 4 }').to.equal(' for ( var x , y = 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x = 0, y = 1; 2; 3) { 4 }').to.equal(' for ( var x = 0 , y = 1 ; 2 ; 3 ) { 4 ; }');
     });
     it('translates for-in loops', () => {
       expectTranslate('for (var x in 1) { 2 }').to.equal(' for ( var x in 1 ) { 2 ; }');

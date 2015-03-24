@@ -199,12 +199,20 @@ describe('transpile to dart', () => {
       expectErroneousCode('function x({a}: number) { return a + b; }')
           .to.throw('types on named parameters are unsupported');
     });
+    it('translates destructuring parameters', () => {
+      expectTranslate('function x({p = null, d = false} = {}) {}')
+          .to.equal(' x ( { p : null , d : false } ) { }');
+      expectErroneousCode('function x({a=false}={a:true})')
+          .to.throw('initializers for named parameters must be empty object literals');
+      expectErroneousCode('function x({a=false}=true)')
+          .to.throw('initializers for named parameters must be empty object literals');
+    });
     it('hacks last object literal parameters into named parameter', () => {
-      expectTranslate(' f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');
-      expectTranslate(' f({a: 12});').to.equal(' f ( a : 12 ) ;');
-      expectTranslate(' f({"a": 12});').to.equal(' f ( { "a" : 12 } ) ;');
-      expectTranslate(' new X(x, {a: 12, b: 4});').to.equal(' new X ( x , a : 12 , b : 4 ) ;');
-      expectTranslate(' f(x, {});').to.equal(' f ( x , { } ) ;');
+      expectTranslate('f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');
+      expectTranslate('f({a: 12});').to.equal(' f ( a : 12 ) ;');
+      expectTranslate('f({"a": 12});').to.equal(' f ( { "a" : 12 } ) ;');
+      expectTranslate('new X(x, {a: 12, b: 4});').to.equal(' new X ( x , a : 12 , b : 4 ) ;');
+      expectTranslate('f(x, {});').to.equal(' f ( x , { } ) ;');
     });
     it('does not support var args', () => {
       expectErroneousCode('function x(...a: number) { return 42; }')

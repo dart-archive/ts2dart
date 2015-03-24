@@ -190,6 +190,10 @@ class Translator {
     }
   }
 
+  escapeTextForTemplateString(n: ts.Node): string {
+    return (<ts.StringLiteralExpression>n).text.replace(/([\$'])/g, '\\$1');
+  }
+    
   reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile() || this.currentFile;
     var start = n.getStart(file);
@@ -382,12 +386,10 @@ class Translator {
         this.emit(text);
         break;
       case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
-        var text = (<ts.StringLiteralExpression>node).text.replace(/\$/, '\\$');
-        this.emit(`'''${text}'''`);
+        this.emit(`'''${this.escapeTextForTemplateString(node)}'''`);
         break;
       case ts.SyntaxKind.TemplateMiddle:
-        var text = (<ts.StringLiteralExpression>node).text.replace(/\$/, '\\$');
-        this.result += text;
+        this.result += this.escapeTextForTemplateString(node);
         break;
       case ts.SyntaxKind.TemplateExpression:
         var tmpl = <ts.TemplateExpression>node;
@@ -395,10 +397,10 @@ class Translator {
         if (tmpl.templateSpans) this.visitEach(tmpl.templateSpans);
         break;
       case ts.SyntaxKind.TemplateHead:
-        this.emit(`'''${(<ts.StringLiteralExpression>node).text}`); //highlighting bug:'
+        this.emit(`'''${this.escapeTextForTemplateString(node)}`); //highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateTail:
-        this.result += `${(<ts.StringLiteralExpression>node).text}'''`; //highlighting bug:'
+        this.result += `${this.escapeTextForTemplateString(node)}'''`; //highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateSpan:
         var span = <ts.TemplateSpan>node;

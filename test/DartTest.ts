@@ -240,6 +240,8 @@ describe('transpile to dart', () => {
       expectTranslate("`hello \nworld`").to.equal(" '''hello \nworld''' ;");
       expectTranslate("`hello ${world}`").to.equal(" '''hello ${ world}''' ;");
       expectTranslate("`${a}$b${$c}`").to.equal(" '''${ a}\\$b${ $c}''' ;");
+      expectTranslate("`'${a}'`").to.equal(" '''\\'${ a}\\'''' ;");
+      expectTranslate("`'a'`").to.equal(" '''\\'a\\'''' ;");
       // https://github.com/angular/angular/issues/509
       expectTranslate('"${a}"').to.equal(' "\\${a}" ;');
       expectTranslate('"\\${a}"').to.equal(' "\\${a}" ;');

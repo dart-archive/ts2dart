@@ -43,7 +43,28 @@ class Translator {
 
   visitParameters(fn: ts.FunctionLikeDeclaration) {
     this.emit('(');
-    this.visitList(fn.parameters);
+    let i;
+    for (i = 0; i < fn.parameters.length; i++) {
+      // ObjectBindingPatterns are handled within the parameter visit.
+      if (fn.parameters[i].initializer &&
+          fn.parameters[i].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
+        break;
+      }
+    }
+
+    if (i !== 0) {
+      var requiredParams = fn.parameters.slice(0, i);
+      this.visitList(requiredParams);
+    }
+
+    if (i !== fn.parameters.length) {
+      if (i !== 0) this.emit(',');
+      var positionalOptional = fn.parameters.slice(i, fn.parameters.length);
+      this.emit('[');
+      this.visitList(positionalOptional);
+      this.emit(']');
+    }
+
     this.emit(')');
   }
 
@@ -130,9 +151,10 @@ class Translator {
     }
     this.visit(paramDecl.name);
     if (paramDecl.initializer) {
-      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression
-        || (<ts.ObjectLiteralExpression>paramDecl.initializer).properties.length > 0) {
-        this.reportError(paramDecl, 'initializers for named parameters must be empty object literals');
+      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression ||
+          (<ts.ObjectLiteralExpression>paramDecl.initializer).properties.length > 0) {
+        this.reportError(paramDecl,
+                         'initializers for named parameters must be empty object literals');
       }
     }
   }
@@ -742,14 +764,12 @@ class Translator {
           this.visitNamedParameter(paramDecl);
           break;
         }
-        if (paramDecl.initializer) this.emit('[');
         this.visitEachIfPresent(paramDecl.decorators);
         if (paramDecl.type) this.visit(paramDecl.type);
         this.visit(paramDecl.name);
         if (paramDecl.initializer) {
           this.emit('=');
           this.visit(paramDecl.initializer);
-          this.emit(']');
         }
         break;
       case ts.SyntaxKind.ObjectBindingPattern:

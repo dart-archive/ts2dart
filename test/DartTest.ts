@@ -251,6 +251,8 @@ describe('transpile to dart', () => {
     it('translates fat arrow operator', () => {
       expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;');
       expectTranslate('var a = (p) => isBlank(p)').to.equal(' var a = ( p ) => isBlank ( p ) ;');
+      expectTranslate('var a = (p = null) => isBlank(p)')
+          .to.equal(' var a = ( [ p = null ] ) => isBlank ( p ) ;');
     });
   });
 

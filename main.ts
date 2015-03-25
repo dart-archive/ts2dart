@@ -738,9 +738,7 @@ class Translator {
         if (arrowFunc.body.kind == ts.SyntaxKind.Block) {
           this.visitFunctionLike(arrowFunc);
         } else {
-          this.emit('(');
-          this.visitList(arrowFunc.parameters);
-          this.emit(')');
+          this.visitParameters(arrowFunc);
           this.emit('=>');
           this.visit(arrowFunc.body);
         }

@@ -11,6 +11,11 @@ class Translator {
   lastCommentIdx: number = -1;
   currentFile: ts.SourceFile;
   errors: string[] = [];
+  failFast: boolean;  // For tests, fail on the first problem.
+
+  constructor(failFast: boolean = false) {
+    this.failFast = failFast;
+  }
 
   translate(sourceFile: ts.SourceFile) {
     this.currentFile = sourceFile.getSourceFile();
@@ -88,7 +93,7 @@ class Translator {
   }
 
   visitClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
-    this.visitEachIfPresent(decl.decorators);
+    this.visitDecorators(decl.decorators);
     this.emit(keyword);
     this.visit(decl.name);
     if (decl.typeParameters) {
@@ -97,9 +102,40 @@ class Translator {
       this.emit('>');
     }
     this.visitEachIfPresent(decl.heritageClauses);
+    // Check for @IMPLEMENTS interfaces to add.
+    // TODO(martinprobst): Drop all special cases for @SOMETHING after migration to TypeScript.
+    var implIfs = this.getImplementsDecorators(decl.decorators);
+    if (implIfs.length > 0) {
+      // Check if we have to emit an 'implements ' or a ', '
+      if (decl.heritageClauses && decl.heritageClauses.length > 0 &&
+          decl.heritageClauses.some((hc) => hc.token === ts.SyntaxKind.ImplementsKeyword)) {
+        // There was some implements clause.
+        this.emit(',');
+      } else {
+        this.emit('implements');
+      }
+      this.emit(implIfs.join(' , '));
+    }
     this.emit('{');
     this.visitEachIfPresent(decl.members);
     this.emit('}');
+  }
+
+  /** Returns the parameters passed to @IMPLEMENTS as the identifier's string values. */
+  getImplementsDecorators(decorators: ts.NodeArray<ts.Decorator>): string[] {
+    var interfaces = [];
+    if (!decorators) return interfaces;
+    decorators.forEach((d) => {
+      if (d.expression.kind !== ts.SyntaxKind.CallExpression) return;
+      var funcExpr = <ts.CallExpression>d.expression;
+      if (this.ident(funcExpr.expression) !== 'IMPLEMENTS') return;
+      funcExpr.arguments.forEach((a) => {
+        var interf = this.ident(a);
+        if (!interf) this.reportError(a, '@IMPLEMENTS only supports literal identifiers');
+        interfaces.push(interf);
+      });
+    });
+    return interfaces;
   }
 
   visitCall(c: ts.CallExpression) {
@@ -109,6 +145,56 @@ class Translator {
       this.visitList(c.arguments);
     }
     this.emit(')');
+  }
+
+  visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
+    if (!decorators) return;
+
+    decorators.forEach((d) => {
+      // Special case @CONST & @ABSTRACT
+      // TODO(martinprobst): remove once the code base is migrated to TypeScript.
+      var name = this.ident(d.expression);
+      if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
+        // Unwrap @CONST()
+        var callExpr = (<ts.CallExpression>d.expression);
+        name = this.ident(callExpr.expression);
+      }
+      if (name === 'ABSTRACT') {
+        this.emit('abstract');
+        return;
+      }
+      if (name === 'CONST') {
+        this.emit('const');
+        return;
+      }
+      if (name === 'IMPLEMENTS') {
+        // Ignore @IMPLEMENTS - it's handled above in visitClassLike.
+        return;
+      }
+      this.emit('@');
+      this.visit(d.expression);
+    });
+  }
+
+  hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
+    return decorators && decorators.some((d) => {
+      var decName = this.ident(d.expression);
+      if (decName === name) return true;
+      if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
+      var callExpr = (<ts.CallExpression>d.expression);
+      decName = this.ident(callExpr.expression);
+      return decName === name;
+    });
+  }
+
+  ident(n: ts.Node): string {
+    if (n.kind === ts.SyntaxKind.Identifier) return (<ts.Identifier>n).text;
+    if (n.kind === ts.SyntaxKind.QualifiedName) {
+      var qname = (<ts.QualifiedName>n);
+      var leftName = this.ident(qname.left);
+      if (leftName) return leftName + '.' + this.ident(qname.right);
+    }
+    return null;
   }
 
   handleNamedParamsCall(c: ts.CallExpression): boolean {
@@ -126,7 +212,7 @@ class Translator {
     // Even worse: foo(a, b, {'c': d}) is considered to *not* be a named parameters call.
     var hasNonPropAssignments = objLit.properties.some(
         (p) => p.kind != ts.SyntaxKind.PropertyAssignment ||
-               (<ts.PropertyAssignment>p).name.kind != ts.SyntaxKind.Identifier);
+               (<ts.PropertyAssignment>p).name.kind !== ts.SyntaxKind.Identifier);
     if (hasNonPropAssignments) return false;
 
     var len = c.arguments.length - 1;
@@ -135,7 +221,7 @@ class Translator {
     var props = objLit.properties;
     for (var i = 0; i < props.length; i++) {
       var prop = <ts.PropertyAssignment>props[i];
-      this.emit((<ts.Identifier>prop.name).text);
+      this.emit(this.ident(prop.name));
       this.emit(':');
       this.visit(prop.initializer);
       if (i < objLit.properties.length - 1) this.emit(',');
@@ -144,7 +230,7 @@ class Translator {
   }
 
   visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
-    this.visitEachIfPresent(paramDecl.decorators);
+    this.visitDecorators(paramDecl.decorators);
     if (paramDecl.type) {
       // TODO(martinprobst): These are currently silently ignored.
       // this.reportError(paramDecl.type, 'types on named parameters are unsupported');
@@ -174,21 +260,92 @@ class Translator {
     this.visit(expr);
   }
 
-  /** Searches for super() calls and emits an initializer for it if found. */
-  maybeEmitInitializerListForSuperCall(body: ts.Block) {
-    if (!body || body.statements.length === 0) return;
+  /**
+   * Handles constructor initializer lists and bodies.
+   *
+   * <p>Dart's super() ctor calls have to be moved to the constructors initializer list, and `const`
+   * constructors must be completely empty, only assigning into fields through the initializer list.
+   * The code below finds super() calls and handles const constructors, marked with the special
+   * `@CONST` annotation.
+   *
+   * <p>Not emitting super() calls when traversing the ctor body is handled by maybeHandleSuperCall
+   * below.
+   */
+  visitConstructorBody(ctor: ts.ConstructorDeclaration) {
+    var body = ctor.body;
+    if (!body) return;
 
-    body.statements.forEach((stmt: ts.Statement) => {
-      if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) return;
+    var errorAssignmentsSuper = 'const constructors can only contain assignments and super calls';
+    var errorThisAssignment = 'assignments in const constructors must assign into this.';
+
+    var isConstCtor = this.hasAnnotation(ctor.decorators, 'CONST');
+    var superCall;
+    var expressions = [];
+    // Find super() calls and (if in a const ctor) collect assignment expressions (not statements!)
+    body.statements.forEach((stmt) => {
+      if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) {
+        if (isConstCtor) this.reportError(stmt, errorAssignmentsSuper);
+        return;
+      }
       var nestedExpr = (<ts.ExpressionStatement>stmt).expression;
-      if (nestedExpr.kind !== ts.SyntaxKind.CallExpression) return;
-      var callExpr = <ts.CallExpression>nestedExpr;
-      if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) return;
 
-      this.emit(': super (');
-      this.visitList(callExpr.arguments);
-      this.emit(')');
+      // super() call?
+      if (nestedExpr.kind === ts.SyntaxKind.CallExpression) {
+        var callExpr = <ts.CallExpression>nestedExpr;
+        if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) {
+          if (isConstCtor) this.reportError(stmt, errorAssignmentsSuper);
+          return;
+        }
+        superCall = callExpr;
+        return;
+      }
+
+      // this.x assignment?
+      if (isConstCtor) {
+        // Check for assignment.
+        if (nestedExpr.kind !== ts.SyntaxKind.BinaryExpression) {
+          this.reportError(nestedExpr, errorAssignmentsSuper);
+          return;
+        }
+        var binExpr = <ts.BinaryExpression>nestedExpr;
+        if (binExpr.operatorToken.kind !== ts.SyntaxKind.EqualsToken) {
+          this.reportError(binExpr, errorAssignmentsSuper);
+          return;
+        }
+        // Check for 'this.'
+        if (binExpr.left.kind !== ts.SyntaxKind.PropertyAccessExpression) {
+          this.reportError(binExpr, errorThisAssignment);
+          return;
+        }
+        var lhs = <ts.PropertyAccessExpression>binExpr.left;
+        if (lhs.expression.kind !== ts.SyntaxKind.ThisKeyword) {
+          this.reportError(binExpr, errorThisAssignment);
+          return;
+        }
+        var ident = lhs.name;
+        binExpr.left = ident;
+        expressions.push(nestedExpr);
+      }
     });
+
+    var hasInitializerExpr = expressions.length > 0;
+    if (hasInitializerExpr) {
+      // Write out the assignments.
+      this.emit(':');
+      this.visitList(expressions);
+    }
+    if (superCall) {
+      this.emit(hasInitializerExpr ? ',' : ':');
+      this.emit('super (');
+      this.visitList(superCall.arguments);
+      this.emit(')');
+    }
+    if (isConstCtor)  {
+      // Const ctors don't have bodies.
+      this.emit(';');
+    } else {
+      this.visit(ctor.body);
+    }
   }
 
   /**
@@ -214,7 +371,7 @@ class Translator {
   }
 
   visitDeclarationMetadata(decl: ts.Declaration) {
-    this.visitEachIfPresent(decl.decorators);
+    this.visitDecorators(decl.decorators);
     this.visitEachIfPresent(decl.modifiers);
 
     // Temporarily deactivated to make migration of Angular code base easier.
@@ -224,8 +381,8 @@ class Translator {
       this.reportError(decl, 'protected declarations are unsupported');
       return;
     }
-    if (!decl.name || decl.name.kind !== ts.SyntaxKind.Identifier) return;
-    var name = (<ts.Identifier>decl.name).text;
+    var name = this.ident(decl.name);
+    if (!name) return;
     var isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);
     var matchesPrivate = !!name.match(/^_/);
     if (isPrivate && !matchesPrivate) {
@@ -273,7 +430,9 @@ class Translator {
     var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);
     // Line and character are 0-based.
-    this.errors.push(`${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`)
+    var fullMessage = `${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`;
+    if (this.failFast) throw new Error(fullMessage);
+    this.errors.push(fullMessage);
   }
 
   visit(node: ts.Node) {
@@ -635,13 +794,6 @@ class Translator {
         }
         break;
 
-      // Decorators
-      case ts.SyntaxKind.Decorator:
-        var dec = <ts.Decorator>node;
-        this.emit('@');
-        this.visit(dec.expression);
-        break;
-
       // Classes & Interfaces
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
@@ -702,12 +854,10 @@ class Translator {
           }
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
-
         this.visitDeclarationMetadata(ctorDecl);
         this.visit(className);
         this.visitParameters(ctorDecl);
-        this.maybeEmitInitializerListForSuperCall(ctorDecl.body);
-        this.visit(ctorDecl.body);
+        this.visitConstructorBody(ctorDecl);
         break;
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
@@ -736,7 +886,7 @@ class Translator {
         break;
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
-        this.visitEachIfPresent(funcDecl.decorators);
+        this.visitDecorators(funcDecl.decorators);
         if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
         this.visitFunctionLike(funcDecl);
         break;
@@ -773,7 +923,7 @@ class Translator {
           this.visitNamedParameter(paramDecl);
           break;
         }
-        this.visitEachIfPresent(paramDecl.decorators);
+        this.visitDecorators(paramDecl.decorators);
         if (paramDecl.type) this.visit(paramDecl.type);
         this.visit(paramDecl.name);
         if (paramDecl.initializer) {
@@ -878,16 +1028,22 @@ class Translator {
         break;
 
       default:
-        this.reportError(node, `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
+        this.reportError(node,
+            `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
         break;
     }
   }
 }
 
-export function translateProgram(program: ts.Program): string {
+export interface TranspileOptions {
+  failFast?: boolean
+}
+
+export function translateProgram(program: ts.Program,
+                                 {failFast = false}: TranspileOptions = {}): string {
   return program.getSourceFiles()
       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-      .map((f) => new Translator().translate(f))
+      .map((f) => new Translator(failFast).translate(f))
       .join('\n');
 }
 

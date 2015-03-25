@@ -57,6 +57,11 @@ describe('transpile to dart', () => {
       expectErroneousCode('var n: number, s: string;').to.throw(msg);
       expectErroneousCode('var untyped, n: number, s: string;').to.throw(msg);
     });
+
+    it('supports const', () => {
+      expectTranslate('const A = 1, B = 2;').to.equal(' const A = 1 , B = 2 ;');
+      expectTranslate('const A: number = 1;').to.equal(' const num A = 1 ;');
+    });
   });
 
   describe('classes', () => {

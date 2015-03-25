@@ -204,6 +204,10 @@ class Translator {
     return true;
   }
 
+  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
+    return n && (n.flags & flag) !== 0 || false;
+  }
+
   visitDeclarationMetadata(decl: ts.Declaration) {
     this.visitEachIfPresent(decl.decorators);
     this.visitEachIfPresent(decl.modifiers);
@@ -211,13 +215,13 @@ class Translator {
     // Temporarily deactivated to make migration of Angular code base easier.
     return;
 
-    if (decl.modifiers && decl.modifiers.flags & ts.NodeFlags.Protected) {
+    if (this.hasFlag(decl.modifiers, ts.NodeFlags.Protected)) {
       this.reportError(decl, 'protected declarations are unsupported');
       return;
     }
     if (!decl.name || decl.name.kind !== ts.SyntaxKind.Identifier) return;
     var name = (<ts.Identifier>decl.name).text;
-    var isPrivate = decl.modifiers && decl.modifiers.flags & ts.NodeFlags.Private;
+    var isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);
     var matchesPrivate = !!name.match(/^_/);
     if (isPrivate && !matchesPrivate) {
       this.reportError(decl, 'private members must be prefixed with "_"');
@@ -244,9 +248,11 @@ class Translator {
      */
     var firstDecl = varDecl.parent.declarations[0];
     var msg = 'Variables in a declaration list of more than one variable cannot by typed';
+    var isConst = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
     if (firstDecl === varDecl) {
+      if (isConst) this.emit('const');
       if (!varDecl.type) {
-        this.emit('var');
+        if (!isConst) this.emit('var');
       } else if (varDecl.parent.declarations.length > 1) {
         this.reportError(varDecl, msg);
       } else {

@@ -50,7 +50,7 @@ describe('transpile to dart', () => {
       expectTranslate('var a, b = 0;').to.equal(' var a , b = 0 ;');
       expectTranslate('var a = 1, b = 0;').to.equal(' var a = 1 , b = 0 ;');
     });
-    it('does not support declaration lists containing more than one type (implicit or explicit)', () => {
+    it('does not support vardecls containing more than one type (implicit or explicit)', () => {
       var msg = 'Variables in a declaration list of more than one variable cannot by typed';
       expectErroneousCode('var a: A, untyped;').to.throw(msg);
       expectErroneousCode('var untyped, b: B;').to.throw(msg);
@@ -282,9 +282,8 @@ describe('transpile to dart', () => {
       expectTranslate("`\\$a`").to.equal(" '''\\$a''' ;");
     });
 
-    it('escapes escape sequences', () => {
-      expectTranslate("`\\\\u1234`").to.equal(" '''\\\\u1234''' ;");
-    });
+    it('escapes escape sequences',
+       () => { expectTranslate("`\\\\u1234`").to.equal(" '''\\\\u1234''' ;"); });
 
     it('translates boolean literals', () => {
       expectTranslate('true').to.equal(' true ;');
@@ -325,8 +324,10 @@ describe('transpile to dart', () => {
     it('translates for loops', () => {
       expectTranslate('for (1; 2; 3) { 4 }').to.equal(' for ( 1 ; 2 ; 3 ) { 4 ; }');
       expectTranslate('for (var x = 1; 2; 3) { 4 }').to.equal(' for ( var x = 1 ; 2 ; 3 ) { 4 ; }');
-      expectTranslate('for (var x, y = 1; 2; 3) { 4 }').to.equal(' for ( var x , y = 1 ; 2 ; 3 ) { 4 ; }');
-      expectTranslate('for (var x = 0, y = 1; 2; 3) { 4 }').to.equal(' for ( var x = 0 , y = 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x, y = 1; 2; 3) { 4 }')
+          .to.equal(' for ( var x , y = 1 ; 2 ; 3 ) { 4 ; }');
+      expectTranslate('for (var x = 0, y = 1; 2; 3) { 4 }')
+          .to.equal(' for ( var x = 0 , y = 1 ; 2 ; 3 ) { 4 ; }');
     });
     it('translates for-in loops', () => {
       expectTranslate('for (var x in 1) { 2 }').to.equal(' for ( var x in 1 ) { 2 ; }');
@@ -478,8 +479,8 @@ describe('transpile to dart', () => {
       expectTranslate('import * as foo from "z";').to.equal(' import "package:z.dart" as foo ;');
     });
     it('allows import dart file from relative path', () => {
-      expectTranslate('import x = require("./y")').to.equal(' import "./y.dart" as x ;');
-      expectTranslate('import {x} from "./y"').to.equal(' import "./y.dart" show x ;');
+      expectTranslate('import x = require("./y")').to.equal(' import "y.dart" as x ;');
+      expectTranslate('import {x} from "./y"').to.equal(' import "y.dart" show x ;');
     });
   });
 
@@ -490,9 +491,12 @@ describe('transpile to dart', () => {
     it('allows class exports',
        () => { expectTranslate('export class X {}').to.equal(' class X { }'); });
     it('allows export declarations',
-       () => { expectTranslate('export * from "X";').to.equal(' export "X" ;'); });
-    it('allows named export declarations',
-       () => { expectTranslate('export {a, b} from "X";').to.equal(' export "X" show a , b ;'); });
+       () => { expectTranslate('export * from "X";').to.equal(' export "package:X.dart" ;'); });
+    it('allows export declarations',
+       () => { expectTranslate('export * from "./X";').to.equal(' export "X.dart" ;'); });
+    it('allows named export declarations', () => {
+      expectTranslate('export {a, b} from "X";').to.equal(' export "package:X.dart" show a , b ;');
+    });
   });
 
   describe('errors', () => {

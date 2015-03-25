@@ -162,10 +162,15 @@ class Translator {
   visitExternalModuleReferenceExpr(expr: ts.Expression) {
     // TODO: what if this isn't a string literal?
     var moduleName = <ts.StringLiteralExpression>expr;
-    if (!moduleName.text.match(/^\./)) {
-      moduleName.text = 'package:' + moduleName.text;
+    var text = moduleName.text;
+    if (text.match(/^\.\//)) {
+      // Strip './' to be more Dart-idiomatic.
+      text = text.substring(2);
+    } else {
+      // Unprefixed imports are package imports.
+      text = 'package:' + text;
     }
-    moduleName.text += '.dart';
+    moduleName.text = text + '.dart';
     this.visit(expr);
   }
 
@@ -856,7 +861,7 @@ class Translator {
       case ts.SyntaxKind.ExportDeclaration:
         var exportDecl = <ts.ExportDeclaration>node;
         this.emit('export');
-        this.visit(exportDecl.moduleSpecifier);
+        this.visitExternalModuleReferenceExpr(exportDecl.moduleSpecifier);
         if (exportDecl.exportClause) this.visit(exportDecl.exportClause);
         this.emit(';');
         break;

@@ -228,7 +228,7 @@ class Translator {
   }
 
   escapeTextForTemplateString(n: ts.Node): string {
-    return (<ts.StringLiteralExpression>n).text.replace(/([\$'])/g, '\\$1');
+    return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 
   visitVariableDeclarationType(varDecl: ts.VariableDeclaration) {

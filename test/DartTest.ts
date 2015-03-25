@@ -277,6 +277,10 @@ describe('transpile to dart', () => {
       expectTranslate("`\\$a`").to.equal(" '''\\$a''' ;");
     });
 
+    it('escapes escape sequences', () => {
+      expectTranslate("`\\\\u1234`").to.equal(" '''\\\\u1234''' ;");
+    });
+
     it('translates boolean literals', () => {
       expectTranslate('true').to.equal(' true ;');
       expectTranslate('false').to.equal(' false ;');

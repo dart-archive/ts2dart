@@ -43,23 +43,23 @@ class Translator {
 
   visitParameters(fn: ts.FunctionLikeDeclaration) {
     this.emit('(');
-    let i;
-    for (i = 0; i < fn.parameters.length; i++) {
+    let firstInitParamIdx;
+    for (firstInitParamIdx = 0; firstInitParamIdx < fn.parameters.length; firstInitParamIdx++) {
       // ObjectBindingPatterns are handled within the parameter visit.
-      if (fn.parameters[i].initializer &&
-          fn.parameters[i].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
+      if (fn.parameters[firstInitParamIdx].initializer &&
+          fn.parameters[firstInitParamIdx].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
         break;
       }
     }
 
-    if (i !== 0) {
-      var requiredParams = fn.parameters.slice(0, i);
+    if (firstInitParamIdx !== 0) {
+      var requiredParams = fn.parameters.slice(0, firstInitParamIdx);
       this.visitList(requiredParams);
     }
 
-    if (i !== fn.parameters.length) {
-      if (i !== 0) this.emit(',');
-      var positionalOptional = fn.parameters.slice(i, fn.parameters.length);
+    if (firstInitParamIdx !== fn.parameters.length) {
+      if (firstInitParamIdx !== 0) this.emit(',');
+      var positionalOptional = fn.parameters.slice(firstInitParamIdx, fn.parameters.length);
       this.emit('[');
       this.visitList(positionalOptional);
       this.emit(']');

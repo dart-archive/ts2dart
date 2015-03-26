@@ -4,6 +4,8 @@
 require('source-map-support').install();
 import ts = require("typescript");
 
+type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
+
 class Translator {
   result: string = '';
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
@@ -92,7 +94,7 @@ class Translator {
     }
   }
 
-  visitClassLike(keyword: string, decl: ts.ClassDeclaration | ts.InterfaceDeclaration) {
+  visitClassLike(keyword: string, decl: ClassLike) {
     this.visitDecorators(decl.decorators);
     this.emit(keyword);
     this.visit(decl.name);
@@ -258,6 +260,13 @@ class Translator {
     }
     moduleName.text = text + '.dart';
     this.visit(expr);
+  }
+
+  hasConstCtor(decl: ClassLike) {
+    return decl.members.some((m) => {
+      if (m.kind !== ts.SyntaxKind.Constructor) return false;
+      return this.hasAnnotation(m.decorators, 'CONST');
+    });
   }
 
   /**
@@ -862,9 +871,13 @@ class Translator {
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         this.visitDeclarationMetadata(propertyDecl);
+        var hasConstCtor = this.hasConstCtor(<ClassLike>propertyDecl.parent);
+        if (hasConstCtor) {
+          this.emit('final');
+        }
         if (propertyDecl.type) {
           this.visit(propertyDecl.type);
-        } else {
+        } else if (!hasConstCtor) {
           this.emit('var');
         }
         this.visit(propertyDecl.name);

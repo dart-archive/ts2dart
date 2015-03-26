@@ -254,7 +254,7 @@ class Translator {
     if (text.match(/^\.\//)) {
       // Strip './' to be more Dart-idiomatic.
       text = text.substring(2);
-    } else {
+    } else if (!text.match(/^\.\.\//)) {
       // Unprefixed imports are package imports.
       text = 'package:' + text;
     }

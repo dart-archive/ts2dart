@@ -515,6 +515,7 @@ describe('transpile to dart', () => {
     it('allows import dart file from relative path', () => {
       expectTranslate('import x = require("./y")').to.equal(' import "y.dart" as x ;');
       expectTranslate('import {x} from "./y"').to.equal(' import "y.dart" show x ;');
+      expectTranslate('import {x} from "../y"').to.equal(' import "../y.dart" show x ;');
     });
   });
 

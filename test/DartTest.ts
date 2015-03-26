@@ -201,8 +201,14 @@ describe('transpile to dart', () => {
     it('special cases @CONST', () => {
       expectTranslate('@CONST class X {}').to.equal(' const class X { }');
       expectTranslate('@CONST() class X {}').to.equal(' const class X { }');
-      expectTranslate('class X { @CONST constructor() { super(3); this.x = 1; this.y = 2; } }')
-          .to.equal(' class X { const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+      expectTranslate('class X { ' +
+                      '  x: number; ' +
+                      '  y; ' +
+                      '  @CONST constructor() { super(3); this.x = 1; this.y = 2; } ' +
+                      '}')
+          .to.equal(' class X {' +
+                    ' final num x ; final y ;' +
+                    ' const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
       expectTranslate('class X { @CONST constructor() {} }')
           .to.equal(' class X { const X ( ) ; }');
       expectErroneousCode('class X { @CONST constructor() { if (1); } }')

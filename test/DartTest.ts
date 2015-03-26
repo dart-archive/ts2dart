@@ -17,7 +17,7 @@ describe('transpile to dart', () => {
   }
 
   function expectErroneousCode(tsCode: string) {
-    return chai.expect(() => translateSource(tsCode));
+    return chai.expect(() => translateSource(tsCode, false));
   }
 
   function expectTranslates(cases: any) {
@@ -198,6 +198,34 @@ describe('transpile to dart', () => {
        () => { expectTranslate('class X { @A p; }').to.equal(' class X { @ A var p ; }'); });
     it('translates on parameters',
        () => { expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }'); });
+    it('special cases @CONST', () => {
+      expectTranslate('@CONST class X {}').to.equal(' const class X { }');
+      expectTranslate('@CONST() class X {}').to.equal(' const class X { }');
+      expectTranslate('class X { @CONST constructor() { super(3); this.x = 1; this.y = 2; } }')
+          .to.equal(' class X { const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+      expectTranslate('class X { @CONST constructor() {} }')
+          .to.equal(' class X { const X ( ) ; }');
+      expectErroneousCode('class X { @CONST constructor() { if (1); } }')
+          .to.throw('const constructors can only contain assignments and super calls');
+      expectErroneousCode('class X { @CONST constructor() { f(); } }')
+          .to.throw('const constructors can only contain assignments and super calls');
+      expectErroneousCode('class X { @CONST constructor() { "string literal"; } }')
+          .to.throw('const constructors can only contain assignments and super calls');
+      expectErroneousCode('class X { @CONST constructor() { x = 1; } }')
+          .to.throw('assignments in const constructors must assign into this.');
+      expectErroneousCode('class X { @CONST constructor() { that.x = 1; } }')
+          .to.throw('assignments in const constructors must assign into this.');
+    });
+    it('special cases @ABSTRACT', () => {
+      expectTranslate('@ABSTRACT class X {}').to.equal(' abstract class X { }');
+    });
+    it('special cases @IMPLEMENTS', () => {
+      expectTranslate('@IMPLEMENTS(Y, Z) class X {}').to.equal(' class X implements Y , Z { }');
+      expectTranslate('@IMPLEMENTS(Z) class X extends Y {}')
+          .to.equal(' class X extends Y implements Z { }');
+      expectTranslate('@IMPLEMENTS(Z) class X implements Y {}')
+          .to.equal(' class X implements Y , Z { }');
+    });
   });
 
   describe('functions', () => {
@@ -509,7 +537,7 @@ describe('transpile to dart', () => {
   });
 });
 
-export function translateSource(contents: string): string {
+export function translateSource(contents: string, failFast = true): string {
   var result: string;
   var compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
@@ -537,5 +565,5 @@ export function translateSource(contents: string): string {
     var first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
-  return main.translateProgram(program);
+  return main.translateProgram(program, {failFast});
 }

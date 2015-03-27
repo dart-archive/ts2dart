@@ -3,3 +3,5 @@ typings
 .clang-format
 .travis.yml
 tsd.json
+build/test
+build/e2e

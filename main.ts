@@ -3,6 +3,7 @@
 /// <reference path="node_modules/typescript/bin/typescript.d.ts" />
 require('source-map-support').install();
 import ts = require("typescript");
+import fs = require("fs");
 
 type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
@@ -13,11 +14,8 @@ class Translator {
   lastCommentIdx: number = -1;
   currentFile: ts.SourceFile;
   errors: string[] = [];
-  failFast: boolean;  // For tests, fail on the first problem.
 
-  constructor(failFast: boolean = false) {
-    this.failFast = failFast;
-  }
+  constructor(private failFast: boolean = false, private libraryName: string = null) {}
 
   translate(sourceFile: ts.SourceFile) {
     this.currentFile = sourceFile.getSourceFile();
@@ -460,6 +458,13 @@ class Translator {
 
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
+        if (this.libraryName) {
+          this.emit('library');
+          this.emit(this.libraryName);
+          this.emit(';');
+        }
+        ts.forEachChild(node, this.visit.bind(this));
+        break;
       case ts.SyntaxKind.EndOfFileToken:
         ts.forEachChild(node, this.visit.bind(this));
         break;
@@ -1051,27 +1056,29 @@ class Translator {
 }
 
 export interface TranspileOptions {
-  failFast?: boolean
+  libraryName?: string,
+  failFast?: boolean,
 }
 
 export function translateProgram(program: ts.Program,
-                                 {failFast = false}: TranspileOptions = {}): string {
+                                 {failFast = false,
+                                  libraryName = null}: TranspileOptions = {}): string {
   return program.getSourceFiles()
       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-      .map((f) => new Translator(failFast).translate(f))
+      .map((f) => new Translator(failFast, libraryName).translate(f))
       .join('\n');
 }
 
 var options: ts.CompilerOptions = {
   target: ts.ScriptTarget.ES6,
   module: ts.ModuleKind.CommonJS,
-  allowNonTsExtensions: true
+  allowNonTsExtensions: true,
 };
 
-export function translateFile(fileName: string): string {
+export function translateFile(fileName: string, libraryName: string): string {
   var host = ts.createCompilerHost(options, /*setParentNodes*/ true);
   var program = ts.createProgram([fileName], options, host);
-  return translateProgram(program);
+  return translateProgram(program, libraryName);
 }
 
 export function translateFiles(fileNames: string[]): void {
@@ -1081,8 +1088,8 @@ export function translateFiles(fileNames: string[]): void {
       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
       .forEach(function(f: ts.SourceFile) {
     var dartCode = new Translator().translate(f);
-    var dartFile = f.fileName.replace(/.ts$/, '.dart');
-    require('fs').writeFileSync(dartFile, dartCode);
+    var dartFile = f.fileName.replace(/.[jt]s$/, '.dart');
+    fs.writeFileSync(dartFile, dartCode);
   });
 }
 

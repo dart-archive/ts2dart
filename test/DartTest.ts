@@ -6,7 +6,7 @@ import sms = require('source-map-support');
 sms.install();
 
 import chai = require('chai');
-import main = require('../main');
+import main = require('../lib/main');
 import ts = require('typescript');
 
 describe('transpile to dart', () => {

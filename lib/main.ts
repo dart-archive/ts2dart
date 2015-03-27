@@ -1,6 +1,6 @@
-/// <reference path="typings/node/node.d.ts" />
+/// <reference path="../typings/node/node.d.ts" />
 // Use HEAD version of typescript, installed by npm
-/// <reference path="node_modules/typescript/bin/typescript.d.ts" />
+/// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
 require('source-map-support').install();
 import ts = require("typescript");
 import fs = require("fs");

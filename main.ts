@@ -346,7 +346,9 @@ class Translator {
     if (superCall) {
       this.emit(hasInitializerExpr ? ',' : ':');
       this.emit('super (');
-      this.visitList(superCall.arguments);
+      if (!this.handleNamedParamsCall(superCall)) {
+        this.visitList(superCall.arguments);
+      }
       this.emit(')');
     }
     if (isConstCtor)  {

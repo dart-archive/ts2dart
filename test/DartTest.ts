@@ -261,6 +261,9 @@ describe('transpile to dart', () => {
           .to.throw('initializers for named parameters must be empty object literals');
       expectErroneousCode('function x({a=false}=true)')
           .to.throw('initializers for named parameters must be empty object literals');
+      expectTranslate('class X { constructor() { super({p: 1}); } }')
+          .to.equal(' class X { X ( ) : super ( p : 1 ) {' +
+                    ' /* super call moved to initializer */ ; } }');
     });
     it('hacks last object literal parameters into named parameter', () => {
       expectTranslate('f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');

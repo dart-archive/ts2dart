@@ -214,6 +214,13 @@ export class Transpiler {
     });
   }
 
+  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
+    for (var parent = n; parent; parent = parent.parent) {
+      if (parent.kind === kind) return true;
+    }
+    return false;
+  }
+
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     return decorators && decorators.some((d) => {
       var decName = this.ident(d.expression);
@@ -731,11 +738,13 @@ export class Transpiler {
         if (span.literal) this.visit(span.literal);
         break;
       case ts.SyntaxKind.ArrayLiteralExpression:
+        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
         this.emit('[');
         this.visitList((<ts.ArrayLiteralExpression>node).elements);
         this.emit(']');
         break;
       case ts.SyntaxKind.ObjectLiteralExpression:
+        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
         this.emit('{');
         this.visitList((<ts.ObjectLiteralExpression>node).properties);
         this.emit('}');

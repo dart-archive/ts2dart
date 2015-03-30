@@ -202,6 +202,10 @@ describe('transpile to dart', () => {
        () => { expectTranslate('@A class X {}').to.equal(' @ A class X { }'); });
     it('translates arguments',
        () => { expectTranslate('@A(a, b) class X {}').to.equal(' @ A ( a , b ) class X { }'); });
+    it('translates const arguments', () => {
+      expectTranslate('@A([1]) class X {}').to.equal(' @ A ( const [ 1 ] ) class X { }');
+      expectTranslate('@A({"a": 1}) class X {}').to.equal(' @ A ( const { "a" : 1 } ) class X { }');
+    });
     it('translates on functions',
        () => { expectTranslate('@A function f() {}').to.equal(' @ A f ( ) { }'); });
     it('translates on properties',

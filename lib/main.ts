@@ -5,19 +5,55 @@ require('source-map-support').install();
 import ts = require("typescript");
 import fs = require("fs");
 
-type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
+export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
-class Translator {
+export class Transpiler {
   result: string = '';
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
   // offset to avoid printing comments multiple times.
   lastCommentIdx: number = -1;
   currentFile: ts.SourceFile;
+  relativeFileName: string;
   errors: string[] = [];
 
-  constructor(private failFast: boolean = false, private libraryName: string = null) {}
+  constructor(private failFast: boolean = false, private generateLibraryName: boolean = false) {}
+
+  options: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ES6,
+    module: ts.ModuleKind.CommonJS,
+    allowNonTsExtensions: true,
+  };
+
+  translateProgram(program: ts.Program, relativeFileName: string): string {
+    this.relativeFileName = relativeFileName;
+    return program.getSourceFiles()
+       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+       .map((f) => this.translate(f))
+       .join('\n');
+  }
+
+  translateFile(fileName: string, relativeFileName: string): string {
+    var host = ts.createCompilerHost(this.options, /*setParentNodes*/ true);
+    var program = ts.createProgram([fileName], this.options, host);
+    return this.translateProgram(program, relativeFileName);
+  }
+
+  translateFiles(fileNames: string[]): void {
+    var host = ts.createCompilerHost(this.options, /*setParentNodes*/ true);
+    var program = ts.createProgram(fileNames, this.options, host);
+    program.getSourceFiles()
+        .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+        .forEach((f: ts.SourceFile) => {
+          var dartCode = this.translate(f);
+          var dartFile = f.fileName.replace(/.[jt]s$/, '.dart');
+          fs.writeFileSync(dartFile, dartCode);
+        });
+  }
 
   translate(sourceFile: ts.SourceFile) {
+    this.result = '';
+    this.errors = [];
+    this.lastCommentIdx = -1;
     this.currentFile = sourceFile.getSourceFile();
     this.visit(sourceFile);
     if (this.errors.length) {
@@ -434,6 +470,22 @@ class Translator {
     }
   }
 
+  static DART_KEYWORDS =
+      ('abstract as assert async await break case catch class const continue ' +
+       'default deferred do dynamic else enum export extends external factory false final ' +
+       'finally for get if implements import in is library new null operator part rethrow return' +
+       ' set static super switch sync this throw true try typedef var void while with yield')
+          .split(/ /);
+
+  getLibraryName(nameForTest: string = null) {
+    var parts = (nameForTest || this.relativeFileName).split('/');
+    return parts.filter((p) => p.length > 0)
+        .map((p) => p.replace(/[^\w.]/g, '_'))
+        .map((p) => p.replace(/\.[jt]s$/g, ''))
+        .map((p) => Transpiler.DART_KEYWORDS.indexOf(p) != -1 ? '_' + p : p)
+        .join('.');
+  }
+
   reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile() || this.currentFile;
     var start = n.getStart(file);
@@ -458,9 +510,9 @@ class Translator {
 
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
-        if (this.libraryName) {
+        if (this.generateLibraryName) {
           this.emit('library');
-          this.emit(this.libraryName);
+          this.emit(this.getLibraryName());
           this.emit(';');
         }
         ts.forEachChild(node, this.visit.bind(this));
@@ -1055,45 +1107,8 @@ class Translator {
   }
 }
 
-export interface TranspileOptions {
-  libraryName?: string,
-  failFast?: boolean,
-}
-
-export function translateProgram(program: ts.Program,
-                                 {failFast = false,
-                                  libraryName = null}: TranspileOptions = {}): string {
-  return program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-      .map((f) => new Translator(failFast, libraryName).translate(f))
-      .join('\n');
-}
-
-var options: ts.CompilerOptions = {
-  target: ts.ScriptTarget.ES6,
-  module: ts.ModuleKind.CommonJS,
-  allowNonTsExtensions: true,
-};
-
-export function translateFile(fileName: string, libraryName: string): string {
-  var host = ts.createCompilerHost(options, /*setParentNodes*/ true);
-  var program = ts.createProgram([fileName], options, host);
-  return translateProgram(program, libraryName);
-}
-
-export function translateFiles(fileNames: string[]): void {
-  var host = ts.createCompilerHost(options, /*setParentNodes*/ true);
-  var program = ts.createProgram(fileNames, options, host);
-  program.getSourceFiles()
-      .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-      .forEach(function(f: ts.SourceFile) {
-    var dartCode = new Translator().translate(f);
-    var dartFile = f.fileName.replace(/.[jt]s$/, '.dart');
-    fs.writeFileSync(dartFile, dartCode);
-  });
-}
-
 // CLI entry point
 if (require.main === module) {
-  translateFiles(process.argv.slice(2));
+  var tp = new Transpiler();
+  tp.translateFiles(process.argv.slice(2));
 }

@@ -545,20 +545,42 @@ describe('transpile to dart', () => {
       expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
   });
+
+  describe('library name', () => {
+    var transpiler;
+    beforeEach(() => transpiler = new main.Transpiler(true, /* generateLibraryName */ true));
+    it('adds a library name', () => {
+      var program = parseProgram('var x;', '/a/b/c.ts');
+      var res = transpiler.translateProgram(program, 'a/b/c.ts');
+      chai.expect(res).to.equal(' library a.b.c ; var x ;');
+    });
+    it('handles keywords', () => {
+      chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('a._for._in._do.x');
+    });
+    it('handles file extensions', () => {
+      chai.expect(transpiler.getLibraryName('a/x.ts')).to.equal('a.x');
+      chai.expect(transpiler.getLibraryName('a/x.js')).to.equal('a.x');
+    });
+    it('handles non word characters', () => {
+      chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x');
+    });
+  });
 });
 
-export function translateSource(contents: string, failFast = true): string {
+function parseProgram(contents: string, fileName = 'file.ts'): ts.Program {
   var result: string;
   var compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
     module: ts.ModuleKind.AMD
   };
   var compilerHost: ts.CompilerHost = {
-    getSourceFile: function(filename, languageVersion) {
-      if (filename === 'file.ts')
-        return ts.createSourceFile(filename, contents, compilerOptions.target, true);
-      if (filename === 'lib.d.ts')
-        return ts.createSourceFile(filename, '', compilerOptions.target, true);
+    getSourceFile: function(sourceName, languageVersion) {
+      if (sourceName === fileName) {
+        return ts.createSourceFile(sourceName, contents, compilerOptions.target, true);
+      }
+      if (sourceName === 'lib.d.ts') {
+        return ts.createSourceFile(sourceName, '', compilerOptions.target, true);
+      }
       return undefined;
     },
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
@@ -569,11 +591,17 @@ export function translateSource(contents: string, failFast = true): string {
     getNewLine: () => '\n'
   };
   // Create a program from inputs
-  var program: ts.Program = ts.createProgram(['file.ts'], compilerOptions, compilerHost);
+  var program: ts.Program = ts.createProgram([fileName], compilerOptions, compilerHost);
   if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
     var first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
   }
-  return main.translateProgram(program, {failFast});
+  return program;
+}
+
+function translateSource(contents: string, failFast = true): string {
+  var program = parseProgram(contents);
+  var transpiler = new main.Transpiler(failFast, /* generateLibraryName */ false);
+  return transpiler.translateProgram(program, null);
 }

@@ -27,9 +27,10 @@ export class Transpiler {
   translateProgram(program: ts.Program, relativeFileName: string): string {
     this.relativeFileName = relativeFileName;
     return program.getSourceFiles()
-       .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
-       .map((f) => this.translate(f))
-       .join('\n');
+        .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
+                                               !!sourceFile.fileName.match(/\.[jt]s$/))
+        .map((f) => this.translate(f))
+        .join('\n');
   }
 
   translateFile(fileName: string, relativeFileName: string): string {
@@ -42,7 +43,8 @@ export class Transpiler {
     var host = ts.createCompilerHost(this.options, /*setParentNodes*/ true);
     var program = ts.createProgram(fileNames, this.options, host);
     program.getSourceFiles()
-        .filter((sourceFile: ts.SourceFile) => sourceFile.fileName.indexOf(".d.ts") < 0)
+        .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
+                                               !!sourceFile.fileName.match(/\.[jt]s$/))
         .forEach((f: ts.SourceFile) => {
           var dartCode = this.translate(f);
           var dartFile = f.fileName.replace(/.[jt]s$/, '.dart');
@@ -1083,7 +1085,11 @@ export class Transpiler {
       case ts.SyntaxKind.ExportDeclaration:
         var exportDecl = <ts.ExportDeclaration>node;
         this.emit('export');
-        this.visitExternalModuleReferenceExpr(exportDecl.moduleSpecifier);
+        if (exportDecl.moduleSpecifier) {
+          this.visitExternalModuleReferenceExpr(exportDecl.moduleSpecifier);
+        } else {
+          this.reportError(node, 're-exports must have a module URL (export x from "./y").');
+        }
         if (exportDecl.exportClause) this.visit(exportDecl.exportClause);
         this.emit(';');
         break;

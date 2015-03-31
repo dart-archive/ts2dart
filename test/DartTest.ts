@@ -535,6 +535,9 @@ describe('transpile to dart', () => {
     it('allows named export declarations', () => {
       expectTranslate('export {a, b} from "X";').to.equal(' export "package:X.dart" show a , b ;');
     });
+    it('fails for exports without URLs', () => {
+      expectErroneousCode('export {a as b};').to.throw('re-exports must have a module URL');
+    });
   });
 
   describe('errors', () => {

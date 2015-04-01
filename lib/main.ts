@@ -953,9 +953,11 @@ export class Transpiler {
         this.visitFunctionLike(<ts.MethodDeclaration>node);
         break;
       case ts.SyntaxKind.GetAccessor:
+        this.visitDeclarationMetadata(<ts.MethodDeclaration>node);
         this.visitFunctionLike(<ts.AccessorDeclaration>node, 'get');
         break;
       case ts.SyntaxKind.SetAccessor:
+        this.visitDeclarationMetadata(<ts.MethodDeclaration>node);
         this.visitFunctionLike(<ts.AccessorDeclaration>node, 'set');
         break;
       case ts.SyntaxKind.FunctionDeclaration:

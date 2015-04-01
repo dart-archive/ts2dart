@@ -31,6 +31,12 @@ describe('transpile to dart', () => {
        () => { expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
     it('drops type literals',
        () => { expectTranslate('var x: {x: string, y: number};').to.equal(' dynamic x ;'); });
+    it('substitutes Dart-ism', () => {
+      expectTranslate('import {Promise} from "./somewhere"; var p: Promise<Date>;')
+          .to.equal(' import "somewhere.dart" show Future ; Future < DateTime > p ;');
+      expectTranslate('import Promise = require("./somewhere");')
+          .to.equal(' import "somewhere.dart" as Future ;');
+    });
   });
 
   describe('variables', () => {

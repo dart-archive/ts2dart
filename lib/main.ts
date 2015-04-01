@@ -472,6 +472,24 @@ export class Transpiler {
     }
   }
 
+  static DART_TYPES = {
+    'Promise': 'Future',
+    'Observable': 'Stream',
+    'ObservableController': 'StreamController',
+    'Date': 'DateTime',
+    'StringMap': 'Map'
+  };
+
+  visitTypeName(typeName: ts.EntityName) {
+    if (typeName.kind !== ts.SyntaxKind.Identifier) {
+      this.visit(typeName);
+      return;
+    }
+    var identifier = this.ident(typeName);
+    var translated = Transpiler.DART_TYPES[identifier] || identifier;
+    this.emit(translated);
+  }
+
   static DART_KEYWORDS =
       ('abstract as assert async await break case catch class const continue ' +
        'default deferred do dynamic else enum export extends external factory false final ' +
@@ -848,7 +866,7 @@ export class Transpiler {
 
       case ts.SyntaxKind.TypeReference:
         var typeRef = <ts.TypeReferenceNode>node;
-        this.visit(typeRef.typeName);
+        this.visitTypeName(typeRef.typeName);
         if (typeRef.typeArguments) {
           this.emit('<');
           this.visitList(typeRef.typeArguments);
@@ -1063,7 +1081,7 @@ export class Transpiler {
         break;
       case ts.SyntaxKind.ImportClause:
         var importClause = <ts.ImportClause>node;
-        if (importClause.name) this.visit(importClause.name);
+        if (importClause.name) this.visitTypeName(importClause.name);
         if (importClause.namedBindings) {
           this.visit(importClause.namedBindings);
         }
@@ -1071,7 +1089,7 @@ export class Transpiler {
       case ts.SyntaxKind.NamespaceImport:
         var nsImport = <ts.NamespaceImport>node;
         this.emit('as');
-        this.visit(nsImport.name);
+        this.visitTypeName(nsImport.name);
         break;
       case ts.SyntaxKind.NamedImports:
       case ts.SyntaxKind.NamedExports:
@@ -1081,8 +1099,8 @@ export class Transpiler {
       case ts.SyntaxKind.ImportSpecifier:
       case ts.SyntaxKind.ExportSpecifier:
         var spec = <ts.ImportOrExportSpecifier>node;
-        if (spec.propertyName) this.visit(spec.propertyName);
-        this.visit(spec.name);
+        if (spec.propertyName) this.visitTypeName(spec.propertyName);
+        this.visitTypeName(spec.name);
         break;
       case ts.SyntaxKind.ExportDeclaration:
         var exportDecl = <ts.ExportDeclaration>node;
@@ -1100,7 +1118,7 @@ export class Transpiler {
         this.emit('import');
         this.visit(importEqDecl.moduleReference);
         this.emit('as');
-        this.visit(importEqDecl.name);
+        this.visitTypeName(importEqDecl.name);
         this.emit(';');
         break;
       case ts.SyntaxKind.ExternalModuleReference:

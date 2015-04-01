@@ -753,6 +753,14 @@ export class Transpiler {
         this.emit(':');
         this.visit(propAssign.initializer);
         break;
+      case ts.SyntaxKind.ShorthandPropertyAssignment:
+        var shorthand = <ts.ShorthandPropertyAssignment>node;
+        this.result += ' "';
+        this.result += shorthand.name.text;
+        this.result += '"';
+        this.emit(':');
+        this.visit(shorthand.name);
+        break;
       case ts.SyntaxKind.TrueKeyword:
         this.emit('true');
         break;

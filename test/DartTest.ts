@@ -360,6 +360,7 @@ describe('transpile to dart', () => {
       expectTranslate('var x = {a: 1, b: 2}').to.equal(' var x = { "a" : 1 , "b" : 2 } ;');
       expectTranslate('var x = {a: 1, }').to.equal(' var x = { "a" : 1 } ;');
       expectTranslate('var x = {}').to.equal(' var x = { } ;');
+      expectTranslate('var x = {y}').to.equal(' var x = { "y" : y } ;');
     });
   });
 

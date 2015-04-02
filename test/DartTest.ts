@@ -213,8 +213,8 @@ describe('transpile to dart', () => {
     it('translates on parameters',
        () => { expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }'); });
     it('special cases @CONST', () => {
-      expectTranslate('@CONST class X {}').to.equal(' const class X { }');
-      expectTranslate('@CONST() class X {}').to.equal(' const class X { }');
+      expectTranslate('@CONST class X {}').to.equal(' @ CONST const class X { }');
+      expectTranslate('@CONST() class X {}').to.equal(' @ CONST ( ) const class X { }');
       expectTranslate(`class X {
                         x: number;
                         y;
@@ -222,9 +222,9 @@ describe('transpile to dart', () => {
                       }`)
           .to.equal(' class X {' +
                     ' final num x ; final y ;' +
-                    ' const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+                    ' @ CONST const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
       expectTranslate('class X { @CONST constructor() {} }')
-          .to.equal(' class X { const X ( ) ; }');
+          .to.equal(' class X { @ CONST const X ( ) ; }');
       expectErroneousCode('class X { @CONST constructor() { if (1); } }')
           .to.throw('const constructors can only contain assignments and super calls');
       expectErroneousCode('class X { @CONST constructor() { f(); } }')
@@ -237,14 +237,15 @@ describe('transpile to dart', () => {
           .to.throw('assignments in const constructors must assign into this.');
     });
     it('special cases @ABSTRACT', () => {
-      expectTranslate('@ABSTRACT class X {}').to.equal(' abstract class X { }');
+      expectTranslate('@ABSTRACT class X {}').to.equal(' @ ABSTRACT abstract class X { }');
     });
     it('special cases @IMPLEMENTS', () => {
-      expectTranslate('@IMPLEMENTS(Y, Z) class X {}').to.equal(' class X implements Y , Z { }');
+      expectTranslate('@IMPLEMENTS(Y, Z) class X {}')
+          .to.equal(' @ IMPLEMENTS ( Y , Z ) class X implements Y , Z { }');
       expectTranslate('@IMPLEMENTS(Z) class X extends Y {}')
-          .to.equal(' class X extends Y implements Z { }');
+          .to.equal(' @ IMPLEMENTS ( Z ) class X extends Y implements Z { }');
       expectTranslate('@IMPLEMENTS(Z) class X implements Y {}')
-          .to.equal(' class X implements Y , Z { }');
+          .to.equal(' @ IMPLEMENTS ( Z ) class X implements Y , Z { }');
     });
   });
 
@@ -534,6 +535,11 @@ describe('transpile to dart', () => {
       expectTranslate('import x = require("./y")').to.equal(' import "y.dart" as x ;');
       expectTranslate('import {x} from "./y"').to.equal(' import "y.dart" show x ;');
       expectTranslate('import {x} from "../y"').to.equal(' import "../y.dart" show x ;');
+    });
+    // TODO(martinprobst): Re-enable once moved to TypeScript.
+    it.skip('handles ignored annotations in imports', () => {
+      expectTranslate('import {CONST, IMPLEMENTS} from "x"').to.equal('');
+      expectTranslate('import {x, IMPLEMENTS} from "./x"').to.equal(' import "x.dart" show x ;');
     });
   });
 

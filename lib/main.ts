@@ -229,7 +229,8 @@ export class Transpiler {
   }
 
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
-    return decorators && decorators.some((d) => {
+    if (!decorators) return false;
+    return decorators.some((d) => {
       var decName = Transpiler.ident(d.expression);
       if (decName === name) return true;
       if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
@@ -327,7 +328,7 @@ export class Transpiler {
   isEmptyImport(n: ts.ImportDeclaration): boolean {
     var bindings = n.importClause.namedBindings;
     if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
-    return (<ts.NamedImports> bindings).elements.every(Transpiler.isIgnoredAnnotation);
+    return (<ts.NamedImports>bindings).elements.every(Transpiler.isIgnoredAnnotation);
   }
 
   filterImports(ns: ts.ImportOrExportSpecifier[]) {
@@ -423,7 +424,7 @@ export class Transpiler {
       }
       this.emit(')');
     }
-    if (isConstCtor)  {
+    if (isConstCtor) {
       // Const ctors don't have bodies.
       this.emit(';');
     } else {
@@ -754,7 +755,8 @@ export class Transpiler {
         this.emit(`'''${this.escapeTextForTemplateString(node)}`); //highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateTail:
-        this.result += `${this.escapeTextForTemplateString(node)}'''`; //highlighting bug:'
+        this.result += this.escapeTextForTemplateString(node);
+        this.result += `'''`;
         break;
       case ts.SyntaxKind.TemplateSpan:
         var span = <ts.TemplateSpan>node;

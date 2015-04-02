@@ -25,14 +25,16 @@ var TSC_OPTIONS = {
 var tsProject = ts.createProject(TSC_OPTIONS);
 
 gulp.task('test.check-format', function() {
-  return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts']).pipe(formatter.checkFormat('file'));
+  return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
+      .pipe(formatter.checkFormat('file'))
+      .on('warning', onError);
 });
 
-var hasCompileError;
+var hasError;
 var failOnError = true;
 
-var onCompileError = function(err) {
-  hasCompileError = true;
+var onError = function(err) {
+  hasError = true;
   gutil.log(err.message);
   if (failOnError) {
     process.exit(1);
@@ -40,11 +42,11 @@ var onCompileError = function(err) {
 };
 
 gulp.task('compile', function() {
-  hasCompileError = false;
+  hasError = false;
   var tsResult = gulp.src(['lib/**/*.ts', 'typings/**/*.d.ts'])
                      .pipe(sourcemaps.init())
                      .pipe(ts(tsProject))
-                     .on('error', onCompileError);
+                     .on('error', onError);
   return merge([
     tsResult.dts.pipe(gulp.dest('build/definitions')),
     // Write external sourcemap next to the js file
@@ -54,20 +56,20 @@ gulp.task('compile', function() {
 });
 
 gulp.task('test.compile', ['compile'], function(done) {
-  if (hasCompileError) {
+  if (hasError) {
     done();
     return;
   }
   return gulp.src(['test/*.ts', 'lib/**/*.ts', 'typings/**/*.d.ts'])
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
-      .on('error', onCompileError)
+      .on('error', onError)
       .js.pipe(sourcemaps.write())
       .pipe(gulp.dest('build/test'));
 });
 
 gulp.task('test.unit', ['test.compile'], function(done) {
-  if (hasCompileError) {
+  if (hasError) {
     done();
     return;
   }
@@ -87,7 +89,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   spawn('sh', ['-c', 'node build/lib/main.js ' + dir + '/*.ts'], {stdio: 'inherit'})
       .on('close', function(code, signal) {
         if (code > 0) {
-          onCompileError(new Error("Failed to transpile " + testfile + '.ts'));
+          onError(new Error("Failed to transpile " + testfile + '.ts'));
         } else {
           try {
             var opts = {stdio: 'inherit', cwd: dir};

@@ -585,9 +585,8 @@ describe('transpile to dart', () => {
       chai.expect(transpiler.getLibraryName('a/x.ts')).to.equal('a.x');
       chai.expect(transpiler.getLibraryName('a/x.js')).to.equal('a.x');
     });
-    it('handles non word characters', () => {
-      chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x');
-    });
+    it('handles non word characters',
+       () => { chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x'); });
   });
 });
 

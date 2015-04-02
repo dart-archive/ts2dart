@@ -166,9 +166,9 @@ export class Transpiler {
     decorators.forEach((d) => {
       if (d.expression.kind !== ts.SyntaxKind.CallExpression) return;
       var funcExpr = <ts.CallExpression>d.expression;
-      if (this.ident(funcExpr.expression) !== 'IMPLEMENTS') return;
+      if (Transpiler.ident(funcExpr.expression) !== 'IMPLEMENTS') return;
       funcExpr.arguments.forEach((a) => {
-        var interf = this.ident(a);
+        var interf = Transpiler.ident(a);
         if (!interf) this.reportError(a, '@IMPLEMENTS only supports literal identifiers');
         interfaces.push(interf);
       });
@@ -188,30 +188,37 @@ export class Transpiler {
   visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
     if (!decorators) return;
 
+    var isAbstract = false, isConst = false;
     decorators.forEach((d) => {
       // Special case @CONST & @ABSTRACT
       // TODO(martinprobst): remove once the code base is migrated to TypeScript.
-      var name = this.ident(d.expression);
+      var name = Transpiler.ident(d.expression);
       if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
         // Unwrap @CONST()
         var callExpr = (<ts.CallExpression>d.expression);
-        name = this.ident(callExpr.expression);
+        name = Transpiler.ident(callExpr.expression);
       }
+      // Make sure these match IGNORED_ANNOTATIONS below.
+      // TODO(martinprobst): Re-enable the early exits below once moved to TypeScript.
       if (name === 'ABSTRACT') {
-        this.emit('abstract');
-        return;
+        isAbstract = true;
+        // this.emit('abstract');
+        // return;
       }
       if (name === 'CONST') {
-        this.emit('const');
-        return;
+        isConst = true;
+        // this.emit('const');
+        // return;
       }
       if (name === 'IMPLEMENTS') {
         // Ignore @IMPLEMENTS - it's handled above in visitClassLike.
-        return;
+        // return;
       }
       this.emit('@');
       this.visit(d.expression);
     });
+    if (isAbstract) this.emit('abstract');
+    if (isConst) this.emit('const');
   }
 
   hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
@@ -223,21 +230,21 @@ export class Transpiler {
 
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     return decorators && decorators.some((d) => {
-      var decName = this.ident(d.expression);
+      var decName = Transpiler.ident(d.expression);
       if (decName === name) return true;
       if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
       var callExpr = (<ts.CallExpression>d.expression);
-      decName = this.ident(callExpr.expression);
+      decName = Transpiler.ident(callExpr.expression);
       return decName === name;
     });
   }
 
-  ident(n: ts.Node): string {
+  static ident(n: ts.Node): string {
     if (n.kind === ts.SyntaxKind.Identifier) return (<ts.Identifier>n).text;
     if (n.kind === ts.SyntaxKind.QualifiedName) {
       var qname = (<ts.QualifiedName>n);
-      var leftName = this.ident(qname.left);
-      if (leftName) return leftName + '.' + this.ident(qname.right);
+      var leftName = Transpiler.ident(qname.left);
+      if (leftName) return leftName + '.' + Transpiler.ident(qname.right);
     }
     return null;
   }
@@ -266,7 +273,7 @@ export class Transpiler {
     var props = objLit.properties;
     for (var i = 0; i < props.length; i++) {
       var prop = <ts.PropertyAssignment>props[i];
-      this.emit(this.ident(prop.name));
+      this.emit(Transpiler.ident(prop.name));
       this.emit(':');
       this.visit(prop.initializer);
       if (i < objLit.properties.length - 1) this.emit(',');
@@ -303,6 +310,28 @@ export class Transpiler {
     }
     moduleName.text = text + '.dart';
     this.visit(expr);
+  }
+
+  static isIgnoredAnnotation(e: ts.ImportSpecifier) {
+    var name = Transpiler.ident(e.name);
+    switch (name) {
+      case 'CONST':
+      case 'ABSTRACT':
+      case 'IMPLEMENTS':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  isEmptyImport(n: ts.ImportDeclaration): boolean {
+    var bindings = n.importClause.namedBindings;
+    if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
+    return (<ts.NamedImports> bindings).elements.every(Transpiler.isIgnoredAnnotation);
+  }
+
+  filterImports(ns: ts.ImportOrExportSpecifier[]) {
+    return ns.filter((e) => !Transpiler.isIgnoredAnnotation(e));
   }
 
   hasConstCtor(decl: ClassLike) {
@@ -435,7 +464,7 @@ export class Transpiler {
       this.reportError(decl, 'protected declarations are unsupported');
       return;
     }
-    var name = this.ident(decl.name);
+    var name = Transpiler.ident(decl.name);
     if (!name) return;
     var isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);
     var matchesPrivate = !!name.match(/^_/);
@@ -492,7 +521,7 @@ export class Transpiler {
       this.visit(typeName);
       return;
     }
-    var identifier = this.ident(typeName);
+    var identifier = Transpiler.ident(typeName);
     var translated = Transpiler.DART_TYPES[identifier] || identifier;
     this.emit(translated);
   }
@@ -1087,6 +1116,8 @@ export class Transpiler {
 
       case ts.SyntaxKind.ImportDeclaration:
         var importDecl = <ts.ImportDeclaration>node;
+        // TODO(martinprobst): Re-enable once moved to TypeScript.
+        // if (this.isEmptyImport(importDecl)) return;
         this.emit('import');
         this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
         if (importDecl.importClause) {
@@ -1109,9 +1140,17 @@ export class Transpiler {
         this.visitTypeName(nsImport.name);
         break;
       case ts.SyntaxKind.NamedImports:
+        this.emit('show');
+        // TODO(martinprobst): Re-enable once moved to TypeScript.
+        // var used = this.filterImports((<ts.NamedImports>node).elements);
+        // if (used.length === 0) {
+        //  this.reportError(node, 'internal error, used imports must not be empty');
+        // }
+        this.visitList((<ts.NamedImports>node).elements);
+        break;
       case ts.SyntaxKind.NamedExports:
         this.emit('show');
-        this.visitList((<ts.NamedImportsOrExports>node).elements);
+        this.visitList((<ts.NamedExports>node).elements);
         break;
       case ts.SyntaxKind.ImportSpecifier:
       case ts.SyntaxKind.ExportSpecifier:

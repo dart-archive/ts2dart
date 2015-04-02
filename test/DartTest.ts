@@ -574,8 +574,8 @@ describe('transpile to dart', () => {
     var transpiler;
     beforeEach(() => transpiler = new main.Transpiler(true, /* generateLibraryName */ true));
     it('adds a library name', () => {
-      var program = parseProgram('var x;', '/a/b/c.ts');
-      var res = transpiler.translateProgram(program, 'a/b/c.ts');
+      var program = parseProgram('var x;', '/a/b/c.js');
+      var res = transpiler.translateProgram(program, 'a/b/c.js');
       chai.expect(res).to.equal(' library a.b.c ; var x ;');
     });
     it('handles keywords', () => {
@@ -590,7 +590,7 @@ describe('transpile to dart', () => {
   });
 });
 
-function parseProgram(contents: string, fileName = 'file.ts'): ts.Program {
+function parseProgram(contents: string, fileName = 'file.js'): ts.Program {
   var result: string;
   var compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,

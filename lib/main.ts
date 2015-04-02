@@ -28,7 +28,7 @@ export class Transpiler {
     this.relativeFileName = relativeFileName;
     return program.getSourceFiles()
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
-                                               !!sourceFile.fileName.match(/\.[jt]s$/))
+                                               !!sourceFile.fileName.match(/\.[j]s$/))
         .map((f) => this.translate(f))
         .join('\n');
   }

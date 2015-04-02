@@ -18,7 +18,7 @@ export class Transpiler {
 
   constructor(private failFast: boolean = false, private generateLibraryName: boolean = false) {}
 
-  options: ts.CompilerOptions = {
+  static OPTIONS: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
     module: ts.ModuleKind.CommonJS,
     allowNonTsExtensions: true,
@@ -33,15 +33,39 @@ export class Transpiler {
         .join('\n');
   }
 
+  createCompilerHost(files: string[]): ts.CompilerHost {
+    var fileMap: {[s: string]: boolean} = {};
+    files.forEach((f) => fileMap[f] = true);
+    return {
+      getSourceFile(sourceName, languageVersion) {
+        // Only transpile the files directly passed in, do not transpile transitive dependencies.
+        if (fileMap.hasOwnProperty(sourceName)) {
+          var contents = fs.readFileSync(sourceName, 'UTF-8');
+          return ts.createSourceFile(sourceName, contents, Transpiler.OPTIONS.target, true);
+        }
+        if (sourceName === 'lib.d.ts') {
+          return ts.createSourceFile(sourceName, '', Transpiler.OPTIONS.target, true);
+        }
+        return undefined;
+      },
+      writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
+      getDefaultLibFileName: () => 'lib.d.ts',
+      useCaseSensitiveFileNames: () => true,
+      getCanonicalFileName: (filename) => filename,
+      getCurrentDirectory: () => '',
+      getNewLine: () => '\n'
+    };
+  }
+
   translateFile(fileName: string, relativeFileName: string): string {
-    var host = ts.createCompilerHost(this.options, /*setParentNodes*/ true);
-    var program = ts.createProgram([fileName], this.options, host);
+    var host = this.createCompilerHost([fileName]);
+    var program = ts.createProgram([fileName], Transpiler.OPTIONS, host);
     return this.translateProgram(program, relativeFileName);
   }
 
   translateFiles(fileNames: string[]): void {
-    var host = ts.createCompilerHost(this.options, /*setParentNodes*/ true);
-    var program = ts.createProgram(fileNames, this.options, host);
+    var host = this.createCompilerHost(fileNames);
+    var program = ts.createProgram(fileNames, Transpiler.OPTIONS, host);
     program.getSourceFiles()
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
                                                !!sourceFile.fileName.match(/\.[jt]s$/))

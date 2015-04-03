@@ -863,7 +863,12 @@ export class Transpiler {
         this.emit(']');
         break;
       case ts.SyntaxKind.NewExpression:
-        this.emit('new');
+        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) {
+          // Constructor calls in annotations must be const constructor calls.
+          this.emit('const');
+        } else {
+          this.emit('new');
+        }
         this.visitCall(<ts.NewExpression>node);
         break;
       case ts.SyntaxKind.CallExpression:

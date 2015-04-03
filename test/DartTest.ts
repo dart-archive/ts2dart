@@ -1,12 +1,13 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 /// <reference path="../typings/mocha/mocha.d.ts"/>
+/// <reference path="../typings/source-map/source-map.d.ts"/>
 /// <reference path="../typings/source-map-support/source-map-support.d.ts"/>
 
-import sms = require('source-map-support');
-sms.install();
+require('source-map-support').install();
 
 import chai = require('chai');
 import main = require('../lib/main');
+import SourceMap = require('source-map');
 import ts = require('typescript');
 
 describe('transpile to dart', () => {
@@ -573,7 +574,7 @@ describe('transpile to dart', () => {
 
   describe('library name', () => {
     var transpiler;
-    beforeEach(() => transpiler = new main.Transpiler(true, /* generateLibraryName */ true));
+    beforeEach(() => transpiler = new main.Transpiler({failFast: true, generateLibraryName: true}));
     it('adds a library name', () => {
       var program = parseProgram('var x;', '/a/b/c.ts');
       var res = transpiler.translateProgram(program, 'a/b/c.ts');
@@ -591,6 +592,30 @@ describe('transpile to dart', () => {
     });
     it('handles non word characters',
        () => { chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x'); });
+  });
+
+  describe('source maps', () => {
+    var transpiler: main.Transpiler;
+    beforeEach(() => transpiler = new main.Transpiler({failFast: true, generateSourceMap: true}));
+    function translateMap(source) {
+      var program = parseProgram(source, '/absolute/path/test.ts');
+      return transpiler.translateProgram(program, 'path/test.ts');
+    }
+    it('generates a source map', () => {
+      chai.expect(translateMap('var x;'))
+          .to.contain('//# sourceMappingURL=data:application/json;base64,');
+    });
+    it('maps locations', () => {
+      var withMap = translateMap('var xVar: number;\nvar yVar: string;');
+      chai.expect(withMap).to.contain(' num xVar ; String yVar ;');
+      var b64string = withMap.match(/sourceMappingURL=data:application\/json;base64,(.*)/)[1];
+      var mapString = new Buffer(b64string, 'base64').toString();
+      var consumer = new SourceMap.SourceMapConsumer(JSON.parse(mapString));
+      var expectedColumn = ' num xVar ; String yVar ;'.indexOf('yVar') + 1;
+      var pos = consumer.originalPositionFor({line: 1, column: expectedColumn});
+      chai.expect(pos).to.include({line: 2, column: 4});
+      chai.expect(consumer.sourceContentFor('path/test.ts')).to.contain('yVar: string');
+    });
   });
 });
 
@@ -629,6 +654,6 @@ function parseProgram(contents: string, fileName = 'file.ts'): ts.Program {
 
 function translateSource(contents: string, failFast = true): string {
   var program = parseProgram(contents);
-  var transpiler = new main.Transpiler(failFast, /* generateLibraryName */ false);
-  return transpiler.translateProgram(program, null);
+  var transpiler = new main.Transpiler({failFast});
+  return transpiler.translateProgram(program, 'test.ts');
 }

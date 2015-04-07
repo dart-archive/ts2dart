@@ -21,6 +21,8 @@ var TSC_OPTIONS = {
   noExternalResolve: false,
   declarationFiles: true,
   noEmitOnError: true,
+  // TypeScript's own typings (which we require) use ES6 `let` statements.
+  target: 'ES6',
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
 

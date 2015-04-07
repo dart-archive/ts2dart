@@ -10,17 +10,18 @@ var mocha = require('gulp-mocha');
 var sourcemaps = require('gulp-sourcemaps');
 var spawn = require('child_process').spawn;
 var ts = require('gulp-typescript');
+var typescript = require('typescript');
 var which = require('which');
 
 var TSC_OPTIONS = {
   module: "commonjs",
-  // allow pulling in files from node_modules
-  // until TS 1.5 is in tsd / DefinitelyTyped
-  // (the alternative is to include node_modules paths
-  // in the src arrays below for compilation)
+  // allow pulling in files from node_modules until TS 1.5 is in tsd / DefinitelyTyped (the
+  // alternative is to include node_modules paths in the src arrays below for compilation)
   noExternalResolve: false,
   declarationFiles: true,
   noEmitOnError: true,
+  // Specify the TypeScript version we're using.
+  typescript: typescript,
 };
 var tsProject = ts.createProject(TSC_OPTIONS);
 

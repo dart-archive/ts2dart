@@ -579,8 +579,11 @@ describe('transpile to dart', () => {
       var res = transpiler.translateProgram(program, 'a/b/c.ts');
       chai.expect(res).to.equal(' library a.b.c ; var x ;');
     });
-    it('handles keywords', () => {
+    it('handles reserved words', () => {
       chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('a._for._in._do.x');
+    });
+    it('handles built-in and limited keywords', () => {
+      chai.expect(transpiler.getLibraryName('/as/if/sync/x')).to.equal('as._if.sync.x');
     });
     it('handles file extensions', () => {
       chai.expect(transpiler.getLibraryName('a/x.ts')).to.equal('a.x');

@@ -551,19 +551,24 @@ export class Transpiler {
     this.emit(translated);
   }
 
-  static DART_KEYWORDS =
-      ('abstract as assert async await break case catch class const continue ' +
-       'default deferred do dynamic else enum export extends external factory false final ' +
-       'finally for get if implements import in is library new null operator part rethrow return' +
-       ' set static super switch sync this throw true try typedef var void while with yield')
-          .split(/ /);
+  // For the Dart keyword list see
+  // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
+  static DART_RESERVED_WORDS =
+      ('assert break case catch class const continue default do else enum extends false final ' +
+      'finally for if in is new null rethrow return super switch this throw true try var void ' +
+      'while with').split(/ /);
+
+  // These are the built-in and limited keywords.
+  static DART_OTHER_KEYWORDS =
+      ('abstract as async await deferred dynamic export external factory get implements import ' +
+      'library operator part set static sync typedef yield').split(/ /);
 
   getLibraryName(nameForTest: string = null) {
     var parts = (nameForTest || this.relativeFileName).split('/');
     return parts.filter((p) => p.length > 0)
         .map((p) => p.replace(/[^\w.]/g, '_'))
         .map((p) => p.replace(/\.[jt]s$/g, ''))
-        .map((p) => Transpiler.DART_KEYWORDS.indexOf(p) != -1 ? '_' + p : p)
+        .map((p) => Transpiler.DART_RESERVED_WORDS.indexOf(p) != -1 ? '_' + p : p)
         .join('.');
   }
 

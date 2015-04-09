@@ -61,7 +61,7 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts', 'lib/**/*.ts', 'typings/**/*.d.ts'])
+  return gulp.src(['test/*.ts', 'typings/**/*.d.ts'])
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
       .on('error', onError)

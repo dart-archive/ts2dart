@@ -570,21 +570,31 @@ describe('transpile to dart', () => {
                                   '.*void operator is unsupported');
       expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
+    it('reports relative paths in errors', () => {
+      var transpiler = new main.Transpiler({basePath: '/a'});
+      var program = parseProgram('delete x["y"];', '/a/b/c.ts');
+      chai.expect(() => transpiler.translateProgram(program)).to.throw(/^b\/c.ts:1/);
+    });
   });
 
   describe('library name', () => {
     var transpiler;
-    beforeEach(() => transpiler = new main.Transpiler({failFast: true, generateLibraryName: true}));
+    beforeEach(() => {
+      transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: '/a'});
+    });
     it('adds a library name', () => {
       var program = parseProgram('var x;', '/a/b/c.ts');
-      var res = transpiler.translateProgram(program, 'a/b/c.ts');
-      chai.expect(res).to.equal(' library a.b.c ; var x ;');
+      var res = transpiler.translateProgram(program);
+      chai.expect(res).to.equal(' library b.c ; var x ;');
+    });
+    it('leaves relative paths alone', () => {
+      chai.expect(transpiler.getLibraryName('a/b')).to.equal('a.b');
     });
     it('handles reserved words', () => {
-      chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('a._for._in._do.x');
+      chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('_for._in._do.x');
     });
     it('handles built-in and limited keywords', () => {
-      chai.expect(transpiler.getLibraryName('/as/if/sync/x')).to.equal('as._if.sync.x');
+      chai.expect(transpiler.getLibraryName('/a/as/if/sync/x')).to.equal('as._if.sync.x');
     });
     it('handles file extensions', () => {
       chai.expect(transpiler.getLibraryName('a/x.ts')).to.equal('a.x');
@@ -594,12 +604,36 @@ describe('transpile to dart', () => {
        () => { chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x'); });
   });
 
+  describe('output paths', () => {
+    it('writes within the path', () => {
+      var transpiler = new main.Transpiler({basePath: '/a'});
+      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
+      chai.expect(transpiler.getOutputPath('b/c.js', '/x')).to.equal('/x/b/c.dart');
+      chai.expect(transpiler.getOutputPath('b/c.js', 'x')).to.equal('x/b/c.dart');
+      chai.expect(() => transpiler.getOutputPath('/outside/b/c.js', '/x'))
+          .to.throw(/must be located under base/);
+    });
+    it('defaults to writing to the same location', () => {
+      var transpiler = new main.Transpiler({basePath: undefined});
+      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/e')).to.equal('/a/b/c.dart');
+      chai.expect(transpiler.getOutputPath('b/c.js', '')).to.equal('b/c.dart');
+    });
+    it('translates .es6, .ts, and .js', () => {
+      var transpiler = new main.Transpiler({basePath: undefined});
+      ['a.js', 'a.ts', 'a.es6'].forEach((n) => {
+        chai.expect(transpiler.getOutputPath(n, '')).to.equal('a.dart');
+      });
+    });
+  });
+
   describe('source maps', () => {
     var transpiler: main.Transpiler;
-    beforeEach(() => transpiler = new main.Transpiler({failFast: true, generateSourceMap: true}));
+    beforeEach(() => {
+      transpiler = new main.Transpiler({generateSourceMap: true, basePath: '/absolute/'});
+    });
     function translateMap(source) {
       var program = parseProgram(source, '/absolute/path/test.ts');
-      return transpiler.translateProgram(program, 'path/test.ts');
+      return transpiler.translateProgram(program);
     }
     it('generates a source map', () => {
       chai.expect(translateMap('var x;'))
@@ -655,5 +689,5 @@ function parseProgram(contents: string, fileName = 'file.ts'): ts.Program {
 function translateSource(contents: string, failFast = true): string {
   var program = parseProgram(contents);
   var transpiler = new main.Transpiler({failFast});
-  return transpiler.translateProgram(program, 'test.ts');
+  return transpiler.translateProgram(program);
 }

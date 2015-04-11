@@ -76,7 +76,7 @@ export class Transpiler {
   }
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
-    var fileMap: {[s: string]: boolean} = {};
+    var fileMap: {[s:string]: boolean} = {};
     files.forEach((f) => fileMap[f] = true);
     return {
       getSourceFile(sourceName, languageVersion) {
@@ -130,7 +130,7 @@ export class Transpiler {
 
   private visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 
-  private visitEachIfPresent(nodes ?: ts.Node[]) {
+  private visitEachIfPresent(nodes?: ts.Node[]) {
     if (nodes) this.visitEach(nodes);
   }
 
@@ -168,7 +168,7 @@ export class Transpiler {
     this.output.emit(')');
   }
 
-  private visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor ?: string) {
+  private visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor?: string) {
     if (fn.type) this.visit(fn.type);
     if (accessor) this.output.emit(accessor);
     if (fn.name) this.visit(fn.name);
@@ -588,13 +588,15 @@ export class Transpiler {
   // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
   private static DART_RESERVED_WORDS =
       ('assert break case catch class const continue default do else enum extends false final ' +
-      'finally for if in is new null rethrow return super switch this throw true try var void ' +
-      'while with').split(/ /);
+       'finally for if in is new null rethrow return super switch this throw true try var void ' +
+       'while with')
+          .split(/ /);
 
   // These are the built-in and limited keywords.
   private static DART_OTHER_KEYWORDS =
       ('abstract as async await deferred dynamic export external factory get implements import ' +
-      'library operator part set static sync typedef yield').split(/ /);
+       'library operator part set static sync typedef yield')
+          .split(/ /);
 
   private getLibraryName(nameForTest?: string) {
     var fileName = this.getRelativeFileName(nameForTest);
@@ -1305,12 +1307,10 @@ class Output {
     }
   }
 
-  getResult(): string {
-    return this.result + this.generateSourceMapComment();
-  }
+  getResult(): string { return this.result + this.generateSourceMapComment(); }
 
   addSourceMapping(n: ts.Node) {
-    if (!this.sourceMap) return; // source maps disabled.
+    if (!this.sourceMap) return;  // source maps disabled.
     var file = n.getSourceFile() || this.currentFile;
     var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);

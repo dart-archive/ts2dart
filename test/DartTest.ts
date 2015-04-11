@@ -587,9 +587,8 @@ describe('transpile to dart', () => {
       var res = transpiler.translateProgram(program);
       chai.expect(res).to.equal(' library b.c ; var x ;');
     });
-    it('leaves relative paths alone', () => {
-      chai.expect(transpiler.getLibraryName('a/b')).to.equal('a.b');
-    });
+    it('leaves relative paths alone',
+       () => { chai.expect(transpiler.getLibraryName('a/b')).to.equal('a.b'); });
     it('handles reserved words', () => {
       chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('_for._in._do.x');
     });
@@ -620,9 +619,8 @@ describe('transpile to dart', () => {
     });
     it('translates .es6, .ts, and .js', () => {
       var transpiler = new main.Transpiler({basePath: undefined});
-      ['a.js', 'a.ts', 'a.es6'].forEach((n) => {
-        chai.expect(transpiler.getOutputPath(n, '')).to.equal('a.dart');
-      });
+      ['a.js', 'a.ts', 'a.es6'].forEach(
+          (n) => { chai.expect(transpiler.getOutputPath(n, '')).to.equal('a.dart'); });
     });
   });
 

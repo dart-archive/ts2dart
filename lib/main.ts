@@ -9,6 +9,8 @@ import fs = require('fs');
 import fsx = require('fs-extra');
 import path = require('path');
 import ts = require('typescript');
+import base = require('./base');
+import ExpressionTranspiler = require('./expression');
 
 export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
@@ -34,7 +36,11 @@ export class Transpiler {
   private lastCommentIdx: number = -1;
   private errors: string[] = [];
 
-  constructor(private options: TranspilerOptions = {}) {}
+  private transpilers: base.TranspilerStep[];
+
+  constructor(private options: TranspilerOptions = {}) {
+    this.transpilers = [new ExpressionTranspiler(this)];
+  }
 
   private static OPTIONS: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
@@ -50,8 +56,8 @@ export class Transpiler {
   transpile(fileNames: string[], destination?: string): void {
     var host = this.createCompilerHost(fileNames);
     if (this.options.basePath && destination === undefined) {
-      throw new Error(
-          `Must have a destination path when a basePath is specified (${this.options.basePath}`);
+      throw new Error('Must have a destination path when a basePath is specified ' +
+                      this.options.basePath);
     }
     var destinationRoot = destination || this.options.basePath || '';
     var program = ts.createProgram(fileNames, Transpiler.OPTIONS, host);
@@ -75,8 +81,14 @@ export class Transpiler {
     return src;
   }
 
+  translateFile(fileName: string): string {
+    var host = this.createCompilerHost([fileName]);
+    var program = ts.createProgram([fileName], Transpiler.OPTIONS, host);
+    return this.translateProgram(program);
+  }
+
   private createCompilerHost(files: string[]): ts.CompilerHost {
-    var fileMap: {[s:string]: boolean} = {};
+    var fileMap: {[s: string]: boolean} = {};
     files.forEach((f) => fileMap[f] = true);
     return {
       getSourceFile(sourceName, languageVersion) {
@@ -97,12 +109,6 @@ export class Transpiler {
       getCurrentDirectory: () => '',
       getNewLine: () => '\n'
     };
-  }
-
-  translateFile(fileName: string): string {
-    var host = this.createCompilerHost([fileName]);
-    var program = ts.createProgram([fileName], Transpiler.OPTIONS, host);
-    return this.translateProgram(program);
   }
 
   // Visible for testing.
@@ -618,7 +624,10 @@ export class Transpiler {
     return path.relative(this.options.basePath || '', filePath);
   }
 
-  private reportError(n: ts.Node, message: string) {
+  emit(s: string) { this.output.emit(s); }
+  emitNoSpace(s: string) { this.output.emitNoSpace(s); }
+
+  reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile() || this.currentFile;
     var fileName = this.getRelativeFileName(file.fileName);
     var start = n.getStart(file);
@@ -629,7 +638,7 @@ export class Transpiler {
     this.errors.push(fullMessage);
   }
 
-  private visit(node: ts.Node) {
+  visit(node: ts.Node) {
     this.output.addSourceMapping(node);
     var comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
     if (comments) {
@@ -640,6 +649,10 @@ export class Transpiler {
         this.output.emit(text);
         if (c.hasTrailingNewLine) this.output.emitNoSpace('\n');
       });
+    }
+
+    for (var i = 0; i < this.transpilers.length; i++) {
+      if (this.transpilers[i].visitNode(node)) return;
     }
 
     switch (node.kind) {
@@ -929,53 +942,6 @@ export class Transpiler {
         if (!this.maybeHandleSuperCall(callExpr)) {
           this.visitCall(callExpr);
         }
-        break;
-      case ts.SyntaxKind.BinaryExpression:
-        var binExpr = <ts.BinaryExpression>node;
-        var operatorKind = binExpr.operatorToken.kind;
-        if (operatorKind === ts.SyntaxKind.EqualsEqualsEqualsToken || operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) {
-          if (operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) this.output.emit('!');
-          this.output.emit('identical (');
-          this.visit(binExpr.left);
-          this.output.emit(',');
-          this.visit(binExpr.right);
-          this.output.emit(')');
-        } else {
-          this.visit(binExpr.left);
-          if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
-            this.output.emit('is');
-          } else {
-            this.output.emit(ts.tokenToString(binExpr.operatorToken.kind));
-          }
-          this.visit(binExpr.right);
-        }
-        break;
-      case ts.SyntaxKind.PrefixUnaryExpression:
-        var prefixUnary = <ts.PrefixUnaryExpression>node;
-        this.output.emit(ts.tokenToString(prefixUnary.operator));
-        this.visit(prefixUnary.operand);
-        break;
-      case ts.SyntaxKind.PostfixUnaryExpression:
-        var postfixUnary = <ts.PostfixUnaryExpression>node;
-        this.visit(postfixUnary.operand);
-        this.output.emit(ts.tokenToString(postfixUnary.operator));
-        break;
-      case ts.SyntaxKind.ConditionalExpression:
-        var conditional = <ts.ConditionalExpression>node;
-        this.visit(conditional.condition);
-        this.output.emit('?');
-        this.visit(conditional.whenTrue);
-        this.output.emit(':');
-        this.visit(conditional.whenFalse);
-        break;
-      case ts.SyntaxKind.DeleteExpression:
-        this.reportError(node, 'delete operator is unsupported');
-        break;
-      case ts.SyntaxKind.VoidExpression:
-        this.reportError(node, 'void operator is unsupported');
-        break;
-      case ts.SyntaxKind.TypeOfExpression:
-        this.reportError(node, 'typeof operator is unsupported');
         break;
 
       case ts.SyntaxKind.QualifiedName:

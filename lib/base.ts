@@ -31,7 +31,23 @@ export class TranspilerStep {
   // TODO(martinprobst): This belonds to module.ts, refactor.
   getLibraryName(): string { return this.transpiler.getLibraryName(); }
 
-  visitTypeName(typeName: ts.EntityName) { this.transpiler.visitTypeName(typeName); }
+  private static DART_TYPES = {
+    'Promise': 'Future',
+    'Observable': 'Stream',
+    'ObservableController': 'StreamController',
+    'Date': 'DateTime',
+    'StringMap': 'Map'
+  };
+
+  visitTypeName(typeName: ts.EntityName) {
+    if (typeName.kind !== ts.SyntaxKind.Identifier) {
+      this.visit(typeName);
+      return;
+    }
+    var identifier = ident(typeName);
+    var translated = TranspilerStep.DART_TYPES[identifier] || identifier;
+    this.emit(translated);
+  }
 
   hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
     return this.transpiler.hasAncestor(n, kind);

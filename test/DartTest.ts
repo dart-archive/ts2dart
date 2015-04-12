@@ -12,13 +12,6 @@ import ts = require('typescript');
 import t = require('./test_support');
 
 describe('transpile to dart', () => {
-
-  function expectTranslates(cases: any) {
-    for (var tsCode in cases) {
-      t.expectTranslate(tsCode).to.equal(cases[tsCode]);
-    }
-  }
-
   describe('types', () => {
     it('supports qualified names',
        () => { t.expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
@@ -351,105 +344,19 @@ describe('transpile to dart', () => {
     });
   });
 
-  describe('property expressions', () => {
-    it('translates property paths', () => {
-      t.expectTranslate('foo.bar;').to.equal(' foo . bar ;');
-      t.expectTranslate('foo[bar];').to.equal(' foo [ bar ] ;');
-    });
+  it('translates "super()" constructor calls', () => {
+    t.expectTranslate('class X { constructor() { super(1); } }')
+        .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');
+    t.expectErroneousCode('class X { constructor() { if (y) super(1, 2); } }')
+        .to.throw('super calls must be immediate children of their constructors');
+    t.expectTranslate('class X { constructor() { a(); super(1); b(); } }')
+        .to.equal(' class X { X ( ) : super ( 1 ) {' +
+                  ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
+                  ' } }');
   });
-
-  describe('basic expressions', () => {
-    it('does math', () => {
-      expectTranslates({
-        '1 + 2': ' 1 + 2 ;',
-        '1 - 2': ' 1 - 2 ;',
-        '1 * 2': ' 1 * 2 ;',
-        '1 / 2': ' 1 / 2 ;',
-        '1 % 2': ' 1 % 2 ;',
-        'x++': ' x ++ ;',
-        'x--': ' x -- ;',
-        '++x': ' ++ x ;',
-        '--x': ' -- x ;',
-        '-x': ' - x ;',
-      });
-    });
-    it('assigns', () => {
-      expectTranslates({
-        'x += 1': ' x += 1 ;',
-        'x -= 1': ' x -= 1 ;',
-        'x *= 1': ' x *= 1 ;',
-        'x /= 1': ' x /= 1 ;',
-        'x %= 1': ' x %= 1 ;',
-        'x <<= 1': ' x <<= 1 ;',
-        'x >>= 1': ' x >>= 1 ;',
-        'x >>>= 1': ' x >>>= 1 ;',
-        'x &= 1': ' x &= 1 ;',
-        'x ^= 1': ' x ^= 1 ;',
-        'x |= 1': ' x |= 1 ;',
-      });
-    });
-    it('compares', () => {
-      expectTranslates({
-        '1 == 2': ' 1 == 2 ;',
-        '1 != 2': ' 1 != 2 ;',
-        '1 > 2': ' 1 > 2 ;',
-        '1 < 2': ' 1 < 2 ;',
-        '1 >= 2': ' 1 >= 2 ;',
-        '1 <= 2': ' 1 <= 2 ;',
-      });
-    });
-    it('compares identity', () => {
-      t.expectTranslate('1 === 2').to.equal(' identical ( 1 , 2 ) ;');
-      t.expectTranslate('1 !== 2').to.equal(' ! identical ( 1 , 2 ) ;');
-    });
-    it('bit fiddles', () => {
-      expectTranslates({
-        '1 & 2': ' 1 & 2 ;',
-        '1 | 2': ' 1 | 2 ;',
-        '1 ^ 2': ' 1 ^ 2 ;',
-        '~ 1': ' ~ 1 ;',
-        '1 << 2': ' 1 << 2 ;',
-        '1 >> 2': ' 1 >> 2 ;',
-        '1 >>> 2': ' 1 >>> 2 ;',
-      });
-    });
-    it('translates logic', () => {
-      expectTranslates({
-        '1 && 2': ' 1 && 2 ;',
-        '1 || 2': ' 1 || 2 ;',
-        '!1': ' ! 1 ;',
-      });
-    });
-    it('translates ternary', () => { t.expectTranslate('1 ? 2 : 3').to.equal(' 1 ? 2 : 3 ;'); });
-    it('translates the comma operator', () => { t.expectTranslate('1 , 2').to.equal(' 1 , 2 ;'); });
-    it('translates "in"', () => { t.expectTranslate('1 in 2').to.equal(' 1 in 2 ;'); });
-    it('translates "instanceof"',
-       () => { t.expectTranslate('1 instanceof 2').to.equal(' 1 is 2 ;'); });
-    it('translates "this"', () => { t.expectTranslate('this.x').to.equal(' this . x ;'); });
-    it('translates "delete"',
-       () => { t.expectErroneousCode('delete x[y];').to.throw('delete operator is unsupported'); });
-    it('translates "typeof"',
-       () => { t.expectErroneousCode('typeof x;').to.throw('typeof operator is unsupported'); });
-    it('translates "void"',
-       () => { t.expectErroneousCode('void x;').to.throw('void operator is unsupported'); });
-    it('translates "super()" constructor calls', () => {
-      t.expectTranslate('class X { constructor() { super(1); } }')
-          .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');
-      t.expectErroneousCode('class X { constructor() { if (y) super(1, 2); } }')
-          .to.throw('super calls must be immediate children of their constructors');
-      t.expectTranslate('class X { constructor() { a(); super(1); b(); } }')
-          .to.equal(' class X { X ( ) : super ( 1 ) {' +
-                    ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
-                    ' } }');
-    });
-    it('translates "super.x()" super method calls', () => {
-      t.expectTranslate('class X { y() { super.z(1); } }')
-          .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
-    });
-  });
-
-  describe('expressions', () => {
-    it('translates parens', () => { t.expectTranslate('(1)').to.equal(' ( 1 ) ;'); });
+  it('translates "super.x()" super method calls', () => {
+    t.expectTranslate('class X { y() { super.z(1); } }')
+        .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
   });
 
   describe('comments', () => {

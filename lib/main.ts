@@ -32,6 +32,12 @@ export interface TranspilerOptions {
   basePath?: string;
 }
 
+var OPTIONS: ts.CompilerOptions = {
+  target: ts.ScriptTarget.ES6,
+  module: ts.ModuleKind.CommonJS,
+  allowNonTsExtensions: true,
+};
+
 export class Transpiler {
   private output: Output;
   private currentFile: ts.SourceFile;
@@ -55,12 +61,6 @@ export class Transpiler {
     ];
   }
 
-  private static OPTIONS: ts.CompilerOptions = {
-    target: ts.ScriptTarget.ES6,
-    module: ts.ModuleKind.CommonJS,
-    allowNonTsExtensions: true,
-  };
-
   /**
    * Transpiles the given files to Dart.
    * @param fileNames The input files.
@@ -73,7 +73,7 @@ export class Transpiler {
                       this.options.basePath);
     }
     var destinationRoot = destination || this.options.basePath || '';
-    var program = ts.createProgram(fileNames, Transpiler.OPTIONS, host);
+    var program = ts.createProgram(fileNames, OPTIONS, host);
     program.getSourceFiles()
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
@@ -96,7 +96,7 @@ export class Transpiler {
 
   translateFile(fileName: string): string {
     var host = this.createCompilerHost([fileName]);
-    var program = ts.createProgram([fileName], Transpiler.OPTIONS, host);
+    var program = ts.createProgram([fileName], OPTIONS, host);
     return this.translateProgram(program);
   }
 
@@ -108,10 +108,10 @@ export class Transpiler {
         // Only transpile the files directly passed in, do not transpile transitive dependencies.
         if (fileMap.hasOwnProperty(sourceName)) {
           var contents = fs.readFileSync(sourceName, 'UTF-8');
-          return ts.createSourceFile(sourceName, contents, Transpiler.OPTIONS.target, true);
+          return ts.createSourceFile(sourceName, contents, OPTIONS.target, true);
         }
         if (sourceName === 'lib.d.ts') {
-          return ts.createSourceFile(sourceName, '', Transpiler.OPTIONS.target, true);
+          return ts.createSourceFile(sourceName, '', OPTIONS.target, true);
         }
         return undefined;
       },

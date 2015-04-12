@@ -147,42 +147,6 @@ export class Transpiler {
     return this.output.getResult();
   }
 
-  visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
-
-  visitEachIfPresent(nodes?: ts.Node[]) {
-    if (nodes) this.visitEach(nodes);
-  }
-
-  visitList(nodes: ts.Node[], separator: string = ',') {
-    for (var i = 0; i < nodes.length; i++) {
-      this.visit(nodes[i]);
-      if (i < nodes.length - 1) this.emit(separator);
-    }
-  }
-
-  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
-    for (var parent = n; parent; parent = parent.parent) {
-      if (parent.kind === kind) return true;
-    }
-    return false;
-  }
-
-  hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
-    if (!decorators) return false;
-    return decorators.some((d) => {
-      var decName = base.ident(d.expression);
-      if (decName === name) return true;
-      if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
-      var callExpr = (<ts.CallExpression>d.expression);
-      decName = base.ident(callExpr.expression);
-      return decName === name;
-    });
-  }
-
-  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
-    return n && (n.flags & flag) !== 0 || false;
-  }
-
   // For the Dart keyword list see
   // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
   private static DART_RESERVED_WORDS =

@@ -22,13 +22,43 @@ export class TranspilerStep {
 
   visitNode(n: ts.Node): boolean { throw Error('not implemented'); }
 
-  visitEach(nodes: ts.Node[]) { this.transpiler.visitEach(nodes); }
-  visitEachIfPresent(nodes?: ts.Node[]) { this.transpiler.visitEachIfPresent(nodes); }
-  visitList(nodes: ts.Node[], separator: string = ',') {
-    this.transpiler.visitList(nodes, separator);
+  visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
+
+  visitEachIfPresent(nodes?: ts.Node[]) {
+    if (nodes) this.visitEach(nodes);
   }
 
-  // TODO(martinprobst): This belonds to module.ts, refactor.
+  visitList(nodes: ts.Node[], separator: string = ',') {
+    for (var i = 0; i < nodes.length; i++) {
+      this.visit(nodes[i]);
+      if (i < nodes.length - 1) this.emit(separator);
+    }
+  }
+
+  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
+    for (var parent = n; parent; parent = parent.parent) {
+      if (parent.kind === kind) return true;
+    }
+    return false;
+  }
+
+  hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
+    if (!decorators) return false;
+    return decorators.some((d) => {
+      var decName = ident(d.expression);
+      if (decName === name) return true;
+      if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
+      var callExpr = (<ts.CallExpression>d.expression);
+      decName = ident(callExpr.expression);
+      return decName === name;
+    });
+  }
+
+  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
+    return n && (n.flags & flag) !== 0 || false;
+  }
+
+  // TODO(martinprobst): This belongs to module.ts, refactor.
   getLibraryName(): string { return this.transpiler.getLibraryName(); }
 
   private static DART_TYPES = {
@@ -47,15 +77,5 @@ export class TranspilerStep {
     var identifier = ident(typeName);
     var translated = TranspilerStep.DART_TYPES[identifier] || identifier;
     this.emit(translated);
-  }
-
-  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
-    return this.transpiler.hasAncestor(n, kind);
-  }
-  hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
-    return this.transpiler.hasAnnotation(decorators, name);
-  }
-  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
-    return this.transpiler.hasFlag(n, flag);
   }
 }

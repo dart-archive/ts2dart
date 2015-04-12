@@ -1,18 +1,13 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 /// <reference path="../typings/mocha/mocha.d.ts"/>
 /// <reference path="../typings/source-map/source-map.d.ts"/>
-/// <reference path="../typings/source-map-support/source-map-support.d.ts"/>
-
-require('source-map-support').install();
-
+import SourceMap = require('source-map');
 import chai = require('chai');
 import main = require('../lib/main');
-import SourceMap = require('source-map');
-import ts = require('typescript');
 import t = require('./test_support');
+import ts = require('typescript');
 
-describe('transpile to dart', () => {
-
+describe('main transpiler functionality', () => {
   describe('comments', () => {
     it('keeps leading comments', () => {
       t.expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');

@@ -57,6 +57,27 @@ class ExpressionTranspiler extends base.TranspilerStep {
         this.reportError(node, 'typeof operator is unsupported');
         break;
 
+      case ts.SyntaxKind.ParenthesizedExpression:
+        var parenExpr = <ts.ParenthesizedExpression>node;
+        this.emit('(');
+        this.visit(parenExpr.expression);
+        this.emit(')');
+        break;
+
+      case ts.SyntaxKind.PropertyAccessExpression:
+        var propAccess = <ts.PropertyAccessExpression>node;
+        this.visit(propAccess.expression);
+        this.emit('.');
+        this.visit(propAccess.name);
+        break;
+      case ts.SyntaxKind.ElementAccessExpression:
+        var elemAccess = <ts.ElementAccessExpression>node;
+        this.visit(elemAccess.expression);
+        this.emit('[');
+        this.visit(elemAccess.argumentExpression);
+        this.emit(']');
+        break;
+
       default:
         return false;
     }

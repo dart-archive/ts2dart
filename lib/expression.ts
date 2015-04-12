@@ -56,6 +56,7 @@ class ExpressionTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.TypeOfExpression:
         this.reportError(node, 'typeof operator is unsupported');
         break;
+
       default:
         return false;
     }

@@ -30,6 +30,9 @@ class CallTranspiler extends base.TranspilerStep {
           this.visitCall(callExpr);
         }
         break;
+      case ts.SyntaxKind.SuperKeyword:
+        this.emit('super');
+        break;
       default:
         return false;
     }
@@ -162,7 +165,7 @@ class CallTranspiler extends base.TranspilerStep {
     if (isConstCtor) {
       // Const ctors don't have bodies.
       this.emit(';');
-      return true; // completely handled.
+      return true;  // completely handled.
     } else {
       return false;
     }

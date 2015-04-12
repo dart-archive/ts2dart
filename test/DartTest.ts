@@ -13,70 +13,6 @@ import t = require('./test_support');
 
 describe('transpile to dart', () => {
 
-  describe('functions', () => {
-    it('supports declarations',
-       () => { t.expectTranslate('function x() {}').to.equal(' x ( ) { }'); });
-    it('supports param default values', () => {
-      t.expectTranslate('function x(a = 42, b = 1) { return 42; }')
-          .to.equal(' x ( [ a = 42 , b = 1 ] ) { return 42 ; }');
-      t.expectTranslate('function x(p1, a = 42, b = 1, p2) { return 42; }')
-          .to.equal(' x ( p1 , [ a = 42 , b = 1 , p2 ] ) { return 42 ; }');
-    });
-    it('supports empty returns',
-       () => { t.expectTranslate('function x() { return; }').to.equal(' x ( ) { return ; }'); });
-    it('supports named parameters', () => {
-      t.expectTranslate('function x({a = "x", b}) { return a + b; }')
-          .to.equal(' x ( { a : "x" , b } ) { return a + b ; }');
-    });
-    // TODO(martinprobst): Support types on named parameters.
-    it.skip('fails for types on named parameters', () => {
-      t.expectErroneousCode('function x({a}: number) { return a + b; }')
-          .to.throw('types on named parameters are unsupported');
-    });
-    it('translates destructuring parameters', () => {
-      t.expectTranslate('function x({p = null, d = false} = {}) {}')
-          .to.equal(' x ( { p : null , d : false } ) { }');
-      t.expectErroneousCode('function x({a=false}={a:true})')
-          .to.throw('initializers for named parameters must be empty object literals');
-      t.expectErroneousCode('function x({a=false}=true)')
-          .to.throw('initializers for named parameters must be empty object literals');
-      t.expectTranslate('class X { constructor() { super({p: 1}); } }')
-          .to.equal(' class X { X ( ) : super ( p : 1 ) {' +
-                    ' /* super call moved to initializer */ ; } }');
-    });
-    it('hacks last object literal parameters into named parameter', () => {
-      t.expectTranslate('f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');
-      t.expectTranslate('f({a: 12});').to.equal(' f ( a : 12 ) ;');
-      t.expectTranslate('f({"a": 12});').to.equal(' f ( { "a" : 12 } ) ;');
-      t.expectTranslate('new X(x, {a: 12, b: 4});').to.equal(' new X ( x , a : 12 , b : 4 ) ;');
-      t.expectTranslate('f(x, {});').to.equal(' f ( x , { } ) ;');
-    });
-    it('does not support var args', () => {
-      t.expectErroneousCode('function x(...a: number) { return 42; }')
-          .to.throw('rest parameters are unsupported');
-    });
-    it('does not support generic functions', () => {
-      t.expectErroneousCode('function x<T>() { return 42; }')
-          .to.throw('generic functions are unsupported');
-    });
-    it('translates calls', () => {
-      t.expectTranslate('foo();').to.equal(' foo ( ) ;');
-      t.expectTranslate('foo(1, 2);').to.equal(' foo ( 1 , 2 ) ;');
-    });
-    it('translates new calls', () => {
-      t.expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
-      t.expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
-    });
-    it('translates function expressions',
-       () => { t.expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;'); });
-    it('translates fat arrow operator', () => {
-      t.expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;');
-      t.expectTranslate('var a = (p) => isBlank(p)').to.equal(' var a = ( p ) => isBlank ( p ) ;');
-      t.expectTranslate('var a = (p = null) => isBlank(p)')
-          .to.equal(' var a = ( [ p = null ] ) => isBlank ( p ) ;');
-    });
-  });
-
   describe('control structures', () => {
     it('translates switch', () => {
       t.expectTranslate('switch(x) { case 1: break; case 2: break; default: break; }')
@@ -119,21 +55,6 @@ describe('transpile to dart', () => {
       t.expectTranslate('continue;').to.equal(' continue ;');
       t.expectTranslate('break foo ;').to.equal(' break foo ;');
     });
-  });
-
-  it('translates "super()" constructor calls', () => {
-    t.expectTranslate('class X { constructor() { super(1); } }')
-        .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');
-    t.expectErroneousCode('class X { constructor() { if (y) super(1, 2); } }')
-        .to.throw('super calls must be immediate children of their constructors');
-    t.expectTranslate('class X { constructor() { a(); super(1); b(); } }')
-        .to.equal(' class X { X ( ) : super ( 1 ) {' +
-                  ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
-                  ' } }');
-  });
-  it('translates "super.x()" super method calls', () => {
-    t.expectTranslate('class X { y() { super.z(1); } }')
-        .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
   });
 
   describe('comments', () => {

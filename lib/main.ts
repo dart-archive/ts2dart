@@ -218,34 +218,6 @@ export class Transpiler {
     return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 
-  private visitVariableDeclarationType(varDecl: ts.VariableDeclaration) {
-    /* Note: VariableDeclarationList can only occur as part of a for loop. This helper method
-     * is meant for processing for-loop variable declaration types only.
-     *
-     * In Dart, all variables in a variable declaration list must have the same type. Since
-     * we are doing syntax directed translation, we cannot reliably determine if distinct
-     * variables are declared with the same type or not. Hence we support the following cases:
-     *
-     * - A variable declaration list with a single variable can be explicitly typed.
-     * - When more than one variable is in the list, all must be implicitly typed.
-     */
-    var firstDecl = varDecl.parent.declarations[0];
-    var msg = 'Variables in a declaration list of more than one variable cannot by typed';
-    var isConst = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
-    if (firstDecl === varDecl) {
-      if (isConst) this.emit('const');
-      if (!varDecl.type) {
-        if (!isConst) this.emit('var');
-      } else if (varDecl.parent.declarations.length > 1) {
-        this.reportError(varDecl, msg);
-      } else {
-        this.visit(varDecl.type);
-      }
-    } else if (varDecl.type) {
-      this.reportError(varDecl, msg);
-    }
-  }
-
   private static DART_TYPES = {
     'Promise': 'Future',
     'Observable': 'Stream',
@@ -340,22 +312,6 @@ export class Transpiler {
         break;
       case ts.SyntaxKind.EndOfFileToken:
         ts.forEachChild(node, this.visit.bind(this));
-        break;
-
-      case ts.SyntaxKind.VariableDeclarationList:
-        // Note: VariableDeclarationList can only occur as part of a for loop.
-        var varDeclList = <ts.VariableDeclarationList>node;
-        this.visitList(varDeclList.declarations);
-        break;
-
-      case ts.SyntaxKind.VariableDeclaration:
-        var varDecl = <ts.VariableDeclaration>node;
-        this.visitVariableDeclarationType(varDecl);
-        this.visit(varDecl.name);
-        if (varDecl.initializer) {
-          this.emit('=');
-          this.visit(varDecl.initializer);
-        }
         break;
 
       case ts.SyntaxKind.NumberKeyword:
@@ -457,6 +413,7 @@ export class Transpiler {
         this.emit(':');
         this.visit(shorthand.name);
         break;
+
       case ts.SyntaxKind.TrueKeyword:
         this.emit('true');
         break;
@@ -471,15 +428,6 @@ export class Transpiler {
         break;
       case ts.SyntaxKind.ThisKeyword:
         this.emit('this');
-        break;
-      case ts.SyntaxKind.StaticKeyword:
-        this.emit('static');
-        break;
-      case ts.SyntaxKind.PrivateKeyword:
-        // no-op, handled through '_' naming convention in Dart.
-        break;
-      case ts.SyntaxKind.ProtectedKeyword:
-        // Error - handled in `visitDeclarationModifiers` above.
         break;
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;

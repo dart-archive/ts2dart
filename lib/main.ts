@@ -251,9 +251,6 @@ export class Transpiler {
     }
 
     switch (node.kind) {
-      case ts.SyntaxKind.SuperKeyword:
-        this.emit('super');
-        break;
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
         var sLit = <ts.LiteralExpression>node;

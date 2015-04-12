@@ -333,13 +333,6 @@ export class Transpiler {
         this.emit('dynamic');
         break;
 
-      case ts.SyntaxKind.ParenthesizedExpression:
-        var parenExpr = <ts.ParenthesizedExpression>node;
-        this.emit('(');
-        this.visit(parenExpr.expression);
-        this.emit(')');
-        break;
-
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
         var sLit = <ts.LiteralExpression>node;
@@ -428,19 +421,6 @@ export class Transpiler {
         break;
       case ts.SyntaxKind.ThisKeyword:
         this.emit('this');
-        break;
-      case ts.SyntaxKind.PropertyAccessExpression:
-        var propAccess = <ts.PropertyAccessExpression>node;
-        this.visit(propAccess.expression);
-        this.emit('.');
-        this.visit(propAccess.name);
-        break;
-      case ts.SyntaxKind.ElementAccessExpression:
-        var elemAccess = <ts.ElementAccessExpression>node;
-        this.visit(elemAccess.expression);
-        this.emit('[');
-        this.visit(elemAccess.argumentExpression);
-        this.emit(']');
         break;
 
       case ts.SyntaxKind.QualifiedName:

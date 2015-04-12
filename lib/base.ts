@@ -34,4 +34,7 @@ export class TranspilerStep {
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     return this.transpiler.hasAnnotation(decorators, name);
   }
+  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
+    return this.transpiler.hasFlag(n, flag);
+  }
 }

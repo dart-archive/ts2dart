@@ -1,4 +1,6 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
+import chai = require('chai');
+import main = require('../lib/main');
 import t = require('./test_support');
 
 describe('imports', () => {

@@ -28,6 +28,11 @@ export class TranspilerStep {
     this.transpiler.visitList(nodes, separator);
   }
 
+  // TODO(martinprobst): This belonds to module.ts, refactor.
+  getLibraryName(): string { return this.transpiler.getLibraryName(); }
+
+  visitTypeName(typeName: ts.EntityName) { this.transpiler.visitTypeName(typeName); }
+
   hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
     return this.transpiler.hasAncestor(n, kind);
   }

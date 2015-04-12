@@ -16,6 +16,7 @@ import DeclarationTranspiler = require('./declaration');
 import ExpressionTranspiler = require('./expression');
 import ModuleTranspiler = require('./module');
 import StatementTranspiler = require('./statement');
+import TypeTranspiler = require('./type');
 
 export interface TranspilerOptions {
   // Fail on the first error, do not collect multiple. Allows easier debugging as stack traces lead
@@ -48,6 +49,7 @@ export class Transpiler {
       new ExpressionTranspiler(this),
       new ModuleTranspiler(this, options.generateLibraryName),
       new StatementTranspiler(this),
+      new TypeTranspiler(this),
     ];
   }
 
@@ -183,24 +185,6 @@ export class Transpiler {
     return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 
-  private static DART_TYPES = {
-    'Promise': 'Future',
-    'Observable': 'Stream',
-    'ObservableController': 'StreamController',
-    'Date': 'DateTime',
-    'StringMap': 'Map'
-  };
-
-  visitTypeName(typeName: ts.EntityName) {
-    if (typeName.kind !== ts.SyntaxKind.Identifier) {
-      this.visit(typeName);
-      return;
-    }
-    var identifier = base.ident(typeName);
-    var translated = Transpiler.DART_TYPES[identifier] || identifier;
-    this.emit(translated);
-  }
-
   // For the Dart keyword list see
   // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
   private static DART_RESERVED_WORDS =
@@ -267,25 +251,9 @@ export class Transpiler {
     }
 
     switch (node.kind) {
-      case ts.SyntaxKind.NumberKeyword:
-        this.emit('num');
-        break;
-      case ts.SyntaxKind.StringKeyword:
-        this.emit('String');
-        break;
-      case ts.SyntaxKind.VoidKeyword:
-        this.emit('void');
-        break;
       case ts.SyntaxKind.SuperKeyword:
         this.emit('super');
         break;
-      case ts.SyntaxKind.BooleanKeyword:
-        this.emit('bool');
-        break;
-      case ts.SyntaxKind.AnyKeyword:
-        this.emit('dynamic');
-        break;
-
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
         var sLit = <ts.LiteralExpression>node;
@@ -376,39 +344,6 @@ export class Transpiler {
         this.emit('this');
         break;
 
-      case ts.SyntaxKind.QualifiedName:
-        var first = <ts.QualifiedName>node;
-        this.visit(first.left);
-        this.emit('.');
-        this.visit(first.right);
-        break;
-      case ts.SyntaxKind.Identifier:
-        var ident = <ts.Identifier>node;
-        this.emit(ident.text);
-        break;
-
-      case ts.SyntaxKind.TypeLiteral:
-        // Dart doesn't support type literals.
-        this.emit('dynamic');
-        break;
-
-      case ts.SyntaxKind.TypeReference:
-        var typeRef = <ts.TypeReferenceNode>node;
-        this.visitTypeName(typeRef.typeName);
-        if (typeRef.typeArguments) {
-          this.emit('<');
-          this.visitList(typeRef.typeArguments);
-          this.emit('>');
-        }
-        break;
-      case ts.SyntaxKind.TypeParameter:
-        var typeParam = <ts.TypeParameterDeclaration>node;
-        this.visit(typeParam.name);
-        if (typeParam.constraint) {
-          this.emit('extends');
-          this.visit(typeParam.constraint);
-        }
-        break;
       default:
         this.reportError(node,
             `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);

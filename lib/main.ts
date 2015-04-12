@@ -17,6 +17,7 @@ import ExpressionTranspiler = require('./expression');
 import ModuleTranspiler = require('./module');
 import StatementTranspiler = require('./statement');
 import TypeTranspiler = require('./type');
+import LiteralTranspiler = require('./literal');
 
 export interface TranspilerOptions {
   // Fail on the first error, do not collect multiple. Allows easier debugging as stack traces lead
@@ -44,9 +45,10 @@ export class Transpiler {
 
   constructor(private options: TranspilerOptions = {}) {
     this.transpilers = [
-      new CallTranspiler(this),
+      new CallTranspiler(this),  // Has to come before StatementTranspiler!
       new DeclarationTranspiler(this),
       new ExpressionTranspiler(this),
+      new LiteralTranspiler(this),
       new ModuleTranspiler(this, options.generateLibraryName),
       new StatementTranspiler(this),
       new TypeTranspiler(this),
@@ -181,10 +183,6 @@ export class Transpiler {
     return n && (n.flags & flag) !== 0 || false;
   }
 
-  private escapeTextForTemplateString(n: ts.Node): string {
-    return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
-  }
-
   // For the Dart keyword list see
   // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
   private static DART_RESERVED_WORDS =
@@ -250,102 +248,8 @@ export class Transpiler {
       if (this.transpilers[i].visitNode(node)) return;
     }
 
-    switch (node.kind) {
-      // Literals.
-      case ts.SyntaxKind.NumericLiteral:
-        var sLit = <ts.LiteralExpression>node;
-        this.emit(sLit.getText());
-        break;
-      case ts.SyntaxKind.StringLiteral:
-        var sLit = <ts.LiteralExpression>node;
-        var text = JSON.stringify(sLit.text);
-        // Escape dollar sign since dart will interpolate in double quoted literal
-        var text = text.replace(/\$/, '\\$');
-        this.emit(text);
-        break;
-      case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
-        this.emit(`'''${this.escapeTextForTemplateString(node)}'''`);
-        break;
-      case ts.SyntaxKind.TemplateMiddle:
-        this.emitNoSpace(this.escapeTextForTemplateString(node));
-        break;
-      case ts.SyntaxKind.TemplateExpression:
-        var tmpl = <ts.TemplateExpression>node;
-        if (tmpl.head) this.visit(tmpl.head);
-        if (tmpl.templateSpans) this.visitEach(tmpl.templateSpans);
-        break;
-      case ts.SyntaxKind.TemplateHead:
-        this.emit(`'''${this.escapeTextForTemplateString(node)}`); //highlighting bug:'
-        break;
-      case ts.SyntaxKind.TemplateTail:
-        this.emitNoSpace(this.escapeTextForTemplateString(node));
-        this.emitNoSpace(`'''`);
-        break;
-      case ts.SyntaxKind.TemplateSpan:
-        var span = <ts.TemplateSpan>node;
-        if (span.expression) {
-          // Do not emit extra whitespace inside the string template
-          this.emitNoSpace('${');
-          this.visit(span.expression);
-          this.emitNoSpace('}');
-        }
-        if (span.literal) this.visit(span.literal);
-        break;
-      case ts.SyntaxKind.ArrayLiteralExpression:
-        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
-        this.emit('[');
-        this.visitList((<ts.ArrayLiteralExpression>node).elements);
-        this.emit(']');
-        break;
-      case ts.SyntaxKind.ObjectLiteralExpression:
-        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
-        this.emit('{');
-        this.visitList((<ts.ObjectLiteralExpression>node).properties);
-        this.emit('}');
-        break;
-      case ts.SyntaxKind.PropertyAssignment:
-        var propAssign = <ts.PropertyAssignment>node;
-        if (propAssign.name.kind === ts.SyntaxKind.Identifier) {
-          // Dart identifiers in Map literals need quoting.
-          this.emitNoSpace(' "');
-          this.emitNoSpace((<ts.Identifier>propAssign.name).text);
-          this.emitNoSpace('"');
-        } else {
-          this.visit(propAssign.name);
-        }
-        this.emit(':');
-        this.visit(propAssign.initializer);
-        break;
-      case ts.SyntaxKind.ShorthandPropertyAssignment:
-        var shorthand = <ts.ShorthandPropertyAssignment>node;
-        this.emitNoSpace(' "');
-        this.emitNoSpace(shorthand.name.text);
-        this.emitNoSpace('"');
-        this.emit(':');
-        this.visit(shorthand.name);
-        break;
-
-      case ts.SyntaxKind.TrueKeyword:
-        this.emit('true');
-        break;
-      case ts.SyntaxKind.FalseKeyword:
-        this.emit('false');
-        break;
-      case ts.SyntaxKind.NullKeyword:
-        this.emit('null');
-        break;
-      case ts.SyntaxKind.RegularExpressionLiteral:
-        this.emit((<ts.LiteralExpression>node).text);
-        break;
-      case ts.SyntaxKind.ThisKeyword:
-        this.emit('this');
-        break;
-
-      default:
-        this.reportError(node,
-            `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
-        break;
-    }
+    this.reportError(node, 'Unsupported node type ' + (<any>ts).SyntaxKind[node.kind] + ': ' +
+                               node.getFullText());
   }
 }
 

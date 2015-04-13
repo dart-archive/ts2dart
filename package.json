@@ -1,12 +1,13 @@
 {
   "name": "ts2dart",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Transpile TypeScript code to Dart",
   "main": "build/lib/main.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
+    "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
     "source-map-support": "^0.2.9",
     "typescript": "Microsoft/TypeScript#cebe42b81fbeeaf68c8e228dda5e602ab94e151b"

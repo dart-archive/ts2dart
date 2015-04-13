@@ -19,6 +19,9 @@
     },
     "source-map/source-map.d.ts": {
       "commit": "2520bce9a8a71b66e67487cbd5b33fec880b0c55"
+    },
+    "fs-extra/fs-extra.d.ts": {
+      "commit": "d5f92f93bdb49f332fa662ff1d0cc8700f02e4dc"
     }
   }
 }

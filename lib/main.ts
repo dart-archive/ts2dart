@@ -1,41 +1,72 @@
+/// <reference path='../typings/fs-extra/fs-extra.d.ts' />
 /// <reference path='../typings/node/node.d.ts' />
 /// <reference path='../typings/source-map/source-map.d.ts' />
 // Use HEAD version of typescript, installed by npm
 /// <reference path='../node_modules/typescript/bin/typescript.d.ts' />
 require('source-map-support').install();
-import fs = require('fs');
 import SourceMap = require('source-map');
+import fs = require('fs');
+import fsx = require('fs-extra');
+import path = require('path');
 import ts = require('typescript');
 
 export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
 export interface TranspilerOptions {
+  // Fail on the first error, do not collect multiple. Allows easier debugging as stack traces lead
+  // directly to the offending line.
   failFast?: boolean;
+  // Whether to generate 'library a.b.c;' names from relative file paths.
   generateLibraryName?: boolean;
+  // Whether to generate source maps.
   generateSourceMap?: boolean;
+  // A base path to relativize absolute file paths against. This is useful for library name
+  // generation (see above) and nicer file names in error messages.
+  basePath?: string;
 }
 
 export class Transpiler {
   private output: Output;
-
-  private relativeFileName: string;
   private currentFile: ts.SourceFile;
 
   // Comments attach to all following AST nodes before the next 'physical' token. Track the earliest
   // offset to avoid printing comments multiple times.
-  lastCommentIdx: number = -1;
-  errors: string[] = [];
+  private lastCommentIdx: number = -1;
+  private errors: string[] = [];
 
   constructor(private options: TranspilerOptions = {}) {}
 
-  static OPTIONS: ts.CompilerOptions = {
+  private static OPTIONS: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
     module: ts.ModuleKind.CommonJS,
     allowNonTsExtensions: true,
   };
 
-  translateProgram(program: ts.Program, relativeFileName: string): string {
-    this.relativeFileName = relativeFileName;
+  /**
+   * Transpiles the given files to Dart.
+   * @param fileNames The input files.
+   * @param destination Location to write files to. Creates files next to their sources if absent.
+   */
+  transpile(fileNames: string[], destination?: string): void {
+    var host = this.createCompilerHost(fileNames);
+    if (this.options.basePath && destination === undefined) {
+      throw new Error(
+          `Must have a destination path when a basePath is specified (${this.options.basePath}`);
+    }
+    var destinationRoot = destination || this.options.basePath || '';
+    var program = ts.createProgram(fileNames, Transpiler.OPTIONS, host);
+    program.getSourceFiles()
+        // Do not generate output for .d.ts files.
+        .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
+        .forEach((f: ts.SourceFile) => {
+          var dartCode = this.translate(f);
+          var outputFile = this.getOutputPath(f.fileName, destinationRoot);
+          fsx.mkdirsSync(path.dirname(outputFile));
+          fs.writeFileSync(outputFile, dartCode);
+        });
+  }
+
+  translateProgram(program: ts.Program): string {
     var src = program.getSourceFiles()
                   .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
                                                          !!sourceFile.fileName.match(/\.[jt]s$/))
@@ -44,7 +75,7 @@ export class Transpiler {
     return src;
   }
 
-  createCompilerHost(files: string[]): ts.CompilerHost {
+  private createCompilerHost(files: string[]): ts.CompilerHost {
     var fileMap: {[s: string]: boolean} = {};
     files.forEach((f) => fileMap[f] = true);
     return {
@@ -68,33 +99,28 @@ export class Transpiler {
     };
   }
 
-  translateFile(fileName: string, relativeFileName: string): string {
+  translateFile(fileName: string): string {
     var host = this.createCompilerHost([fileName]);
     var program = ts.createProgram([fileName], Transpiler.OPTIONS, host);
-    return this.translateProgram(program, relativeFileName);
+    return this.translateProgram(program);
   }
 
-  translateFiles(fileNames: string[]): void {
-    var host = this.createCompilerHost(fileNames);
-    var program = ts.createProgram(fileNames, Transpiler.OPTIONS, host);
-    program.getSourceFiles()
-        .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
-                                               !!sourceFile.fileName.match(/\.[jt]s$/))
-        .forEach((f: ts.SourceFile) => {
-          var dartCode = this.translate(f);
-          var dartFile = f.fileName.replace(/.[jt]s$/, '.dart');
-          fs.writeFileSync(dartFile, dartCode);
-        });
+  // Visible for testing.
+  getOutputPath(filePath: string, destinationRoot: string): string {
+    var relative = this.getRelativeFileName(filePath);
+    var dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
+    return path.join(destinationRoot, dartFile);
   }
 
-  translate(sourceFile: ts.SourceFile): string {
-    this.output = new Output(sourceFile, this.relativeFileName, this.options.generateSourceMap);
+  private translate(sourceFile: ts.SourceFile): string {
+    this.currentFile = sourceFile;
+    this.output =
+        new Output(sourceFile, this.getRelativeFileName(), this.options.generateSourceMap);
     this.errors = [];
     this.lastCommentIdx = -1;
-    this.currentFile = sourceFile;
     this.visit(sourceFile);
     if (this.errors.length) {
-      var e = new Error('hello' + this.errors.join('\n'));
+      var e = new Error(this.errors.join('\n'));
       e.name = 'TS2DartError';
       throw e;
     }
@@ -102,20 +128,20 @@ export class Transpiler {
     return this.output.getResult();
   }
 
-  visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
+  private visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 
-  visitEachIfPresent(nodes ?: ts.Node[]) {
+  private visitEachIfPresent(nodes ?: ts.Node[]) {
     if (nodes) this.visitEach(nodes);
   }
 
-  visitList(nodes: ts.Node[], separator: string = ',') {
+  private visitList(nodes: ts.Node[], separator: string = ',') {
     for (var i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
       if (i < nodes.length - 1) this.output.emit(separator);
     }
   }
 
-  visitParameters(fn: ts.FunctionLikeDeclaration) {
+  private visitParameters(fn: ts.FunctionLikeDeclaration) {
     this.output.emit('(');
     let firstInitParamIdx;
     for (firstInitParamIdx = 0; firstInitParamIdx < fn.parameters.length; firstInitParamIdx++) {
@@ -142,7 +168,7 @@ export class Transpiler {
     this.output.emit(')');
   }
 
-  visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor ?: string) {
+  private visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor ?: string) {
     if (fn.type) this.visit(fn.type);
     if (accessor) this.output.emit(accessor);
     if (fn.name) this.visit(fn.name);
@@ -161,7 +187,7 @@ export class Transpiler {
     }
   }
 
-  visitClassLike(keyword: string, decl: ClassLike) {
+  private visitClassLike(keyword: string, decl: ClassLike) {
     this.visitDecorators(decl.decorators);
     this.output.emit(keyword);
     this.visit(decl.name);
@@ -191,7 +217,7 @@ export class Transpiler {
   }
 
   /** Returns the parameters passed to @IMPLEMENTS as the identifier's string values. */
-  getImplementsDecorators(decorators: ts.NodeArray<ts.Decorator>): string[] {
+  private getImplementsDecorators(decorators: ts.NodeArray<ts.Decorator>): string[] {
     var interfaces = [];
     if (!decorators) return interfaces;
     decorators.forEach((d) => {
@@ -207,7 +233,7 @@ export class Transpiler {
     return interfaces;
   }
 
-  visitCall(c: ts.CallExpression) {
+  private visitCall(c: ts.CallExpression) {
     this.visit(c.expression);
     this.output.emit('(');
     if (!this.handleNamedParamsCall(c)) {
@@ -216,7 +242,7 @@ export class Transpiler {
     this.output.emit(')');
   }
 
-  visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
+  private visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
     if (!decorators) return;
 
     var isAbstract = false, isConst = false;
@@ -252,14 +278,14 @@ export class Transpiler {
     if (isConst) this.output.emit('const');
   }
 
-  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
+  private hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
     for (var parent = n; parent; parent = parent.parent) {
       if (parent.kind === kind) return true;
     }
     return false;
   }
 
-  hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
+  private hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     if (!decorators) return false;
     return decorators.some((d) => {
       var decName = Transpiler.ident(d.expression);
@@ -271,7 +297,7 @@ export class Transpiler {
     });
   }
 
-  static ident(n: ts.Node): string {
+  private static ident(n: ts.Node): string {
     if (n.kind === ts.SyntaxKind.Identifier) return (<ts.Identifier>n).text;
     if (n.kind === ts.SyntaxKind.QualifiedName) {
       var qname = (<ts.QualifiedName>n);
@@ -281,7 +307,7 @@ export class Transpiler {
     return null;
   }
 
-  handleNamedParamsCall(c: ts.CallExpression): boolean {
+  private handleNamedParamsCall(c: ts.CallExpression): boolean {
     // Preamble: This is all committed in the name of backwards compat with the traceur transpiler.
 
     // Terrible hack: transform foo(a, b, {c: d}) into foo(a, b, c: d), which is Dart's calling
@@ -313,7 +339,7 @@ export class Transpiler {
     return true;
   }
 
-  visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
+  private visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
     this.visitDecorators(paramDecl.decorators);
     if (paramDecl.type) {
       // TODO(martinprobst): These are currently silently ignored.
@@ -329,7 +355,7 @@ export class Transpiler {
     }
   }
 
-  visitExternalModuleReferenceExpr(expr: ts.Expression) {
+  private visitExternalModuleReferenceExpr(expr: ts.Expression) {
     // TODO: what if this isn't a string literal?
     var moduleName = <ts.StringLiteralExpression>expr;
     var text = moduleName.text;
@@ -344,7 +370,7 @@ export class Transpiler {
     this.visit(expr);
   }
 
-  static isIgnoredAnnotation(e: ts.ImportSpecifier) {
+  private static isIgnoredAnnotation(e: ts.ImportSpecifier) {
     var name = Transpiler.ident(e.name);
     switch (name) {
       case 'CONST':
@@ -356,17 +382,17 @@ export class Transpiler {
     }
   }
 
-  isEmptyImport(n: ts.ImportDeclaration): boolean {
+  private isEmptyImport(n: ts.ImportDeclaration): boolean {
     var bindings = n.importClause.namedBindings;
     if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
     return (<ts.NamedImports>bindings).elements.every(Transpiler.isIgnoredAnnotation);
   }
 
-  filterImports(ns: ts.ImportOrExportSpecifier[]) {
+  private filterImports(ns: ts.ImportOrExportSpecifier[]) {
     return ns.filter((e) => !Transpiler.isIgnoredAnnotation(e));
   }
 
-  hasConstCtor(decl: ClassLike) {
+  private hasConstCtor(decl: ClassLike) {
     return decl.members.some((m) => {
       if (m.kind !== ts.SyntaxKind.Constructor) return false;
       return this.hasAnnotation(m.decorators, 'CONST');
@@ -384,7 +410,7 @@ export class Transpiler {
    * <p>Not emitting super() calls when traversing the ctor body is handled by maybeHandleSuperCall
    * below.
    */
-  visitConstructorBody(ctor: ts.ConstructorDeclaration) {
+  private visitConstructorBody(ctor: ts.ConstructorDeclaration) {
     var body = ctor.body;
     if (!body) return;
 
@@ -467,7 +493,7 @@ export class Transpiler {
    * Checks whether `callExpr` is a super() call that should be ignored because it was already
    * handled by `maybeEmitSuperInitializer` above.
    */
-  maybeHandleSuperCall(callExpr: ts.CallExpression): boolean {
+  private maybeHandleSuperCall(callExpr: ts.CallExpression): boolean {
     if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) return false;
     // Sanity check that there was indeed a ctor directly above this call.
     var exprStmt = callExpr.parent;
@@ -481,11 +507,11 @@ export class Transpiler {
     return true;
   }
 
-  hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
+  private hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
     return n && (n.flags & flag) !== 0 || false;
   }
 
-  visitDeclarationMetadata(decl: ts.Declaration) {
+  private visitDeclarationMetadata(decl: ts.Declaration) {
     this.visitDecorators(decl.decorators);
     this.visitEachIfPresent(decl.modifiers);
 
@@ -508,11 +534,11 @@ export class Transpiler {
     }
   }
 
-  escapeTextForTemplateString(n: ts.Node): string {
+  private escapeTextForTemplateString(n: ts.Node): string {
     return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 
-  visitVariableDeclarationType(varDecl: ts.VariableDeclaration) {
+  private visitVariableDeclarationType(varDecl: ts.VariableDeclaration) {
     /* Note: VariableDeclarationList can only occur as part of a for loop. This helper method
      * is meant for processing for-loop variable declaration types only.
      *
@@ -540,7 +566,7 @@ export class Transpiler {
     }
   }
 
-  static DART_TYPES = {
+  private static DART_TYPES = {
     'Promise': 'Future',
     'Observable': 'Stream',
     'ObservableController': 'StreamController',
@@ -548,7 +574,7 @@ export class Transpiler {
     'StringMap': 'Map'
   };
 
-  visitTypeName(typeName: ts.EntityName) {
+  private visitTypeName(typeName: ts.EntityName) {
     if (typeName.kind !== ts.SyntaxKind.Identifier) {
       this.visit(typeName);
       return;
@@ -560,18 +586,19 @@ export class Transpiler {
 
   // For the Dart keyword list see
   // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
-  static DART_RESERVED_WORDS =
+  private static DART_RESERVED_WORDS =
       ('assert break case catch class const continue default do else enum extends false final ' +
       'finally for if in is new null rethrow return super switch this throw true try var void ' +
       'while with').split(/ /);
 
   // These are the built-in and limited keywords.
-  static DART_OTHER_KEYWORDS =
+  private static DART_OTHER_KEYWORDS =
       ('abstract as async await deferred dynamic export external factory get implements import ' +
       'library operator part set static sync typedef yield').split(/ /);
 
-  getLibraryName(nameForTest: string = null) {
-    var parts = (nameForTest || this.relativeFileName).split('/');
+  private getLibraryName(nameForTest?: string) {
+    var fileName = this.getRelativeFileName(nameForTest);
+    var parts = fileName.split('/');
     return parts.filter((p) => p.length > 0)
         .map((p) => p.replace(/[^\w.]/g, '_'))
         .map((p) => p.replace(/\.[jt]s$/g, ''))
@@ -579,17 +606,28 @@ export class Transpiler {
         .join('.');
   }
 
-  reportError(n: ts.Node, message: string) {
+  private getRelativeFileName(absolute?: string) {
+    var filePath = absolute !== undefined ? absolute : this.currentFile.fileName;
+    if (filePath.indexOf('/') !== 0) return filePath;  // relative path.
+    var base = this.options.basePath || '';
+    if (filePath.indexOf(base) !== 0) {
+      throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
+    }
+    return path.relative(this.options.basePath || '', filePath);
+  }
+
+  private reportError(n: ts.Node, message: string) {
     var file = n.getSourceFile() || this.currentFile;
+    var fileName = this.getRelativeFileName(file.fileName);
     var start = n.getStart(file);
     var pos = file.getLineAndCharacterOfPosition(start);
     // Line and character are 0-based.
-    var fullMessage = `${file.fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`;
+    var fullMessage = `${fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`;
     if (this.options.failFast) throw new Error(fullMessage);
     this.errors.push(fullMessage);
   }
 
-  visit(node: ts.Node) {
+  private visit(node: ts.Node) {
     this.output.addSourceMapping(node);
     var comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
     if (comments) {
@@ -1295,6 +1333,5 @@ class Output {
 
 // CLI entry point
 if (require.main === module) {
-  var tp = new Transpiler();
-  tp.translateFiles(process.argv.slice(2));
+  new Transpiler().transpile(process.argv.slice(2))
 }

@@ -4,14 +4,15 @@
 import SourceMap = require('source-map');
 import chai = require('chai');
 import main = require('../lib/main');
-import t = require('./test_support');
 import ts = require('typescript');
+
+import {expectTranslate, expectErroneousCode, parseProgram} from './test_support';
 
 describe('main transpiler functionality', () => {
   describe('comments', () => {
     it('keeps leading comments', () => {
-      t.expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
-      t.expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
+      expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
+      expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
     });
   });
 
@@ -20,11 +21,11 @@ describe('main transpiler functionality', () => {
       // Reports both the private field not having an underbar and protected being unsupported.
       var errorLines = new RegExp('delete operator is unsupported\n' +
                                   '.*void operator is unsupported');
-      t.expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
+      expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
     it('reports relative paths in errors', () => {
       var transpiler = new main.Transpiler({basePath: '/a'});
-      var program = t.parseProgram('delete x["y"];', '/a/b/c.ts');
+      var program = parseProgram('delete x["y"];', '/a/b/c.ts');
       chai.expect(() => transpiler.translateProgram(program)).to.throw(/^b\/c.ts:1/);
     });
   });
@@ -56,7 +57,7 @@ describe('main transpiler functionality', () => {
       transpiler = new main.Transpiler({generateSourceMap: true, basePath: '/absolute/'});
     });
     function translateMap(source) {
-      var program = t.parseProgram(source, '/absolute/path/test.ts');
+      var program = parseProgram(source, '/absolute/path/test.ts');
       return transpiler.translateProgram(program);
     }
     it('generates a source map', () => {

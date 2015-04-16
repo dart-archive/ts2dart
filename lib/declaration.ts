@@ -51,7 +51,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
           this.reportError(node, 'const enums are not supported');
         }
         this.emit('enum');
-        this.visit(decl.name);
+        this.visitTypeName(decl.name);
         this.emit('{');
         // Enums can be empty in TS ...
         if (decl.members.length === 0) {
@@ -267,7 +267,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
   private visitClassLike(keyword: string, decl: ClassLike) {
     this.visitDecorators(decl.decorators);
     this.emit(keyword);
-    this.visit(decl.name);
+    this.visitTypeName(decl.name);
     if (decl.typeParameters) {
       this.emit('<');
       this.visitList(decl.typeParameters);

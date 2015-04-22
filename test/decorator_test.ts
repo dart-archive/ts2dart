@@ -63,4 +63,12 @@ describe('annotation/decorator hack', () => {
     expectTranslate('import {FooAnnotation} from "foo";')
         .to.equal(' import "package:foo.dart" show Foo ;');
   });
+  it('should strip "Annotation" in constructor names', () => {
+  expectTranslate('@CONST class FooAnnotation { constructor() {} }')
+      .to.equal(' @ CONST const class Foo { Foo( ) { } }');
+  });
+  it('should strip "Annotation" in type checks', () => {
+  expectTranslate('x instanceof FooAnnotation;')
+      .to.equal(' x is Foo ;');
+  });
 });

@@ -12,6 +12,10 @@ describe('types', () => {
     expectTranslate('import Promise = require("./somewhere");')
         .to.equal(' import "somewhere.dart" as Future ;');
   });
+  it('not mangle prototype names', () => {
+    expectTranslate('import toString = require("./somewhere");')
+        .to.equal(' import "somewhere.dart" as toString ;');
+  });
 });
 
 describe('type arguments', () => {

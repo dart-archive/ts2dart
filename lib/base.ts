@@ -75,8 +75,10 @@ export class TranspilerStep {
       return;
     }
     var identifier = ident(typeName);
-    var translated = TranspilerStep.DART_TYPES[identifier] || identifier;
-    this.emit(translated);
+    if (TranspilerStep.DART_TYPES.hasOwnProperty(identifier)) {
+      identifier = TranspilerStep.DART_TYPES[identifier];
+    }
+    this.emit(identifier);
   }
 
   maybeVisitTypeArguments(n: {typeArguments?: ts.NodeArray<ts.TypeNode>}) {

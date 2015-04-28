@@ -23,10 +23,11 @@ class ExpressionTranspiler extends base.TranspilerStep {
           this.visit(binExpr.left);
           if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
             this.emit('is');
+            this.visitTypeName(<ts.Identifier>binExpr.right);
           } else {
             this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+            this.visit(binExpr.right);
           }
-          this.visit(binExpr.right);
         }
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:

@@ -75,7 +75,6 @@ export class TranspilerStep {
       return;
     }
     var identifier = ident(typeName);
-    identifier = identifier.replace(/(.+)Annotation$/, '$1');
     var translated = TranspilerStep.DART_TYPES[identifier] || identifier;
     this.emit(translated);
   }

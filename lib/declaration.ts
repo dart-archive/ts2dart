@@ -108,6 +108,9 @@ class DeclarationTranspiler extends base.TranspilerStep {
         }
         this.emit(';');
         break;
+      case ts.SyntaxKind.SemicolonClassElement:
+        // No-op, don't emit useless declarations.
+        break;
       case ts.SyntaxKind.MethodDeclaration:
         this.visitDeclarationMetadata(<ts.MethodDeclaration>node);
         this.visitFunctionLike(<ts.MethodDeclaration>node);

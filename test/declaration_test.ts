@@ -45,6 +45,8 @@ describe('classes', () => {
   });
 
   describe('members', () => {
+    it('supports empty declarations',
+       () => { expectTranslate('class X { ; }').to.equal(' class X { }'); });
     it('supports fields', () => {
       expectTranslate('class X { x: number; y: string; }')
           .to.equal(' class X { num x ; String y ; }');

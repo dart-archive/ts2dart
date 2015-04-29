@@ -15,11 +15,7 @@ class TypeTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.TypeReference:
         var typeRef = <ts.TypeReferenceNode>node;
         this.visitTypeName(typeRef.typeName);
-        if (typeRef.typeArguments) {
-          this.emit('<');
-          this.visitList(typeRef.typeArguments);
-          this.emit('>');
-        }
+        this.maybeVisitTypeArguments(typeRef);
         break;
       case ts.SyntaxKind.TypeParameter:
         var typeParam = <ts.TypeParameterDeclaration>node;

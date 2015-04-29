@@ -43,6 +43,11 @@ class DeclarationTranspiler extends base.TranspilerStep {
         // Can only have one member for extends clauses.
         this.visitList(heritageClause.types);
         break;
+      case ts.SyntaxKind.HeritageClauseElement:
+        var heritageClauseElem = <ts.HeritageClauseElement>node;
+        this.visit(heritageClauseElem.expression);
+        this.maybeVisitTypeArguments(heritageClauseElem);
+        break;
       case ts.SyntaxKind.EnumDeclaration:
         var decl = <ts.EnumDeclaration>node;
         // The only legal modifier for an enum decl is const.

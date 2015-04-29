@@ -79,4 +79,12 @@ export class TranspilerStep {
     var translated = TranspilerStep.DART_TYPES[identifier] || identifier;
     this.emit(translated);
   }
+
+  maybeVisitTypeArguments(n: {typeArguments?: ts.NodeArray<ts.TypeNode>}) {
+    if (n.typeArguments) {
+      this.emit('<');
+      this.visitList(n.typeArguments);
+      this.emit('>');
+    }
+  }
 }

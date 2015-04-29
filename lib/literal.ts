@@ -105,7 +105,7 @@ class LiteralTranspiler extends base.TranspilerStep {
   }
 
   private escapeTextForTemplateString(n: ts.Node): string {
-    return (<ts.StringLiteralExpression>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
+    return (<ts.StringLiteral>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 }
 

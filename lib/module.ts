@@ -106,7 +106,7 @@ class ImportExportTranspiler extends base.TranspilerStep {
 
   private visitExternalModuleReferenceExpr(expr: ts.Expression) {
     // TODO: what if this isn't a string literal?
-    var moduleName = <ts.StringLiteralExpression>expr;
+    var moduleName = <ts.StringLiteral>expr;
     var text = moduleName.text;
     if (text.match(/^\.\//)) {
       // Strip './' to be more Dart-idiomatic.

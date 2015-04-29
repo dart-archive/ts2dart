@@ -27,7 +27,7 @@
     "which": "^1.0.9"
   },
   "scripts": {
-    "preinstall": "tsd reinstall",
+    "preinstall": "npm install tsd@^0.5.7 && tsd reinstall",
     "prepublish": "gulp compile",
     "test": "gulp test"
   },

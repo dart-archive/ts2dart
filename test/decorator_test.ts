@@ -52,15 +52,4 @@ describe('decorators', () => {
     expectTranslate('@IMPLEMENTS(Z) class X implements Y {}')
         .to.equal(' @ IMPLEMENTS ( Z ) class X implements Y , Z { }');
   });
-
-});
-
-describe('annotation/decorator hack', () => {
-  it('should strip "Annotation" from type names', () => {
-    expectTranslate('@CONST class FooAnnotation {}').to.equal(' @ CONST const class Foo { }');
-  });
-  it('should strip "Annotation" from imports', () => {
-    expectTranslate('import {FooAnnotation} from "foo";')
-        .to.equal(' import "package:foo.dart" show Foo ;');
-  });
 });

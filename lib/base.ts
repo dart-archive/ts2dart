@@ -2,6 +2,8 @@
 import ts = require('typescript');
 import ts2dart = require('./main');
 
+export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
+
 export function ident(n: ts.Node): string {
   if (n.kind === ts.SyntaxKind.Identifier) return (<ts.Identifier>n).text;
   if (n.kind === ts.SyntaxKind.QualifiedName) {
@@ -56,6 +58,14 @@ export class TranspilerStep {
 
   hasFlag(n: {flags: number}, flag: ts.NodeFlags): boolean {
     return n && (n.flags & flag) !== 0 || false;
+  }
+
+  isConst(decl: ClassLike) {
+    return this.hasAnnotation(decl.decorators, 'CONST') ||
+           decl.members.some((m) => {
+             if (m.kind !== ts.SyntaxKind.Constructor) return false;
+             return this.hasAnnotation(m.decorators, 'CONST');
+           });
   }
 
   // TODO(martinprobst): This belongs to module.ts, refactor.

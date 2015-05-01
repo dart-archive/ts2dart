@@ -18,23 +18,26 @@ describe('decorators', () => {
   it('translates on parameters',
      () => { expectTranslate('function f (@A p) {}').to.equal(' f ( @ A p ) { }'); });
   it('special cases @CONST', () => {
-    expectTranslate('@CONST class X {}').to.equal(' @ CONST const class X { }');
-    expectTranslate('@CONST() class X {}').to.equal(' @ CONST ( ) const class X { }');
-    expectTranslate(`class X {
+    expectTranslate('@CONST class X {}').to.equal(' @ CONST class X { const X (); }');
+    expectTranslate('@CONST() class X {}').to.equal(' @ CONST ( ) class X { const X (); }');
+    expectTranslate(`@CONST class X {
                        x: number;
                        y;
-                       @CONST constructor() { super(3); this.x = 1; this.y = 2; }
+                       constructor() { super(3); this.x = 1; this.y = 2; }
                      }`)
-        .to.equal(' class X {' +
+        .to.equal(' @ CONST class X {' +
                   ' final num x ; final y ;' +
-                  ' @ CONST const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+                  ' const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+    expectTranslate('@CONST class X { constructor() {} }')
+        .to.equal(' @ CONST class X { const X ( ) ; }');
+    // For backwards-compatibility for traceur inputs (not valid TS input)
     expectTranslate('class X { @CONST constructor() {} }')
         .to.equal(' class X { @ CONST const X ( ) ; }');
-    expectErroneousCode('class X { @CONST constructor() { if (1); } }')
+    expectErroneousCode('@CONST class X { constructor() { if (1); } }')
         .to.throw('const constructors can only contain assignments and super calls');
-    expectErroneousCode('class X { @CONST constructor() { f(); } }')
+    expectErroneousCode('@CONST class X { constructor() { f(); } }')
         .to.throw('const constructors can only contain assignments and super calls');
-    expectErroneousCode('class X { @CONST constructor() { "string literal"; } }')
+    expectErroneousCode('@CONST class X { constructor() { "string literal"; } }')
         .to.throw('const constructors can only contain assignments and super calls');
     expectErroneousCode('class X { @CONST constructor() { x = 1; } }')
         .to.throw('assignments in const constructors must assign into this.');

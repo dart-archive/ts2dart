@@ -3,8 +3,6 @@ import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
 
-type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
-
 class DeclarationTranspiler extends base.TranspilerStep {
   constructor(tr: ts2dart.Transpiler) { super(tr); }
 
@@ -85,6 +83,9 @@ class DeclarationTranspiler extends base.TranspilerStep {
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
         this.visitDeclarationMetadata(ctorDecl);
+        if (this.isConst(<base.ClassLike>ctorDecl.parent)) {
+          this.emit('const');
+        }
         this.visit(className);
         this.visitParameters(ctorDecl);
         this.visit(ctorDecl.body);
@@ -92,7 +93,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         this.visitDeclarationMetadata(propertyDecl);
-        var hasConstCtor = this.hasConstCtor(<ClassLike>propertyDecl.parent);
+        var hasConstCtor = this.isConst(<base.ClassLike>propertyDecl.parent);
         if (hasConstCtor) {
           this.emit('final');
         }
@@ -272,7 +273,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
     this.emit(')');
   }
 
-  private visitClassLike(keyword: string, decl: ClassLike) {
+  private visitClassLike(keyword: string, decl: base.ClassLike) {
     this.visitDecorators(decl.decorators);
     this.emit(keyword);
     this.visitTypeName(decl.name);
@@ -298,6 +299,13 @@ class DeclarationTranspiler extends base.TranspilerStep {
     }
     this.emit('{');
     this.visitEachIfPresent(decl.members);
+
+    // Generate a constructor to host the const modifier, if needed
+    if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
+      this.emit("const");
+      this.visitTypeName(decl.name);
+      this.emit("();")
+    }
     this.emit('}');
   }
 
@@ -338,20 +346,14 @@ class DeclarationTranspiler extends base.TranspilerStep {
         // this.emit('abstract');
         // return;
       }
-      if (name === 'CONST') {
-        isConst = true;
-        // this.emit('const');
-        // return;
-      }
-      if (name === 'IMPLEMENTS') {
-        // Ignore @IMPLEMENTS - it's handled above in visitClassLike.
+      if (name === 'CONST' || name === 'IMPLEMENTS') {
+        // Ignore @IMPLEMENTS and @CONST - they are handled above in visitClassLike.
         // return;
       }
       this.emit('@');
       this.visit(d.expression);
     });
     if (isAbstract) this.emit('abstract');
-    if (isConst) this.emit('const');
   }
 
   private visitDeclarationMetadata(decl: ts.Declaration) {
@@ -375,13 +377,6 @@ class DeclarationTranspiler extends base.TranspilerStep {
     if (!isPrivate && matchesPrivate) {
       this.reportError(decl, 'public members must not be prefixed with "_"');
     }
-  }
-
-  private hasConstCtor(decl: ClassLike) {
-    return decl.members.some((m) => {
-      if (m.kind !== ts.SyntaxKind.Constructor) return false;
-      return this.hasAnnotation(m.decorators, 'CONST');
-    });
   }
 
   private visitNamedParameter(paramDecl: ts.ParameterDeclaration) {

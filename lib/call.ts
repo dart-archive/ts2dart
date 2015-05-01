@@ -86,7 +86,7 @@ class CallTranspiler extends base.TranspilerStep {
    * <p>Dart's super() ctor calls have to be moved to the constructors initializer list, and `const`
    * constructors must be completely empty, only assigning into fields through the initializer list.
    * The code below finds super() calls and handles const constructors, marked with the special
-   * `@CONST` annotation.
+   * `@CONST` annotation on the class.
    *
    * <p>Not emitting super() calls when traversing the ctor body is handled by maybeHandleSuperCall
    * below.
@@ -98,13 +98,13 @@ class CallTranspiler extends base.TranspilerStep {
     var errorAssignmentsSuper = 'const constructors can only contain assignments and super calls';
     var errorThisAssignment = 'assignments in const constructors must assign into this.';
 
-    var isConstCtor = this.hasAnnotation(ctor.decorators, 'CONST');
+    var parent = <base.ClassLike>ctor.parent;
     var superCall;
     var expressions = [];
     // Find super() calls and (if in a const ctor) collect assignment expressions (not statements!)
     body.statements.forEach((stmt) => {
       if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) {
-        if (isConstCtor) this.reportError(stmt, errorAssignmentsSuper);
+        if (this.isConst(parent)) this.reportError(stmt, errorAssignmentsSuper);
         return false;
       }
       var nestedExpr = (<ts.ExpressionStatement>stmt).expression;
@@ -113,7 +113,7 @@ class CallTranspiler extends base.TranspilerStep {
       if (nestedExpr.kind === ts.SyntaxKind.CallExpression) {
         var callExpr = <ts.CallExpression>nestedExpr;
         if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) {
-          if (isConstCtor) this.reportError(stmt, errorAssignmentsSuper);
+          if (this.isConst(parent)) this.reportError(stmt, errorAssignmentsSuper);
           return;
         }
         superCall = callExpr;
@@ -121,7 +121,7 @@ class CallTranspiler extends base.TranspilerStep {
       }
 
       // this.x assignment?
-      if (isConstCtor) {
+      if (this.isConst(parent)) {
         // Check for assignment.
         if (nestedExpr.kind !== ts.SyntaxKind.BinaryExpression) {
           this.reportError(nestedExpr, errorAssignmentsSuper);
@@ -162,7 +162,7 @@ class CallTranspiler extends base.TranspilerStep {
       }
       this.emit(')');
     }
-    if (isConstCtor) {
+    if (this.isConst(parent)) {
       // Const ctors don't have bodies.
       this.emit(';');
       return true;  // completely handled.

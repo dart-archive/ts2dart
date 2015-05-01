@@ -9,7 +9,7 @@
   "dependencies": {
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
-    "source-map-support": "^0.2.9",
+    "source-map-support": "git://github.com/mprobst/node-source-map-support",
     "typescript": "git://github.com/mhegazy/TypeScript.git#v1.5-beta"
   },
   "devDependencies": {

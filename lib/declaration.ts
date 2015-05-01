@@ -87,27 +87,13 @@ class DeclarationTranspiler extends base.TranspilerStep {
           this.emit('const');
         }
         this.visit(className);
-        this.visitParameters(ctorDecl);
+        this.visitParameters(ctorDecl.parameters);
         this.visit(ctorDecl.body);
         break;
       case ts.SyntaxKind.PropertyDeclaration:
         var propertyDecl = <ts.PropertyDeclaration>node;
         this.visitDeclarationMetadata(propertyDecl);
-        var hasConstCtor = this.isConst(<base.ClassLike>propertyDecl.parent);
-        if (hasConstCtor) {
-          this.emit('final');
-        }
-        if (propertyDecl.type) {
-          this.visit(propertyDecl.type);
-        } else if (!hasConstCtor) {
-          this.emit('var');
-        }
-        this.visit(propertyDecl.name);
-        if (propertyDecl.initializer) {
-          this.emit('=');
-          this.visit(propertyDecl.initializer);
-        }
-        this.emit(';');
+        this.visitProperty(propertyDecl, <base.ClassLike>node.parent);
         break;
       case ts.SyntaxKind.SemicolonClassElement:
         // No-op, don't emit useless declarations.
@@ -138,7 +124,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
         if (arrowFunc.body.kind == ts.SyntaxKind.Block) {
           this.visitFunctionLike(arrowFunc);
         } else {
-          this.visitParameters(arrowFunc);
+          this.visitParameters(arrowFunc.parameters);
           this.emit('=>');
           this.visit(arrowFunc.body);
         }
@@ -155,6 +141,14 @@ class DeclarationTranspiler extends base.TranspilerStep {
         break;
       case ts.SyntaxKind.Parameter:
         var paramDecl = <ts.ParameterDeclaration>node;
+        // Property parameters will have an explicit property declaration, so we just
+        // need the dart assignment shorthand to reference the property.
+        if (this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Public) ||
+            this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Private)) {
+          this.emit('this .');
+          this.visit(paramDecl.name);
+          break;
+        }
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
         if (paramDecl.name.kind === ts.SyntaxKind.ObjectBindingPattern) {
           this.visitNamedParameter(paramDecl);
@@ -233,7 +227,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
     if (fn.name) this.visit(fn.name);
     // Dart does not even allow the parens of an empty param list on getter
     if (accessor !== 'get') {
-      this.visitParameters(fn);
+      this.visitParameters(fn.parameters);
     } else {
       if (fn.parameters && fn.parameters.length > 0) {
         this.reportError(fn, 'getter should not accept parameters');
@@ -246,31 +240,56 @@ class DeclarationTranspiler extends base.TranspilerStep {
     }
   }
 
-  private visitParameters(fn: ts.FunctionLikeDeclaration) {
+  private visitParameters(parameters: ts.ParameterDeclaration[]) {
     this.emit('(');
     let firstInitParamIdx;
-    for (firstInitParamIdx = 0; firstInitParamIdx < fn.parameters.length; firstInitParamIdx++) {
+    for (firstInitParamIdx = 0; firstInitParamIdx < parameters.length; firstInitParamIdx++) {
       // ObjectBindingPatterns are handled within the parameter visit.
-      let isOpt = fn.parameters[firstInitParamIdx].initializer || fn.parameters[firstInitParamIdx].questionToken;
-      if (isOpt && fn.parameters[firstInitParamIdx].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
+      let isOpt =
+          parameters[firstInitParamIdx].initializer || parameters[firstInitParamIdx].questionToken;
+      if (isOpt && parameters[firstInitParamIdx].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
         break;
       }
     }
 
     if (firstInitParamIdx !== 0) {
-      var requiredParams = fn.parameters.slice(0, firstInitParamIdx);
+      var requiredParams = parameters.slice(0, firstInitParamIdx);
       this.visitList(requiredParams);
     }
 
-    if (firstInitParamIdx !== fn.parameters.length) {
+    if (firstInitParamIdx !== parameters.length) {
       if (firstInitParamIdx !== 0) this.emit(',');
-      var positionalOptional = fn.parameters.slice(firstInitParamIdx, fn.parameters.length);
+      var positionalOptional = parameters.slice(firstInitParamIdx, parameters.length);
       this.emit('[');
       this.visitList(positionalOptional);
       this.emit(']');
     }
 
     this.emit(')');
+  }
+
+  /**
+   * Visit a property declaration.
+   * In the special case of property parameters in a constructor, we also allow a parameter to be
+   * emitted as a property.
+   */
+  private visitProperty(propertyDecl: ts.PropertyDeclaration | ts.ParameterDeclaration,
+                        containingClass: base.ClassLike) {
+    var hasConstCtor = this.isConst(containingClass);
+    if (hasConstCtor) {
+      this.emit('final');
+    }
+    if (propertyDecl.type) {
+      this.visit(propertyDecl.type);
+    } else if (!hasConstCtor) {
+      this.emit('var');
+    }
+    this.visit(propertyDecl.name);
+    if (propertyDecl.initializer) {
+      this.emit('=');
+      this.visit(propertyDecl.initializer);
+    }
+    this.emit(';');
   }
 
   private visitClassLike(keyword: string, decl: base.ClassLike) {
@@ -298,6 +317,18 @@ class DeclarationTranspiler extends base.TranspilerStep {
       this.emit(implIfs.join(' , '));
     }
     this.emit('{');
+
+    // Synthesize explicit properties for ctor with 'property parameters'
+    let synthesizePropertyParam = (param: ts.ParameterDeclaration) => {
+      if (this.hasFlag(param.modifiers, ts.NodeFlags.Public) ||
+          this.hasFlag(param.modifiers, ts.NodeFlags.Private)) {
+        // TODO: we should enforce the underscore prefix on privates
+        this.visitProperty(param, <base.ClassLike>param.parent.parent);
+      }
+    };
+    decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)
+        .forEach((ctor) =>
+                     (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed

@@ -101,6 +101,14 @@ describe('classes', () => {
     it('supports constructors', () => {
       expectTranslate('class X { constructor() { } }').to.equal(' class X { X ( ) { } }');
     });
+    it('supports parameter properties', () => {
+      expectTranslate(
+          'class X { c: number; constructor(private bar: B, public foo: string = "hello") {} }')
+          .to.equal(
+              ' class X { B bar ; String foo = \"hello\" ; num c ; X ( this . bar , [ this . foo ] ) { } }');
+      expectTranslate('@CONST class X { constructor(public foo: string, b: number) {} }')
+          .to.equal(' @ CONST class X { final String foo ; const X ( this . foo , num b ) ; }');
+    });
   });
 });
 

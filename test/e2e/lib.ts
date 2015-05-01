@@ -1,7 +1,8 @@
+@CONST
 class MyClass {
   private _field: string;
 
-  MyClass(someVal: string) { this._field = someVal; }
+  constructor(someVal: string) { this._field = someVal; }
 
   get field(): string {
     // TODO: TypeScript doesn't parse the RHS as StringKeyword so we lose

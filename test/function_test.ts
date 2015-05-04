@@ -9,6 +9,12 @@ describe('functions', () => {
     expectTranslate('function x(p1, a = 42, b = 1, p2) { return 42; }')
         .to.equal(' x ( p1 , [ a = 42 , b = 1 , p2 ] ) { return 42 ; }');
   });
+  it('translates optional parameters', () => {
+    expectTranslate('function x(a?: number, b?: number) { return 42; }')
+        .to.equal(' x ( [ num a , num b ] ) { return 42 ; }');
+    expectTranslate('function x(p1, a?: number, b?: number, p2) { return 42; }')
+        .to.equal(' x ( p1 , [ num a , num b , p2 ] ) { return 42 ; }');
+  });
   it('supports empty returns',
      () => { expectTranslate('function x() { return; }').to.equal(' x ( ) { return ; }'); });
   it('supports named parameters', () => {

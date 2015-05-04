@@ -251,8 +251,8 @@ class DeclarationTranspiler extends base.TranspilerStep {
     let firstInitParamIdx;
     for (firstInitParamIdx = 0; firstInitParamIdx < fn.parameters.length; firstInitParamIdx++) {
       // ObjectBindingPatterns are handled within the parameter visit.
-      if (fn.parameters[firstInitParamIdx].initializer &&
-          fn.parameters[firstInitParamIdx].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
+      let isOpt = fn.parameters[firstInitParamIdx].initializer || fn.parameters[firstInitParamIdx].questionToken;
+      if (isOpt && fn.parameters[firstInitParamIdx].name.kind !== ts.SyntaxKind.ObjectBindingPattern) {
         break;
       }
     }

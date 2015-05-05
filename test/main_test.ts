@@ -11,8 +11,8 @@ import {expectTranslate, expectErroneousCode, parseProgram} from './test_support
 describe('main transpiler functionality', () => {
   describe('comments', () => {
     it('keeps leading comments', () => {
-      expectTranslate('/* A */ a\n /* B */ b').to.equal(' /* A */ a ; /* B */ b ;');
-      expectTranslate('// A\na\n// B\nb').to.equal(' // A\n a ; // B\n b ;');
+      expectTranslate('/* A */ a\n /* B */ b').to.equal('\n /* A */ a ;\n /* B */ b ;');
+      expectTranslate('// A\na\n// B\nb').to.equal('\n // A\n a ;\n // B\n b ;');
     });
   });
 

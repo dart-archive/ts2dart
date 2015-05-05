@@ -203,6 +203,7 @@ export class Transpiler {
         if (c.pos <= this.lastCommentIdx) return;
         this.lastCommentIdx = c.pos;
         var text = this.currentFile.text.substring(c.pos, c.end);
+        this.emitNoSpace('\n');
         this.emit(text);
         if (c.hasTrailingNewLine) this.emitNoSpace('\n');
       });

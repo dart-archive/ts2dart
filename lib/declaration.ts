@@ -91,9 +91,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
         this.visit(ctorDecl.body);
         break;
       case ts.SyntaxKind.PropertyDeclaration:
-        var propertyDecl = <ts.PropertyDeclaration>node;
-        this.visitDeclarationMetadata(propertyDecl);
-        this.visitProperty(propertyDecl, <base.ClassLike>node.parent);
+        this.visitProperty(<ts.PropertyDeclaration>node);
         break;
       case ts.SyntaxKind.SemicolonClassElement:
         // No-op, don't emit useless declarations.
@@ -147,6 +145,10 @@ class DeclarationTranspiler extends base.TranspilerStep {
             this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Private)) {
           this.emit('this .');
           this.visit(paramDecl.name);
+          if (paramDecl.initializer) {
+            this.emit('=');
+            this.visit(paramDecl.initializer);
+          }
           break;
         }
         if (paramDecl.dotDotDotToken) this.reportError(node, 'rest parameters are unsupported');
@@ -274,7 +276,9 @@ class DeclarationTranspiler extends base.TranspilerStep {
    * emitted as a property.
    */
   private visitProperty(propertyDecl: ts.PropertyDeclaration | ts.ParameterDeclaration,
-                        containingClass: base.ClassLike) {
+                        isParameter: boolean = false) {
+    if (!isParameter) this.visitDeclarationMetadata(propertyDecl);
+    var containingClass = <base.ClassLike>(isParameter ? propertyDecl.parent.parent : propertyDecl.parent);
     var hasConstCtor = this.isConst(containingClass);
     if (hasConstCtor) {
       this.emit('final');
@@ -285,7 +289,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
       this.emit('var');
     }
     this.visit(propertyDecl.name);
-    if (propertyDecl.initializer) {
+    if (propertyDecl.initializer && !isParameter) {
       this.emit('=');
       this.visit(propertyDecl.initializer);
     }
@@ -323,7 +327,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
       if (this.hasFlag(param.modifiers, ts.NodeFlags.Public) ||
           this.hasFlag(param.modifiers, ts.NodeFlags.Private)) {
         // TODO: we should enforce the underscore prefix on privates
-        this.visitProperty(param, <base.ClassLike>param.parent.parent);
+        this.visitProperty(param, true);
       }
     };
     decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)

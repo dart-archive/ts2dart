@@ -10,10 +10,11 @@
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
     "source-map-support": "git://github.com/mprobst/node-source-map-support",
-    "typescript": "git://github.com/alexeagle/TypeScript#cddc1867c44b6bed9095dc30f0b0f552cbc003a9"
+    "typescript": "1.5.0-beta"
   },
   "devDependencies": {
     "chai": "^2.1.1",
+    "fs-extra": "^0.16.5",
     "gulp": "^3.8.11",
     "gulp-clang-format": "^1.0.0",
     "gulp-mocha": "^2.0.0",

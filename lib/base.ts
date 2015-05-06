@@ -22,7 +22,7 @@ export class TranspilerStep {
   emitNoSpace(s: string) { this.transpiler.emitNoSpace(s); }
   reportError(n: ts.Node, message: string) { this.transpiler.reportError(n, message); }
 
-  visitNode(n: ts.Node): boolean { throw new Error('not implemented'); }
+  visitNode(n: ts.Node): boolean { throw Error('not implemented'); }
 
   visitEach(nodes: ts.Node[]) { nodes.forEach((n) => this.visit(n)); }
 

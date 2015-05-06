@@ -9,10 +9,8 @@
   "dependencies": {
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
-    "source-map-support": "git://github.com/mprobst/node-source-map-support"
-  },
-  "peerDependencies": {
-    "typescript": "^1.5.0-beta"
+    "source-map-support": "git://github.com/mprobst/node-source-map-support",
+    "typescript": "git://github.com/alexeagle/TypeScript#error_is_class"
   },
   "devDependencies": {
     "chai": "^2.1.1",

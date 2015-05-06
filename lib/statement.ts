@@ -77,7 +77,7 @@ class StatementTranspiler extends base.TranspilerStep {
         this.emit(';');
         if (forStmt.condition) this.visit(forStmt.condition);
         this.emit(';');
-        if (forStmt.iterator) this.visit(forStmt.iterator);
+        if (forStmt.incrementor) this.visit(forStmt.incrementor);
         this.emit(')');
         this.visit(forStmt.statement);
         break;

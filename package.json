@@ -10,6 +10,7 @@
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
     "source-map-support": "git://github.com/mprobst/node-source-map-support",
+    "tsd": "^0.5.7",
     "typescript": "1.5.0-beta"
   },
   "devDependencies": {
@@ -22,7 +23,6 @@
     "gulp-util": "^3.0.4",
     "merge2": "^0.3.1",
     "temp": "^0.8.1",
-    "tsd": "^0.5.7",
     "which": "^1.0.9"
   },
   "scripts": {

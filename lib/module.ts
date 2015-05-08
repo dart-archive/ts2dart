@@ -21,8 +21,7 @@ class ImportExportTranspiler extends base.TranspilerStep {
         break;
       case ts.SyntaxKind.ImportDeclaration:
         var importDecl = <ts.ImportDeclaration>node;
-        // TODO(martinprobst): Re-enable once moved to TypeScript.
-        // if (this.isEmptyImport(importDecl)) return;
+        if (this.isEmptyImport(importDecl)) return true;
         this.emit('import');
         this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
         if (importDecl.importClause) {
@@ -46,12 +45,11 @@ class ImportExportTranspiler extends base.TranspilerStep {
         break;
       case ts.SyntaxKind.NamedImports:
         this.emit('show');
-        // TODO(martinprobst): Re-enable once moved to TypeScript.
-        // var used = this.filterImports((<ts.NamedImports>node).elements);
-        // if (used.length === 0) {
-        //  this.reportError(node, 'internal error, used imports must not be empty');
-        // }
-        this.visitList((<ts.NamedImports>node).elements);
+        var used = this.filterImports((<ts.NamedImports>node).elements);
+        if (used.length === 0) {
+         this.reportError(node, 'internal error, used imports must not be empty');
+        }
+        this.visitList(used);
         break;
       case ts.SyntaxKind.NamedExports:
         this.emit('show');
@@ -92,10 +90,11 @@ class ImportExportTranspiler extends base.TranspilerStep {
     return true;
   }
 
-  private static isIgnoredAnnotation(e: ts.ImportSpecifier) {
+  private static isIgnoredImport(e: ts.ImportSpecifier) {
     var name = base.ident(e.name);
     switch (name) {
       case 'CONST':
+      case 'CONST_EXPR':
       case 'ABSTRACT':
       case 'IMPLEMENTS':
         return true;
@@ -122,11 +121,11 @@ class ImportExportTranspiler extends base.TranspilerStep {
   private isEmptyImport(n: ts.ImportDeclaration): boolean {
     var bindings = n.importClause.namedBindings;
     if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
-    return (<ts.NamedImports>bindings).elements.every(ImportExportTranspiler.isIgnoredAnnotation);
+    return (<ts.NamedImports>bindings).elements.every(ImportExportTranspiler.isIgnoredImport);
   }
 
   private filterImports(ns: ts.ImportOrExportSpecifier[]) {
-    return ns.filter((e) => !ImportExportTranspiler.isIgnoredAnnotation(e));
+    return ns.filter((e) => !ImportExportTranspiler.isIgnoredImport(e));
   }
 }
 

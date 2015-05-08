@@ -30,9 +30,9 @@ describe('statements', () => {
   });
   it('translates try/catch', () => {
     expectTranslate('try {} catch(e) {} finally {}')
-        .to.equal(' try { } catch ( e ) { } finally { }');
+        .to.equal(' try { } catch ( e , e_stack ) { } finally { }');
     expectTranslate('try {} catch(e: MyException) {}')
-        .to.equal(' try { } on MyException catch ( e ) { }');
+        .to.equal(' try { } on MyException catch ( e , e_stack ) { }');
   });
   it('translates throw', () => {
     expectTranslate('throw new Error("oops")').to.equal(' throw new Error ( "oops" ) ;');
@@ -42,5 +42,9 @@ describe('statements', () => {
     expectTranslate('break;').to.equal(' break ;');
     expectTranslate('continue;').to.equal(' continue ;');
     expectTranslate('break foo ;').to.equal(' break foo ;');
+  });
+  it('rewrites catch block to preserve stack trace', () => {
+    expectTranslate('try {} catch (e) { console.log(e, e.stack); }')
+        .to.equal(' try { } catch ( e , e_stack ) { console . log ( e , e_stack ) ; }');
   });
 });

@@ -109,8 +109,19 @@ class StatementTranspiler extends base.TranspilerStep {
         break;
 
       case ts.SyntaxKind.ThrowStatement:
+        var throwStmt = <ts.ThrowStatement>node;
+        var surroundingCatchClause = this.getAncestor(throwStmt, ts.SyntaxKind.CatchClause);
+        if (surroundingCatchClause) {
+          var ref = (<ts.CatchClause>surroundingCatchClause).variableDeclaration;
+          if (ref.getText() === throwStmt.expression.getText()) {
+            this.emit('rethrow');
+            this.emit(';');
+            break;
+          }
+        }
+         
         this.emit('throw');
-        this.visit((<ts.ThrowStatement>node).expression);
+        this.visit(throwStmt.expression);
         this.emit(';');
         break;
       case ts.SyntaxKind.TryStatement:
@@ -135,7 +146,7 @@ class StatementTranspiler extends base.TranspilerStep {
         this.emit('(');
         this.visit(ctch.variableDeclaration.name);
         this.emit(',');
-        this.emit((<ts.Identifier>ctch.variableDeclaration.name).text);
+        this.visit(ctch.variableDeclaration.name);
         this.emitNoSpace('_stack');
         this.emit(')');
         this.visit(ctch.block);

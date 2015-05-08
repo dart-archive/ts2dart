@@ -47,4 +47,7 @@ describe('statements', () => {
     expectTranslate('try {} catch (e) { console.log(e, e.stack); }')
         .to.equal(' try { } catch ( e , e_stack ) { console . log ( e , e_stack ) ; }');
   });
+  it('rewrites rethrow to preserve stack trace', () => {
+    expectTranslate('try {} catch (ex) { throw ex; }').to.equal(' try { } catch ( ex , ex_stack ) { rethrow ; }')
+  });
 });

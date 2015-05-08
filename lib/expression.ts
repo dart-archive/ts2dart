@@ -68,8 +68,12 @@ class ExpressionTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
         this.visit(propAccess.expression);
-        this.emit('.');
-        this.visit(propAccess.name);
+        if (propAccess.name.text === 'stack' && this.hasAncestor(propAccess, ts.SyntaxKind.CatchClause)) {
+          this.emitNoSpace('_stack');
+        } else {
+          this.emit('.');
+          this.visit(propAccess.name);
+        }
         break;
       case ts.SyntaxKind.ElementAccessExpression:
         var elemAccess = <ts.ElementAccessExpression>node;

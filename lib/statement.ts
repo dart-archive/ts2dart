@@ -134,6 +134,9 @@ class StatementTranspiler extends base.TranspilerStep {
         this.emit('catch');
         this.emit('(');
         this.visit(ctch.variableDeclaration.name);
+        this.emit(',');
+        this.emit((<ts.Identifier>ctch.variableDeclaration.name).text);
+        this.emitNoSpace('_stack');
         this.emit(')');
         this.visit(ctch.block);
         break;

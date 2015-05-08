@@ -19,9 +19,8 @@ describe('imports', () => {
     expectTranslate('import {x} from "./y"').to.equal(' import "y.dart" show x ;');
     expectTranslate('import {x} from "../y"').to.equal(' import "../y.dart" show x ;');
   });
-  // TODO(martinprobst): Re-enable once moved to TypeScrip
-  it.skip('handles ignored annotations in imports', () => {
-    expectTranslate('import {CONST, IMPLEMENTS} from "x"').to.equal('');
+  it('handles ignored annotations in imports', () => {
+    expectTranslate('import {CONST, CONST_EXPR, IMPLEMENTS, ABSTRACT} from "x"').to.equal('');
     expectTranslate('import {x, IMPLEMENTS} from "./x"').to.equal(' import "x.dart" show x ;');
   });
 });

@@ -364,10 +364,9 @@ class DeclarationTranspiler extends base.TranspilerStep {
   private visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
     if (!decorators) return;
 
-    var isAbstract = false, isConst = false;
+    var isAbstract = false;
     decorators.forEach((d) => {
-      // Special case @CONST & @ABSTRACT
-      // TODO(martinprobst): remove once the code base is migrated to TypeScript.
+      // Special case @CONST, @IMPLEMENTS, & @ABSTRACT
       var name = base.ident(d.expression);
       if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
         // Unwrap @CONST()
@@ -375,15 +374,14 @@ class DeclarationTranspiler extends base.TranspilerStep {
         name = base.ident(callExpr.expression);
       }
       // Make sure these match IGNORED_ANNOTATIONS below.
-      // TODO(martinprobst): Re-enable the early exits below once moved to TypeScript.
       if (name === 'ABSTRACT') {
         isAbstract = true;
-        // this.emit('abstract');
-        // return;
+        return;
       }
       if (name === 'CONST' || name === 'IMPLEMENTS') {
         // Ignore @IMPLEMENTS and @CONST - they are handled above in visitClassLike.
-        // return;
+        // TODO(martinprobst): @IMPLEMENTS should be removed as TS supports it natively.
+        return;
       }
       this.emit('@');
       this.visit(d.expression);

@@ -107,7 +107,7 @@ describe('classes', () => {
           .to.equal(
               ' class X { B bar ; String foo ; num c ; X ( this . bar , [ this . foo = \"hello\" ] ) { } }');
       expectTranslate('@CONST class X { constructor(public foo: string, b: number) {} }')
-          .to.equal(' @ CONST class X { final String foo ; const X ( this . foo , num b ) ; }');
+          .to.equal(' class X { final String foo ; const X ( this . foo , num b ) ; }');
     });
   });
 });

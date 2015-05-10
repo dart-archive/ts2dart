@@ -28,11 +28,9 @@ describe('decorators', () => {
         .to.equal(' class X {' +
                   ' final num x ; final y ;' +
                   ' const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
-    expectTranslate('@CONST class X { constructor() {} }')
-        .to.equal(' class X { const X ( ) ; }');
+    expectTranslate('@CONST class X { constructor() {} }').to.equal(' class X { const X ( ) ; }');
     // For backwards-compatibility for traceur inputs (not valid TS input)
-    expectTranslate('class X { @CONST constructor() {} }')
-        .to.equal(' class X { const X ( ) ; }');
+    expectTranslate('class X { @CONST constructor() {} }').to.equal(' class X { const X ( ) ; }');
     expectErroneousCode('@CONST class X { constructor() { if (1); } }')
         .to.throw('const constructors can only contain assignments and super calls');
     expectErroneousCode('@CONST class X { constructor() { f(); } }')
@@ -44,12 +42,10 @@ describe('decorators', () => {
     expectErroneousCode('class X { @CONST constructor() { thax = 1; } }')
         .to.throw('assignments in const constructors must assign into this.');
   });
-  it('special cases @ABSTRACT', () => {
-    expectTranslate('@ABSTRACT class X {}').to.equal(' abstract class X { }');
-  });
+  it('special cases @ABSTRACT',
+     () => { expectTranslate('@ABSTRACT class X {}').to.equal(' abstract class X { }'); });
   it('special cases @IMPLEMENTS', () => {
-    expectTranslate('@IMPLEMENTS(Y, Z) class X {}')
-        .to.equal(' class X implements Y , Z { }');
+    expectTranslate('@IMPLEMENTS(Y, Z) class X {}').to.equal(' class X implements Y , Z { }');
     expectTranslate('@IMPLEMENTS(Z) class X extends Y {}')
         .to.equal(' class X extends Y implements Z { }');
     expectTranslate('@IMPLEMENTS(Z) class X implements Y {}')

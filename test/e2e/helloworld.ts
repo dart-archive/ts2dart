@@ -14,7 +14,5 @@ function main(): void {
     var b = "world";
     t.expect(`${a} ${b}`, t.equals("hello world"));
   });
-  t.test("const expr", function() {
-    t.expect(SomeArray[0], t.equals(1));
-  });
+  t.test("const expr", function() { t.expect(SomeArray[0], t.equals(1)); });
 }

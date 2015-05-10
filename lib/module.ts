@@ -47,7 +47,7 @@ class ImportExportTranspiler extends base.TranspilerStep {
         this.emit('show');
         var used = this.filterImports((<ts.NamedImports>node).elements);
         if (used.length === 0) {
-         this.reportError(node, 'internal error, used imports must not be empty');
+          this.reportError(node, 'internal error, used imports must not be empty');
         }
         this.visitList(used);
         break;

@@ -46,7 +46,7 @@ describe('calls', () => {
   it('translates CONST_EXPR(...) to const (...)', () => {
     expectTranslate('import {CONST_EXPR} from "angular2/facade/lang.ts";\n' +
                     'const x = CONST_EXPR([]);')
-        .to.equal(' const x = const ( [ ] ) ;');
+        .to.equal(' const x = const [ ] ;');
     expectErroneousCode('CONST_EXPR()').to.throw(/exactly one argument/);
     expectErroneousCode('CONST_EXPR(1, 2)').to.throw(/exactly one argument/);
   });

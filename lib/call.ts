@@ -41,18 +41,22 @@ class CallTranspiler extends base.TranspilerStep {
 
   private visitCall(c: ts.CallExpression) {
     var fnName = base.ident(c.expression);
-    if (fnName === 'CONST_EXPR') {
-      // The special function CONST_EXPR translates to Dart's const expressions.
+    var isConstExpr = fnName === 'CONST_EXPR';// The special function CONST_EXPR translates to Dart's const expressions.
+    if (isConstExpr) {
       this.emit('const');
       if (c.arguments.length !== 1) this.reportError(c, 'CONST_EXPR takes exactly one argument');
     } else {
       this.visit(c.expression);
     }
-    this.emit('(');
+    if (!isConstExpr) {
+      this.emit('(');
+    }
     if (!this.handleNamedParamsCall(c)) {
       this.visitList(c.arguments);
     }
-    this.emit(')');
+    if (!isConstExpr) {
+      this.emit(')');
+    }
   }
 
   private handleNamedParamsCall(c: ts.CallExpression): boolean {

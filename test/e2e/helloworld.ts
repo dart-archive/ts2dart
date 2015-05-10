@@ -1,5 +1,5 @@
 import t = require("unittest/unittest");
-import {MyClass} from './lib';
+import {MyClass, SomeArray} from './lib';
 
 function main(): void {
   t.test("handles classes", function() {
@@ -13,5 +13,8 @@ function main(): void {
     var a = "hello";
     var b = "world";
     t.expect(`${a} ${b}`, t.equals("hello world"));
+  });
+  t.test("const expr", function() {
+    t.expect(SomeArray[0], t.equals(1));
   });
 }

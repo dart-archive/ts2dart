@@ -1,3 +1,5 @@
+import {CONST_EXPR} from "somewhere";
+
 @CONST
 class MyClass {
   private _error: string = "error";
@@ -16,3 +18,5 @@ class MyClass {
 
   namedParam({x = "?"}) { return 'hello' + x; }
 }
+
+const SomeArray = CONST_EXPR([1, 2, 3]);

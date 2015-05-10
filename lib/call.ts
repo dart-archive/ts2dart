@@ -43,11 +43,12 @@ class CallTranspiler extends base.TranspilerStep {
     var fnName = base.ident(c.expression);
     if (fnName === 'CONST_EXPR') {
       // The special function CONST_EXPR translates to Dart's const expressions.
-      this.emit('const');
       if (c.arguments.length !== 1) this.reportError(c, 'CONST_EXPR takes exactly one argument');
-    } else {
-      this.visit(c.expression);
+      this.emit('const');
+      this.visitList(c.arguments);
+      return;
     }
+    this.visit(c.expression);
     this.emit('(');
     if (!this.handleNamedParamsCall(c)) {
       this.visitList(c.arguments);

@@ -44,7 +44,7 @@ describe('exports', () => {
 });
 
 describe('library name', () => {
-  var transpiler;
+  var transpiler: main.Transpiler;
   beforeEach(() => {
     transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: '/a'});
   });

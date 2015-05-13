@@ -74,7 +74,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.Constructor:
         var ctorDecl = <ts.ConstructorDeclaration>node;
         // Find containing class name.
-        var className;
+        var className: ts.Identifier;
         for (var parent = ctorDecl.parent; parent; parent = parent.parent) {
           if (parent.kind == ts.SyntaxKind.ClassDeclaration) {
             className = (<ts.ClassDeclaration>parent).name;
@@ -244,8 +244,8 @@ class DeclarationTranspiler extends base.TranspilerStep {
 
   private visitParameters(parameters: ts.ParameterDeclaration[]) {
     this.emit('(');
-    let firstInitParamIdx;
-    for (firstInitParamIdx = 0; firstInitParamIdx < parameters.length; firstInitParamIdx++) {
+    let firstInitParamIdx = 0;
+    for (; firstInitParamIdx < parameters.length; firstInitParamIdx++) {
       // ObjectBindingPatterns are handled within the parameter visit.
       let isOpt =
           parameters[firstInitParamIdx].initializer || parameters[firstInitParamIdx].questionToken;
@@ -346,7 +346,7 @@ class DeclarationTranspiler extends base.TranspilerStep {
 
   /** Returns the parameters passed to @IMPLEMENTS as the identifier's string values. */
   private getImplementsDecorators(decorators: ts.NodeArray<ts.Decorator>): string[] {
-    var interfaces = [];
+    var interfaces: string[] = [];
     if (!decorators) return interfaces;
     decorators.forEach((d) => {
       if (d.expression.kind !== ts.SyntaxKind.CallExpression) return;

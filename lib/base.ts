@@ -71,7 +71,7 @@ export class TranspilerStep {
   // TODO(martinprobst): This belongs to module.ts, refactor.
   getLibraryName(): string { return this.transpiler.getLibraryName(); }
 
-  private static DART_TYPES = {
+  private static DART_TYPES: {[k: string]: string} = {
     'Promise': 'Future',
     'Observable': 'Stream',
     'ObservableController': 'StreamController',

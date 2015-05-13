@@ -107,8 +107,8 @@ class CallTranspiler extends base.TranspilerStep {
     var errorThisAssignment = 'assignments in const constructors must assign into this.';
 
     var parent = <base.ClassLike>ctor.parent;
-    var superCall;
-    var expressions = [];
+    var superCall: ts.CallExpression;
+    var expressions: ts.Expression[] = [];
     // Find super() calls and (if in a const ctor) collect assignment expressions (not statements!)
     body.statements.forEach((stmt) => {
       if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) {

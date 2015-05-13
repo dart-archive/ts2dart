@@ -56,7 +56,7 @@ describe('main transpiler functionality', () => {
     beforeEach(() => {
       transpiler = new main.Transpiler({generateSourceMap: true, basePath: '/absolute/'});
     });
-    function translateMap(source) {
+    function translateMap(source: string) {
       var program = parseProgram(source, '/absolute/path/test.ts');
       return transpiler.translateProgram(program);
     }

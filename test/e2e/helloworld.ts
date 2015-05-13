@@ -1,6 +1,7 @@
 import t = require("unittest/unittest");
 import {MyClass, SomeArray} from './lib';
 
+
 function main(): void {
   t.test("handles classes", function() {
     var mc = new MyClass("hello");

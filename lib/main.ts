@@ -227,7 +227,7 @@ class Output {
   private generateSourceMap: boolean;
   private sourceMap: SourceMap.SourceMapGenerator;
 
-  constructor(private currentFile: ts.SourceFile, private relativeFileName,
+  constructor(private currentFile: ts.SourceFile, private relativeFileName: string,
               generateSourceMap: boolean) {
     if (generateSourceMap) {
       this.sourceMap = new SourceMap.SourceMapGenerator({file: relativeFileName + '.dart'});

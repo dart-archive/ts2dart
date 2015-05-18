@@ -119,7 +119,7 @@ class StatementTranspiler extends base.TranspilerStep {
             break;
           }
         }
-         
+
         this.emit('throw');
         this.visit(throwStmt.expression);
         this.emit(';');

@@ -43,10 +43,8 @@ export class TranspilerStep {
     }
     return null;
   }
- 
-  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean {
-    return !!this.getAncestor(n, kind);
-  }
+
+  hasAncestor(n: ts.Node, kind: ts.SyntaxKind): boolean { return !!this.getAncestor(n, kind); }
 
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     if (!decorators) return false;

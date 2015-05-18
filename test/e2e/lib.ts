@@ -19,4 +19,9 @@ class MyClass {
   namedParam({x = "?"}) { return 'hello' + x; }
 }
 
+class MySubclass extends MyClass {
+  constructor(_field: string) { super(_field); }
+  get subclassField(): string { return this.field; }
+}
+
 const SomeArray = CONST_EXPR([1, 2, 3]);

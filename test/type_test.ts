@@ -13,7 +13,9 @@ describe('types', () => {
         .to.equal(' import "somewhere.dart" as Future ;');
     expectTranslate('x instanceof Promise;').to.equal(' x is Future ;');
   });
-  it('not mangle prototype names', () => {
+  it('allows typecasts',
+     () => { expectTranslate('<MyType>ref').to.equal(' ( ref as MyType ) ;'); });
+  it('does not mangle prototype names', () => {
     expectTranslate('import toString = require("./somewhere");')
         .to.equal(' import "somewhere.dart" as toString ;');
   });

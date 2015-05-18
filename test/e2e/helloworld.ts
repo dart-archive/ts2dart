@@ -1,5 +1,5 @@
 import t = require("unittest/unittest");
-import {MyClass, SomeArray} from './lib';
+import {MyClass, MySubclass, SomeArray} from './lib';
 
 
 function main(): void {
@@ -8,6 +8,11 @@ function main(): void {
     t.expect(mc.field.toUpperCase(), t.equals("HELLO WORLD"));
     t.expect(mc.namedParam({x: '!'}), t.equals("hello!"));
     t.expect(mc.namedParam(), t.equals("hello?"));
+  });
+  t.test("allows subclassing and casts", function() {
+    var mc: MyClass;
+    mc = new MySubclass("hello");
+    t.expect((<MySubclass>mc).subclassField, t.equals("hello world"));
   });
   t.test("string templates", function() {
     t.expect("$mc", t.equals("$mc"));

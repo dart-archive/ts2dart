@@ -17,6 +17,14 @@ class TypeTranspiler extends base.TranspilerStep {
         this.visitTypeName(typeRef.typeName);
         this.maybeVisitTypeArguments(typeRef);
         break;
+      case ts.SyntaxKind.TypeAssertionExpression:
+        var typeAssertExpr = <ts.TypeAssertion>node;
+        this.emit('(');
+        this.visit(typeAssertExpr.expression);
+        this.emit('as');
+        this.visit(typeAssertExpr.type);
+        this.emit(')');
+        break;
       case ts.SyntaxKind.TypeParameter:
         var typeParam = <ts.TypeParameterDeclaration>node;
         this.visit(typeParam.name);

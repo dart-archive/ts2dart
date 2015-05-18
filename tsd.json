@@ -22,6 +22,9 @@
     },
     "fs-extra/fs-extra.d.ts": {
       "commit": "d5f92f93bdb49f332fa662ff1d0cc8700f02e4dc"
+    },
+    "minimist/minimist.d.ts": {
+      "commit": "8b7cc13f6dbabd0a49de7ccba75c342160e600ad"
     }
   }
 }

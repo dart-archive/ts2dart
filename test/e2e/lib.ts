@@ -1,4 +1,4 @@
-import {CONST_EXPR, FORWARD_REF} from "somewhere";
+import {CONST_EXPR, FORWARD_REF} from "angular2/src/facade/lang";
 
 @CONST
 class MyClass {

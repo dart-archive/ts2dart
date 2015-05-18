@@ -2,9 +2,10 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from './facade_converter';
 
-class ExpressionTranspiler extends base.TranspilerStep {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+class ExpressionTranspiler extends base.TranspilerBase {
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -72,6 +73,7 @@ class ExpressionTranspiler extends base.TranspilerStep {
             this.hasAncestor(propAccess, ts.SyntaxKind.CatchClause)) {
           this.emitNoSpace('_stack');
         } else {
+          this.fc.checkPropertyAccess(propAccess);
           this.emit('.');
           this.visit(propAccess.name);
         }

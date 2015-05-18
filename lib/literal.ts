@@ -2,9 +2,10 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from "./facade_converter";
 
-class LiteralTranspiler extends base.TranspilerStep {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+class LiteralTranspiler extends base.TranspilerBase {
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -49,13 +50,13 @@ class LiteralTranspiler extends base.TranspilerStep {
         if (span.literal) this.visit(span.literal);
         break;
       case ts.SyntaxKind.ArrayLiteralExpression:
-        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
+        if (this.shouldBeConst(node)) this.emit('const');
         this.emit('[');
         this.visitList((<ts.ArrayLiteralExpression>node).elements);
         this.emit(']');
         break;
       case ts.SyntaxKind.ObjectLiteralExpression:
-        if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) this.emit('const');
+        if (this.shouldBeConst(node)) this.emit('const');
         this.emit('{');
         this.visitList((<ts.ObjectLiteralExpression>node).properties);
         this.emit('}');
@@ -102,6 +103,10 @@ class LiteralTranspiler extends base.TranspilerStep {
         return false;
     }
     return true;
+  }
+
+  private shouldBeConst(n: ts.Node): boolean {
+    return this.hasAncestor(n, ts.SyntaxKind.Decorator) || this.fc.isInsideConstExpr(n);
   }
 
   private escapeTextForTemplateString(n: ts.Node): string {

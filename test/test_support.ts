@@ -1,31 +1,57 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import main = require('../lib/main');
+/// <reference path="../typings/node/node.d.ts"/>
 import chai = require('chai');
+import fs = require('fs');
+import main = require('../lib/main');
+import path = require('path');
 import ts = require('typescript');
 
-export function expectTranslate(tsCode: string) {
-  var result = translateSource(tsCode);
+export type Input = string | { [k: string]: string };
+
+export function expectTranslate(tsCode: Input, options: main.TranspilerOptions = {}) {
+  var result = translateSource(tsCode, options);
   return chai.expect(result);
 }
 
-export function expectErroneousCode(tsCode: string) {
-  return chai.expect(() => translateSource(tsCode, false));
+export function expectErroneousCode(tsCode: Input, options: main.TranspilerOptions = {}) {
+  options.failFast = false;  // Collect *all* errors.
+  return chai.expect(() => translateSource(tsCode, options));
 }
 
-export function parseProgram(contents: string, fileName = 'file.ts'): ts.Program {
+export function parseProgram(contents: Input, fileName = 'file.ts'): ts.Program {
+  var namesToContent: {[k: string]: string};
+  if (typeof contents === 'string') {
+    namesToContent = {};
+    namesToContent[fileName] = contents;
+  } else {
+    namesToContent = contents;
+  }
+  return parseFiles(namesToContent);
+}
+
+var libSource =
+    fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), 'lib.d.ts'), 'utf-8');
+var libSourceFile: ts.SourceFile;
+
+export function parseFiles(nameToContent: {[k: string]: string}): ts.Program {
   var result: string;
   var compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
-    module: ts.ModuleKind.AMD
+    module: ts.ModuleKind.CommonJS,
   };
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function(sourceName, languageVersion) {
-      if (sourceName === fileName) {
-        return ts.createSourceFile(sourceName, contents, compilerOptions.target, true);
+      if (nameToContent.hasOwnProperty(sourceName)) {
+        return ts.createSourceFile(sourceName, nameToContent[sourceName], compilerOptions.target,
+                                   true);
       }
       if (sourceName === 'lib.d.ts') {
-        return ts.createSourceFile(sourceName, '', compilerOptions.target, true);
+        if (!libSourceFile) {
+          // Cache to avoid excessive test times.
+          libSourceFile = ts.createSourceFile(sourceName, libSource, compilerOptions.target, true);
+        }
+        return libSourceFile;
       }
       return undefined;
     },
@@ -37,17 +63,20 @@ export function parseProgram(contents: string, fileName = 'file.ts'): ts.Program
     getNewLine: () => '\n'
   };
   // Create a program from inputs
-  var program: ts.Program = ts.createProgram([fileName], compilerOptions, compilerHost);
+  var entryPoints = Object.keys(nameToContent);
+  var program: ts.Program = ts.createProgram(entryPoints, compilerOptions, compilerHost);
   if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
     var first = program.getSyntacticDiagnostics()[0];
-    throw new Error(`${first.start}: ${first.messageText} in ${contents}`);
+    throw new Error(`${first.start}: ${first.messageText} in ${nameToContent[entryPoints[0]]}`);
   }
   return program;
 }
 
-export function translateSource(contents: string, failFast = true): string {
+export function translateSource(contents: Input, options: main.TranspilerOptions = {}): string {
+  // Default to quick stack traces.
+  if (!options.hasOwnProperty('failFast')) options.failFast = true;
   var program = parseProgram(contents);
-  var transpiler = new main.Transpiler({failFast});
+  var transpiler = new main.Transpiler(options);
   return transpiler.translateProgram(program);
 }

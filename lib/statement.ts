@@ -5,7 +5,7 @@ import ts2dart = require('./main');
 
 type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
-class StatementTranspiler extends base.TranspilerStep {
+class StatementTranspiler extends base.TranspilerBase {
   constructor(tr: ts2dart.Transpiler) { super(tr); }
 
   visitNode(node: ts.Node): boolean {

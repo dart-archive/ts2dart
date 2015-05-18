@@ -3,7 +3,7 @@ import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
 
-class ImportExportTranspiler extends base.TranspilerStep {
+class ImportExportTranspiler extends base.TranspilerBase {
   constructor(tr: ts2dart.Transpiler, private generateLibraryName: boolean) { super(tr); }
 
   visitNode(node: ts.Node): boolean {

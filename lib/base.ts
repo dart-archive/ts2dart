@@ -14,7 +14,7 @@ export function ident(n: ts.Node): string {
   return null;
 }
 
-export class TranspilerStep {
+export class TranspilerBase {
   constructor(private transpiler: ts2dart.Transpiler) {}
 
   visit(n: ts.Node) { this.transpiler.visit(n); }
@@ -73,12 +73,13 @@ export class TranspilerStep {
   // TODO(martinprobst): This belongs to module.ts, refactor.
   getLibraryName(): string { return this.transpiler.getLibraryName(); }
 
-  private static DART_TYPES: {[k: string]: string} = {
+  private static TS_TO_DART_TYPENAMES: {[k: string]: string} = {
     'Promise': 'Future',
     'Observable': 'Stream',
     'ObservableController': 'StreamController',
     'Date': 'DateTime',
-    'StringMap': 'Map'
+    'StringMap': 'Map',
+    'Array': 'List',
   };
 
   visitTypeName(typeName: ts.EntityName) {
@@ -87,8 +88,8 @@ export class TranspilerStep {
       return;
     }
     var identifier = ident(typeName);
-    if (TranspilerStep.DART_TYPES.hasOwnProperty(identifier)) {
-      identifier = TranspilerStep.DART_TYPES[identifier];
+    if (TranspilerBase.TS_TO_DART_TYPENAMES.hasOwnProperty(identifier)) {
+      identifier = TranspilerBase.TS_TO_DART_TYPENAMES[identifier];
     }
     this.emit(identifier);
   }

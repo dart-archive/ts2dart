@@ -3,6 +3,7 @@
 /// <reference path='../typings/source-map/source-map.d.ts' />
 // Use HEAD version of typescript, installed by npm
 /// <reference path='../node_modules/typescript/bin/typescript.d.ts' />
+/// <reference path='../typings/minimist/minimist.d.ts' />
 require('source-map-support').install();
 import SourceMap = require('source-map');
 import fs = require('fs');
@@ -18,25 +19,29 @@ import ModuleTranspiler = require('./module');
 import StatementTranspiler = require('./statement');
 import TypeTranspiler = require('./type');
 import LiteralTranspiler = require('./literal');
+import {FacadeConverter} from './facade_converter';
 
 export interface TranspilerOptions {
-  // Fail on the first error, do not collect multiple. Allows easier debugging as stack traces lead
-  // directly to the offending line.
+  /**
+   * Fail on the first error, do not collect multiple. Allows easier debugging as stack traces lead
+   * directly to the offending line.
+   */
   failFast?: boolean;
-  // Whether to generate 'library a.b.c;' names from relative file paths.
+  /** Whether to generate 'library a.b.c;' names from relative file paths. */
   generateLibraryName?: boolean;
-  // Whether to generate source maps.
+  /** Whether to generate source maps. */
   generateSourceMap?: boolean;
-  // A base path to relativize absolute file paths against. This is useful for library name
-  // generation (see above) and nicer file names in error messages.
+  /**
+   * A base path to relativize absolute file paths against. This is useful for library name
+   * generation (see above) and nicer file names in error messages.
+   */
   basePath?: string;
+  /**
+   * Translate calls to builtins, i.e. seemlessly convert from `Array` to `List`, and convert the
+   * corresponding methods. Requires type checking.
+   */
+  translateBuiltins?: boolean;
 }
-
-var OPTIONS: ts.CompilerOptions = {
-  target: ts.ScriptTarget.ES6,
-  module: ts.ModuleKind.CommonJS,
-  allowNonTsExtensions: true,
-};
 
 export class Transpiler {
   private output: Output;
@@ -47,14 +52,16 @@ export class Transpiler {
   private lastCommentIdx: number = -1;
   private errors: string[] = [];
 
-  private transpilers: base.TranspilerStep[];
+  private transpilers: base.TranspilerBase[];
+  private fc: FacadeConverter;
 
   constructor(private options: TranspilerOptions = {}) {
+    this.fc = new FacadeConverter(this);
     this.transpilers = [
-      new CallTranspiler(this),  // Has to come before StatementTranspiler!
+      new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
       new DeclarationTranspiler(this),
-      new ExpressionTranspiler(this),
-      new LiteralTranspiler(this),
+      new ExpressionTranspiler(this, this.fc),
+      new LiteralTranspiler(this, this.fc),
       new ModuleTranspiler(this, options.generateLibraryName),
       new StatementTranspiler(this),
       new TypeTranspiler(this),
@@ -73,7 +80,10 @@ export class Transpiler {
                       this.options.basePath);
     }
     var destinationRoot = destination || this.options.basePath || '';
-    var program = ts.createProgram(fileNames, OPTIONS, host);
+    var program = ts.createProgram(fileNames, this.getCompilerOptions(), host);
+    if (this.options.translateBuiltins) {
+      this.fc.setTypeChecker(program.getTypeChecker());
+    }
     program.getSourceFiles()
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
@@ -86,6 +96,9 @@ export class Transpiler {
   }
 
   translateProgram(program: ts.Program): string {
+    if (this.options.translateBuiltins) {
+      this.fc.setTypeChecker(program.getTypeChecker());
+    }
     var src = program.getSourceFiles()
                   .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
                                                           !!sourceFile.fileName.match(/\.[jt]s$/)))
@@ -96,22 +109,31 @@ export class Transpiler {
 
   translateFile(fileName: string): string {
     var host = this.createCompilerHost([fileName]);
-    var program = ts.createProgram([fileName], OPTIONS, host);
+    var program = ts.createProgram([fileName], this.getCompilerOptions(), host);
     return this.translateProgram(program);
+  }
+
+  private getCompilerOptions() {
+    const opts: ts.CompilerOptions = {
+      target: ts.ScriptTarget.ES6,
+      module: ts.ModuleKind.CommonJS,
+      allowNonTsExtensions: true,
+    };
+    return opts;
   }
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
     var fileMap: {[s: string]: boolean} = {};
     files.forEach((f) => fileMap[f] = true);
     return {
-      getSourceFile(sourceName, languageVersion) {
+      getSourceFile: (sourceName, languageVersion) => {
         // Only transpile the files directly passed in, do not transpile transitive dependencies.
         if (fileMap.hasOwnProperty(sourceName)) {
           var contents = fs.readFileSync(sourceName, 'UTF-8');
-          return ts.createSourceFile(sourceName, contents, OPTIONS.target, true);
+          return ts.createSourceFile(sourceName, contents, this.getCompilerOptions().target, true);
         }
         if (sourceName === 'lib.d.ts') {
-          return ts.createSourceFile(sourceName, '', OPTIONS.target, true);
+          return ts.createSourceFile(sourceName, '', this.getCompilerOptions().target, true);
         }
         return undefined;
       },
@@ -278,5 +300,6 @@ class Output {
 
 // CLI entry point
 if (require.main === module) {
-  new Transpiler().transpile(process.argv.slice(2))
+  var args = require('minimist')(process.argv.slice(2), {base: 'string'});
+  new Transpiler(args).transpile(args._, args.destination);
 }

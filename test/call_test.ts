@@ -42,26 +42,4 @@ describe('calls', () => {
     expectTranslate('class X { y() { super.z(1); } }')
         .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
   });
-
-  it('translates CONST_EXPR(...) to const (...)', () => {
-    expectTranslate('import {CONST_EXPR} from "angular2/facade/lang.ts";\n' +
-                    'const x = CONST_EXPR([]);')
-        .to.equal(' const x = const [ ] ;');
-    expectTranslate('import {CONST_EXPR} from "angular2/facade/lang.ts";\n' +
-                    'const x = CONST_EXPR(new Person());')
-        .to.equal(' const x = const Person ( ) ;');
-    expectTranslate('import {CONST_EXPR} from "angular2/facade/lang.ts";\n' +
-                    'const x = CONST_EXPR({"one":1});')
-        .to.equal(' const x = const { "one" : 1 } ;');
-    expectErroneousCode('CONST_EXPR()').to.throw(/exactly one argument/);
-    expectErroneousCode('CONST_EXPR(1, 2)').to.throw(/exactly one argument/);
-  });
-
-  it('translates FORWARD_REF(() => T) to T', () => {
-    expectTranslate('import {FORWARD_REF} from "angular2/facade/lang.ts";\n' +
-                    'var x = FORWARD_REF(() => SomeType);')
-        .to.equal(' var x = SomeType ;');
-    expectErroneousCode('FORWARD_REF()').to.throw(/exactly one argument/);
-    expectErroneousCode('FORWARD_REF(1)').to.throw(/only arrow functions/);
-  });
 });

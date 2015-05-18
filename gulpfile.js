@@ -89,7 +89,10 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   fsx.copySync(__dirname + '/test/e2e', dir);
 
   // run node with a shell so we can wildcard all the .ts files
-  spawn('sh', ['-c', 'node build/lib/main.js ' + dir + '/*.ts'], {stdio: 'inherit'})
+  var cmd = 'node ../lib/main.js --translateBuiltins --basePath=. --destination=. ' +
+            '*.ts angular2/src/facade/lang.d.ts';
+  // Paths must be relative to our source root, so run with cwd == dir.
+  spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir})
       .on('close', function(code, signal) {
         if (code > 0) {
           onError(new Error("Failed to transpile " + testfile + '.ts'));

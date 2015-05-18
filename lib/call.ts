@@ -2,9 +2,10 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from "./facade_converter";
 
-class CallTranspiler extends base.TranspilerStep {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+class CallTranspiler extends base.TranspilerBase {
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -26,21 +27,11 @@ class CallTranspiler extends base.TranspilerStep {
         }
         this.visitCall(<ts.NewExpression>node);
         break;
-      case ts.SyntaxKind.ArrayLiteralExpression:
-        if (this.isInsideConstExpr(node)) {
-          this.emit('const');
-        }
-        return false;
-      case ts.SyntaxKind.ObjectLiteralExpression:
-        if (this.isInsideConstExpr(node)) {
-          this.emit('const');
-        }
-        return false;
       case ts.SyntaxKind.CallExpression:
         var callExpr = <ts.CallExpression>node;
-        if (!this.maybeHandleSuperCall(callExpr)) {
-          this.visitCall(callExpr);
-        }
+        if (this.fc.maybeHandleCall(callExpr)) break;
+        if (this.maybeHandleSuperCall(callExpr)) break;
+        this.visitCall(callExpr);
         break;
       case ts.SyntaxKind.SuperKeyword:
         this.emit('super');
@@ -52,30 +43,6 @@ class CallTranspiler extends base.TranspilerStep {
   }
 
   private visitCall(c: ts.CallExpression) {
-    if (this.isConstCall(c)) {
-      // The special function CONST_EXPR translates to Dart's const expressions.
-      if (c.arguments.length !== 1) this.reportError(c, 'CONST_EXPR takes exactly one argument');
-      this.visitList(c.arguments);
-      return;
-    }
-
-    if (this.isForwardRef(c)) {
-      // The special function FORWARD_REF translated to an unwrapped value
-      if (c.arguments.length !== 1) {
-        this.reportError(c, 'FORWARD_REF takes exactly one argument');
-        return;
-      }
-
-      const callback = <ts.FunctionExpression>c.arguments[0];
-      if (callback.kind !== ts.SyntaxKind.ArrowFunction) {
-        this.reportError(c, 'FORWARD_REF takes only arrow functions');
-        return;
-      }
-
-      this.visit(callback.body);
-      return;
-    }
-
     this.visit(c.expression);
     this.emit('(');
     if (!this.handleNamedParamsCall(c)) {

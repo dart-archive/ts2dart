@@ -19,9 +19,14 @@ class MyClass {
   namedParam({x = "?"}) { return 'hello' + x; }
 }
 
-class MySubclass extends MyClass {
+interface Observer {
+  update(o: Object, arg: Object);
+}
+
+class MySubclass extends MyClass implements Observer {
   constructor(_field: string) { super(_field); }
   get subclassField(): string { return this.field; }
+  update(o: Object, arg: Object) {}
 }
 
 const SomeArray = CONST_EXPR([1, 2, 3]);

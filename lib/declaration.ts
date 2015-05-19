@@ -133,7 +133,6 @@ class DeclarationTranspiler extends base.TranspilerStep {
         break;
       case ts.SyntaxKind.MethodSignature:
         var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
-        this.emit('abstract');
         this.visitEachIfPresent(methodSignatureDecl.modifiers);
         this.visitFunctionLike(methodSignatureDecl);
         break;

@@ -12,6 +12,11 @@ class TypeTranspiler extends base.TranspilerStep {
         // Dart doesn't support type literals.
         this.emit('dynamic');
         break;
+      case ts.SyntaxKind.UnionType:
+        this.emit('dynamic /*');
+        this.visitList((<ts.UnionTypeNode>node).types, "|");
+        this.emit('*/');
+        break;
       case ts.SyntaxKind.TypeReference:
         var typeRef = <ts.TypeReferenceNode>node;
         this.visitTypeName(typeRef.typeName);

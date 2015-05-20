@@ -19,6 +19,10 @@ describe('types', () => {
     expectTranslate('import toString = require("./somewhere");')
         .to.equal(' import "somewhere.dart" as toString ;');
   });
+  it('should support union types', () => {
+    expectTranslate('var x:number|List<string> = 11;')
+        .to.equal(' dynamic /* num | List < String > */ x = 11 ;');
+  });
 });
 
 describe('type arguments', () => {

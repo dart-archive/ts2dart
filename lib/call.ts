@@ -19,11 +19,23 @@ class CallTranspiler extends base.TranspilerStep {
         if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) {
           // Constructor calls in annotations must be const constructor calls.
           this.emit('const');
+        } else if (this.isInsideConstExpr(node)) {
+          this.emit('const');
         } else {
           this.emit('new');
         }
         this.visitCall(<ts.NewExpression>node);
         break;
+      case ts.SyntaxKind.ArrayLiteralExpression:
+        if (this.isInsideConstExpr(node)) {
+          this.emit('const');
+        }
+        return false;
+      case ts.SyntaxKind.ObjectLiteralExpression:
+        if (this.isInsideConstExpr(node)) {
+          this.emit('const');
+        }
+        return false;
       case ts.SyntaxKind.CallExpression:
         var callExpr = <ts.CallExpression>node;
         if (!this.maybeHandleSuperCall(callExpr)) {
@@ -40,11 +52,9 @@ class CallTranspiler extends base.TranspilerStep {
   }
 
   private visitCall(c: ts.CallExpression) {
-    var fnName = base.ident(c.expression);
-    if (fnName === 'CONST_EXPR') {
+    if (this.isConstCall(c)) {
       // The special function CONST_EXPR translates to Dart's const expressions.
       if (c.arguments.length !== 1) this.reportError(c, 'CONST_EXPR takes exactly one argument');
-      this.emit('const');
       this.visitList(c.arguments);
       return;
     }
@@ -54,6 +64,15 @@ class CallTranspiler extends base.TranspilerStep {
       this.visitList(c.arguments);
     }
     this.emit(')');
+  }
+
+  private isInsideConstExpr(node: ts.Node): boolean {
+    return this.isConstCall(
+        <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
+  }
+
+  private isConstCall(node: ts.CallExpression): boolean {
+    return node && base.ident(node.expression) === 'CONST_EXPR';
   }
 
   private handleNamedParamsCall(c: ts.CallExpression): boolean {

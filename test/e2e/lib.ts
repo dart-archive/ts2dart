@@ -1,4 +1,4 @@
-import {CONST_EXPR} from "somewhere";
+import {CONST_EXPR, FORWARD_REF} from "somewhere";
 
 @CONST
 class MyClass {
@@ -30,3 +30,4 @@ class MySubclass extends MyClass implements Observer {
 }
 
 const SomeArray = CONST_EXPR([1, 2, 3]);
+const someArray = FORWARD_REF(() => SomeArray);

@@ -58,6 +58,24 @@ class CallTranspiler extends base.TranspilerStep {
       this.visitList(c.arguments);
       return;
     }
+
+    if (this.isForwardRef(c)) {
+      // The special function FORWARD_REF translated to an unwrapped value
+      if (c.arguments.length !== 1) {
+        this.reportError(c, 'FORWARD_REF takes exactly one argument');
+        return;
+      }
+
+      const callback = <ts.FunctionExpression>c.arguments[0];
+      if (callback.kind !== ts.SyntaxKind.ArrowFunction) {
+        this.reportError(c, 'FORWARD_REF takes only arrow functions');
+        return;
+      }
+
+      this.visit(callback.body);
+      return;
+    }
+
     this.visit(c.expression);
     this.emit('(');
     if (!this.handleNamedParamsCall(c)) {
@@ -73,6 +91,10 @@ class CallTranspiler extends base.TranspilerStep {
 
   private isConstCall(node: ts.CallExpression): boolean {
     return node && base.ident(node.expression) === 'CONST_EXPR';
+  }
+
+  private isForwardRef(node: ts.CallExpression): boolean {
+    return node && base.ident(node.expression) === 'FORWARD_REF';
   }
 
   private handleNamedParamsCall(c: ts.CallExpression): boolean {

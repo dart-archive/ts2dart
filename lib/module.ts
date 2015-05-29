@@ -95,6 +95,7 @@ class ImportExportTranspiler extends base.TranspilerStep {
     switch (name) {
       case 'CONST':
       case 'CONST_EXPR':
+      case 'FORWARD_REF':
       case 'ABSTRACT':
       case 'IMPLEMENTS':
         return true;

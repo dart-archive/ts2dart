@@ -56,4 +56,12 @@ describe('calls', () => {
     expectErroneousCode('CONST_EXPR()').to.throw(/exactly one argument/);
     expectErroneousCode('CONST_EXPR(1, 2)').to.throw(/exactly one argument/);
   });
+
+  it('translates FORWARD_REF(() => T) to T', () => {
+    expectTranslate('import {FORWARD_REF} from "angular2/facade/lang.ts";\n' +
+                    'var x = FORWARD_REF(() => SomeType);')
+        .to.equal(' var x = SomeType ;');
+    expectErroneousCode('FORWARD_REF()').to.throw(/exactly one argument/);
+    expectErroneousCode('FORWARD_REF(1)').to.throw(/only arrow functions/);
+  });
 });

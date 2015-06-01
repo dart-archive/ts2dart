@@ -82,7 +82,8 @@ gulp.task('test.unit', ['test.compile'], function(done) {
 gulp.task('test.e2e', ['test.compile'], function(done) {
   var testfile = 'helloworld';
 
-  var dir = __dirname + '/build/e2e';
+  // Removes backslashes from __dirname in Windows
+  var dir = (__dirname.replace(/\\/g, '/') + '/build/e2e');
   if (fs.existsSync(dir)) fsx.removeSync(dir);
   fs.mkdirSync(dir);
   fsx.copySync(__dirname + '/test/e2e', dir);

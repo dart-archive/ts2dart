@@ -9,7 +9,7 @@
   "dependencies": {
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
-    "source-map-support": "git://github.com/evanw/node-source-map-support#9b28b7896934a2836f58b536a98081b47c755c20",
+    "source-map-support": "^0.3.1",
     "tsd": "^0.5.7",
     "typescript": "1.5.0-beta"
   },
@@ -41,7 +41,7 @@
     "Alex Eagle <alexeagle@google.com> (https://angularjs.org/)",
     "Martin Probst <martinprobst@google.com> (https://angularjs.org/)"
   ],
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/angular/ts2dart/issues"
   },

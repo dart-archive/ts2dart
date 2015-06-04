@@ -2,7 +2,7 @@ language: dart # NodeJS is available everywhere
 node_js:
   - "stable"
 before_script:
-    - npm install
+    - npm update
 script:
     - npm test
 cache:

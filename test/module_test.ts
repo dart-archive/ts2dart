@@ -23,6 +23,10 @@ describe('imports', () => {
     expectTranslate('import {CONST, CONST_EXPR, IMPLEMENTS, ABSTRACT} from "x"').to.equal('');
     expectTranslate('import {x, IMPLEMENTS} from "./x"').to.equal(' import "x.dart" show x ;');
   });
+  it('fails for renamed imports', () => {
+    expectErroneousCode('import {Foo as Bar} from "baz";')
+        .to.throw(/import\/export renames are unsupported in Dart/);
+  });
 });
 
 describe('exports', () => {
@@ -37,6 +41,10 @@ describe('exports', () => {
      () => { expectTranslate('export * from "./X";').to.equal(' export "X.dart" ;'); });
   it('allows named export declarations', () => {
     expectTranslate('export {a, b} from "X";').to.equal(' export "package:X.dart" show a , b ;');
+  });
+  it('fails for renamed exports', () => {
+    expectErroneousCode('export {Foo as Bar} from "baz";')
+        .to.throw(/import\/export renames are unsupported in Dart/);
   });
   it('fails for exports without URLs', () => {
     expectErroneousCode('export {a as b};').to.throw('re-exports must have a module URL');

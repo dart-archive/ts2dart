@@ -58,7 +58,9 @@ class ImportExportTranspiler extends base.TranspilerStep {
       case ts.SyntaxKind.ImportSpecifier:
       case ts.SyntaxKind.ExportSpecifier:
         var spec = <ts.ImportOrExportSpecifier>node;
-        if (spec.propertyName) this.visitTypeName(spec.propertyName);
+        if (spec.propertyName) {
+          this.reportError(spec.propertyName, 'import/export renames are unsupported in Dart');
+        }
         this.visitTypeName(spec.name);
         break;
       case ts.SyntaxKind.ExportDeclaration:

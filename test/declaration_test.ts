@@ -127,6 +127,10 @@ describe('interfaces', () => {
   });
   it('supports abstract methods',
      () => { expectTranslate('interface X { x(); }').to.equal(' abstract class X { x ( ) ; }'); });
+  it('supports interface properties', () => {
+    expectTranslate('interface X { x: string; y; }')
+        .to.equal(' abstract class X { String x ; var y ; }');
+  });
 });
 
 describe('enums', () => {

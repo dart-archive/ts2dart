@@ -131,6 +131,10 @@ class DeclarationTranspiler extends base.TranspilerBase {
         var funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);
         break;
+      case ts.SyntaxKind.PropertySignature:
+        var propSig = <ts.PropertyDeclaration>node;
+        this.visitProperty(propSig);
+        break;
       case ts.SyntaxKind.MethodSignature:
         var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
         this.visitEachIfPresent(methodSignatureDecl.modifiers);

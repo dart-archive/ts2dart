@@ -62,12 +62,12 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts', 'typings/**/*.d.ts'])
+  return gulp.src(['test/*.ts', 'typings/**/*.d.ts'], {base: '.'})
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
       .on('error', onError)
       .js.pipe(sourcemaps.write())
-      .pipe(gulp.dest('build/test'));
+      .pipe(gulp.dest('build/'));  // '/test/' comes from base above.
 });
 
 gulp.task('test.unit', ['test.compile'], function(done) {

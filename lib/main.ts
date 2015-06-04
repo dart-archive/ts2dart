@@ -87,8 +87,8 @@ export class Transpiler {
 
   translateProgram(program: ts.Program): string {
     var src = program.getSourceFiles()
-                  .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/) &&
-                                                         !!sourceFile.fileName.match(/\.[jt]s$/))
+                  .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
+                                                          !!sourceFile.fileName.match(/\.[jt]s$/)))
                   .map((f) => this.translate(f))
                   .join('\n');
     return src;

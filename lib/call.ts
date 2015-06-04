@@ -111,8 +111,8 @@ class CallTranspiler extends base.TranspilerStep {
     if (objLit.properties.length === 0) return false;
     // Even worse: foo(a, b, {'c': d}) is considered to *not* be a named parameters call.
     var hasNonPropAssignments = objLit.properties.some(
-        (p) => p.kind != ts.SyntaxKind.PropertyAssignment ||
-               (<ts.PropertyAssignment>p).name.kind !== ts.SyntaxKind.Identifier);
+        (p) => (p.kind != ts.SyntaxKind.PropertyAssignment ||
+                (<ts.PropertyAssignment>p).name.kind !== ts.SyntaxKind.Identifier));
     if (hasNonPropAssignments) return false;
 
     var len = c.arguments.length - 1;

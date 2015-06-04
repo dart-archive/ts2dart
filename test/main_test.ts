@@ -14,6 +14,10 @@ describe('main transpiler functionality', () => {
       expectTranslate('/* A */ a\n /* B */ b').to.equal('\n /* A */ a ;\n /* B */ b ;');
       expectTranslate('// A\na\n// B\nb').to.equal('\n // A\n a ;\n // B\n b ;');
     });
+    it('keeps ctor comments', () => {
+      expectTranslate('/** A */ class A {\n /** ctor */ constructor() {}}')
+          .to.equal('\n /** A */ class A {\n /** ctor */ A ( ) { } }');
+    });
   });
 
   describe('errors', () => {

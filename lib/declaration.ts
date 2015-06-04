@@ -223,7 +223,16 @@ class DeclarationTranspiler extends base.TranspilerStep {
   }
 
   private visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor?: string) {
-    if (fn.type) this.visit(fn.type);
+    if (fn.type) {
+      if (fn.kind === ts.SyntaxKind.ArrowFunction) {
+        // Type is silently dropped for arrow functions, not supported in Dart.
+        this.emit('/*');
+        this.visit(fn.type);
+        this.emit('*/');
+      } else {
+        this.visit(fn.type);
+      }
+    }
     if (accessor) this.emit(accessor);
     if (fn.name) this.visit(fn.name);
     // Dart does not even allow the parens of an empty param list on getter

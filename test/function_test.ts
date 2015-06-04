@@ -38,6 +38,7 @@ describe('functions', () => {
      () => { expectTranslate('var a = function() {}').to.equal(' var a = ( ) { } ;'); });
   it('translates fat arrow operator', () => {
     expectTranslate('var a = () => {}').to.equal(' var a = ( ) { } ;');
+    expectTranslate('var a = (): string => {}').to.equal(' var a = /* String */ ( ) { } ;');
     expectTranslate('var a = (p) => isBlank(p)').to.equal(' var a = ( p ) => isBlank ( p ) ;');
     expectTranslate('var a = (p = null) => isBlank(p)')
         .to.equal(' var a = ( [ p = null ] ) => isBlank ( p ) ;');

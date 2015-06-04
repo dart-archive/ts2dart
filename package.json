@@ -10,7 +10,6 @@
     "fs-extra": "^0.18.0",
     "source-map": "^0.4.2",
     "source-map-support": "^0.3.1",
-    "tsd": "^0.6.0",
     "typescript": "alexeagle/TypeScript#error_is_class"
   },
   "devDependencies": {
@@ -23,6 +22,7 @@
     "gulp-util": "^3.0.4",
     "merge2": "^0.3.1",
     "temp": "^0.8.1",
+    "tsd": "^0.6.0",
     "which": "^1.0.9"
   },
   "scripts": {

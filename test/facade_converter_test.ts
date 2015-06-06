@@ -27,24 +27,28 @@ var langDeclarations = `
   export declare function FORWARD_REF<T>(x: T): T;
   `;
 
+var otherFile = `
+  export class X { map(x: number): string { return String(x); } }
+  `;
+
+function getSrcs(str: string): {[k: string]: string} {
+  var srcs: {[k: string]: string} = {
+    'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
+    'angular2/src/facade/lang.d.ts': langDeclarations,
+    'other/file.ts': otherFile,
+  };
+  srcs['main.ts'] = str;
+  return srcs;
+}
+
+const COMPILE_OPTS = {translateBuiltins: true, failFast: true};
+
 function expectWithTypes(str: string) {
-  return expectTranslate(
-      {
-        'main.ts': str,
-        'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
-        'angular2/src/facade/lang.d.ts': langDeclarations,
-      },
-      {translateBuiltins: true, failFast: true});
+  return expectTranslate(getSrcs(str), COMPILE_OPTS);
 }
 
 function expectErroneousWithType(str: string) {
-  return chai.expect(() => translateSource(
-                         {
-                           'main.ts': str,
-                           'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
-                           'angular2/src/facade/lang.d.ts': langDeclarations,
-                         },
-                         {translateBuiltins: true, failFast: true}));
+  return chai.expect(() => translateSource(getSrcs(str), COMPILE_OPTS));
 }
 
 
@@ -64,7 +68,7 @@ describe('collection façade', () => {
   });
 });
 
-describe('magic functions', () => {
+describe('builtin functions', () => {
   it('translates CONST_EXPR(...) to const (...)', () => {
     expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
                     'const x = CONST_EXPR([]);')
@@ -93,4 +97,9 @@ describe('error detection', () => {
   });
   it('for untyped symbols matching special cased methods',
      () => { expectErroneousWithType('x.push(1)').to.throw(/Untyped property access to "push"/); });
+  it.only('allows unrelated methods', () => {
+    expectWithTypes('import {map} from "other/file";\n' +
+                    'new X().map(1)')
+        .to.equal(' import "package:other/file.dart" show map ; new X ( ) . map ( 1 ) ;');
+  });
 });

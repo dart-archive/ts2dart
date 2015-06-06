@@ -1,6 +1,7 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
 import chai = require('chai');
 import main = require('../lib/main');
+import ModuleTranspiler from '../lib/module';
 
 import {expectTranslate, expectErroneousCode, parseProgram} from './test_support';
 
@@ -53,8 +54,10 @@ describe('exports', () => {
 
 describe('library name', () => {
   var transpiler: main.Transpiler;
+  var modTranspiler: ModuleTranspiler;
   beforeEach(() => {
     transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: '/a'});
+    modTranspiler = new ModuleTranspiler(transpiler, true);
   });
   it('adds a library name', () => {
     var program = parseProgram('var x;', '/a/b/c.ts');
@@ -62,17 +65,17 @@ describe('library name', () => {
     chai.expect(res).to.equal(' library b.c ; var x ;');
   });
   it('leaves relative paths alone',
-     () => { chai.expect(transpiler.getLibraryName('a/b')).to.equal('a.b'); });
+     () => { chai.expect(modTranspiler.getLibraryName('a/b')).to.equal('a.b'); });
   it('handles reserved words', () => {
-    chai.expect(transpiler.getLibraryName('/a/for/in/do/x')).to.equal('_for._in._do.x');
+    chai.expect(modTranspiler.getLibraryName('/a/for/in/do/x')).to.equal('_for._in._do.x');
   });
   it('handles built-in and limited keywords', () => {
-    chai.expect(transpiler.getLibraryName('/a/as/if/sync/x')).to.equal('as._if.sync.x');
+    chai.expect(modTranspiler.getLibraryName('/a/as/if/sync/x')).to.equal('as._if.sync.x');
   });
   it('handles file extensions', () => {
-    chai.expect(transpiler.getLibraryName('a/x.ts')).to.equal('a.x');
-    chai.expect(transpiler.getLibraryName('a/x.js')).to.equal('a.x');
+    chai.expect(modTranspiler.getLibraryName('a/x.ts')).to.equal('a.x');
+    chai.expect(modTranspiler.getLibraryName('a/x.js')).to.equal('a.x');
   });
   it('handles non word characters',
-     () => { chai.expect(transpiler.getLibraryName('a/%x.ts')).to.equal('a._x'); });
+     () => { chai.expect(modTranspiler.getLibraryName('a/%x.ts')).to.equal('a._x'); });
 });

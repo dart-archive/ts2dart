@@ -3,7 +3,7 @@ import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
 
-class ImportExportTranspiler extends base.TranspilerBase {
+export default class ModuleTranspiler extends base.TranspilerBase {
   constructor(tr: ts2dart.Transpiler, private generateLibraryName: boolean) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
@@ -124,12 +124,34 @@ class ImportExportTranspiler extends base.TranspilerBase {
   private isEmptyImport(n: ts.ImportDeclaration): boolean {
     var bindings = n.importClause.namedBindings;
     if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
-    return (<ts.NamedImports>bindings).elements.every(ImportExportTranspiler.isIgnoredImport);
+    return (<ts.NamedImports>bindings).elements.every(ModuleTranspiler.isIgnoredImport);
   }
 
   private filterImports(ns: ts.ImportOrExportSpecifier[]) {
-    return ns.filter((e) => !ImportExportTranspiler.isIgnoredImport(e));
+    return ns.filter((e) => !ModuleTranspiler.isIgnoredImport(e));
+  }
+
+  // For the Dart keyword list see
+  // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
+  private static DART_RESERVED_WORDS =
+      ('assert break case catch class const continue default do else enum extends false final ' +
+       'finally for if in is new null rethrow return super switch this throw true try var void ' +
+       'while with')
+          .split(/ /);
+
+  // These are the built-in and limited keywords.
+  private static DART_OTHER_KEYWORDS =
+      ('abstract as async await deferred dynamic export external factory get implements import ' +
+       'library operator part set static sync typedef yield')
+          .split(/ /);
+
+  getLibraryName(nameForTest?: string) {
+    var fileName = this.getRelativeFileName(nameForTest);
+    var parts = fileName.split('/');
+    return parts.filter((p) => p.length > 0)
+        .map((p) => p.replace(/[^\w.]/g, '_'))
+        .map((p) => p.replace(/\.[jt]s$/g, ''))
+        .map((p) => ModuleTranspiler.DART_RESERVED_WORDS.indexOf(p) != -1 ? '_' + p : p)
+        .join('.');
   }
 }
-
-export = ImportExportTranspiler;

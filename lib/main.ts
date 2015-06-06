@@ -15,7 +15,7 @@ import base = require('./base');
 import CallTranspiler = require('./call');
 import DeclarationTranspiler = require('./declaration');
 import ExpressionTranspiler = require('./expression');
-import ModuleTranspiler = require('./module');
+import ModuleTranspiler from './module';
 import StatementTranspiler = require('./statement');
 import TypeTranspiler = require('./type');
 import LiteralTranspiler = require('./literal');
@@ -118,6 +118,7 @@ export class Transpiler {
       target: ts.ScriptTarget.ES6,
       module: ts.ModuleKind.CommonJS,
       allowNonTsExtensions: true,
+      rootDir: this.options.basePath,
     };
     return opts;
   }
@@ -169,38 +170,18 @@ export class Transpiler {
     return this.output.getResult();
   }
 
-  // For the Dart keyword list see
-  // https://www.dartlang.org/docs/dart-up-and-running/ch02.html#keywords
-  private static DART_RESERVED_WORDS =
-      ('assert break case catch class const continue default do else enum extends false final ' +
-       'finally for if in is new null rethrow return super switch this throw true try var void ' +
-       'while with')
-          .split(/ /);
-
-  // These are the built-in and limited keywords.
-  private static DART_OTHER_KEYWORDS =
-      ('abstract as async await deferred dynamic export external factory get implements import ' +
-       'library operator part set static sync typedef yield')
-          .split(/ /);
-
-  getLibraryName(nameForTest?: string) {
-    var fileName = this.getRelativeFileName(nameForTest);
-    var parts = fileName.split('/');
-    return parts.filter((p) => p.length > 0)
-        .map((p) => p.replace(/[^\w.]/g, '_'))
-        .map((p) => p.replace(/\.[jt]s$/g, ''))
-        .map((p) => Transpiler.DART_RESERVED_WORDS.indexOf(p) != -1 ? '_' + p : p)
-        .join('.');
-  }
-
-  private getRelativeFileName(absolute?: string) {
-    var filePath = absolute !== undefined ? absolute : this.currentFile.fileName;
-    if (filePath.indexOf('/') !== 0) return filePath;  // relative path.
+  /**
+   * Returns `filePath`, relativized to the program's `basePath`.
+   * @param filePath Optional path to relativize, defaults to the current file's path.
+   */
+  getRelativeFileName(filePath?: string) {
+    if (filePath === undefined) filePath = this.currentFile.fileName;
+    if (filePath.indexOf('/') !== 0) return filePath;  // doesn't start with / => is a relative path
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
-    return path.relative(this.options.basePath || '', filePath);
+    return path.relative(base, filePath);
   }
 
   emit(s: string) { this.output.emit(s); }

@@ -70,8 +70,9 @@ export class TranspilerBase {
            });
   }
 
-  // TODO(martinprobst): This belongs to module.ts, refactor.
-  getLibraryName(): string { return this.transpiler.getLibraryName(); }
+  getRelativeFileName(fileName: string): string {
+    return this.transpiler.getRelativeFileName(fileName);
+  }
 
   private static TS_TO_DART_TYPENAMES: {[k: string]: string} = {
     'Promise': 'Future',

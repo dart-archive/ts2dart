@@ -26,15 +26,23 @@ export class FacadeConverter extends base.TranspilerBase {
 
     var symbol: ts.Symbol;
     var context: ts.Expression;
+    var ident: string;
 
     if (c.expression.kind === ts.SyntaxKind.Identifier) {
       // Function call.
       symbol = this.tc.getSymbolAtLocation(c.expression);
+      ident = base.ident(c.expression);
       context = null;
     } else if (c.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
       // Method call.
       var pa = <ts.PropertyAccessExpression>c.expression;
-      symbol = this.tc.getSymbolAtLocation(pa.name);
+      var sig = this.tc.getResolvedSignature(c);
+      symbol = this.tc.getSymbolAtLocation(pa);
+      ident = base.ident(pa.name);
+      // if (pa.name.text === 'map') {
+      //   console.log(sig);
+      //   console.log(symbol);
+      // }
       context = pa.expression;
     } else {
       // Not a call we recognize.
@@ -42,8 +50,7 @@ export class FacadeConverter extends base.TranspilerBase {
     }
 
     if (!symbol) {
-      var ident = base.ident(c.expression);
-      if (ident && this.forbiddenNames[ident]) this.reportMissingType(c, ident);
+      if (this.forbiddenNames[ident]) this.reportMissingType(c, ident);
       return false;
     }
 
@@ -51,16 +58,18 @@ export class FacadeConverter extends base.TranspilerBase {
     if (!symbol.valueDeclaration) return false;
 
     var fileName = symbol.valueDeclaration.getSourceFile().fileName;
+    fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
-    // console.log('fn:', fileName);
+    console.log('fn:', fileName);
     var fileSubs = this.subs[fileName];
+    if (!fileSubs) return false;
     var qn = this.tc.getFullyQualifiedName(symbol);
     // Function Qualified Names include their file name. Might be a bug in TypeScript, for the
     // time being just special case.
     if (symbol.flags & ts.SymbolFlags.Function) qn = symbol.getName();
 
-    // console.log('qn', qn);
+    console.log('qn', qn);
 
     var qnSub = fileSubs[qn];
     if (!qnSub) return false;
@@ -104,20 +113,21 @@ export class FacadeConverter extends base.TranspilerBase {
       },
     },
     'angular2/traceur-runtime': {
-      'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('[');
-        this.visit(c.arguments[0]);
-        this.emit(']');
-        this.emit('=');
-        this.visit(c.arguments[1]);
-      },
-      'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('[');
-        this.visit(c.arguments[0]);
-        this.emit(']');
-      },
+        // TODO(martinprobst): enable these once the Angular code base is sufficiently typed.
+        // 'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
+        //   this.visit(context);
+        //   this.emit('[');
+        //   this.visit(c.arguments[0]);
+        //   this.emit(']');
+        //   this.emit('=');
+        //   this.visit(c.arguments[1]);
+        // },
+        // 'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
+        //   this.visit(context);
+        //   this.emit('[');
+        //   this.visit(c.arguments[0]);
+        //   this.emit(']');
+        // },
     },
     'angular2/src/facade/lang': {
       'CONST_EXPR': (c: ts.CallExpression, context: ts.Expression) => {
@@ -147,14 +157,14 @@ export class FacadeConverter extends base.TranspilerBase {
   checkPropertyAccess(pa: ts.PropertyAccessExpression) {
     if (!this.tc) return;
     var ident = pa.name.text;
-    if (this.forbiddenNames[ident] && !this.tc.getSymbolAtLocation(pa.name)) {
+    if (this.forbiddenNames[ident] && !this.tc.getSymbolAtLocation(pa)) {
       this.reportMissingType(pa, ident);
     }
   }
 
   reportMissingType(n: ts.Node, ident: string) {
-    this.reportError(n, `Untyped property access to "${ident}" which could be special.\n` +
-                            ` Please add type declarations to disambiguate.`);
+    this.reportError(n, `Untyped property access to "${ident}" which could be a special` +
+                            ` ts2dart builtin.\n Please add type declarations to disambiguate.`);
   }
 
   isInsideConstExpr(node: ts.Node): boolean {

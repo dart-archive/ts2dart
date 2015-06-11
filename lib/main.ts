@@ -43,6 +43,12 @@ export interface TranspilerOptions {
   translateBuiltins?: boolean;
 }
 
+export const COMPILER_OPTIONS: ts.CompilerOptions = {
+  allowNonTsExtensions: true,
+  module: ts.ModuleKind.CommonJS,
+  target: ts.ScriptTarget.ES5,
+};
+
 export class Transpiler {
   private output: Output;
   private currentFile: ts.SourceFile;
@@ -100,7 +106,7 @@ export class Transpiler {
           fsx.mkdirsSync(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
-    this.checkForErrors();
+    this.checkForErrors(program);
   }
 
   translateProgram(program: ts.Program): {[path: string]: string} {
@@ -113,32 +119,26 @@ export class Transpiler {
         .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
                                                 !!sourceFile.fileName.match(/\.[jt]s$/)))
         .forEach((f) => paths[f.fileName] = this.translate(f));
-    this.checkForErrors();
+    this.checkForErrors(program);
     return paths;
   }
 
   private getCompilerOptions() {
-    const opts: ts.CompilerOptions = {
-      target: ts.ScriptTarget.ES6,
-      module: ts.ModuleKind.CommonJS,
-      allowNonTsExtensions: true,
-      rootDir: this.options.basePath,
-    };
+    var opts: ts.CompilerOptions = {};
+    for (var k in COMPILER_OPTIONS) opts[k] = COMPILER_OPTIONS[k];
+    opts.rootDir = this.options.basePath;
     return opts;
   }
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
     return {
       getSourceFile: (sourceName, languageVersion) => {
-        if (sourceName === 'lib.d.ts') {
-          return ts.createSourceFile(sourceName, '', this.getCompilerOptions().target, true);
-        }
         if (!fs.existsSync(sourceName)) return undefined;
         var contents = fs.readFileSync(sourceName, 'UTF-8');
-        return ts.createSourceFile(sourceName, contents, this.getCompilerOptions().target, true);
+        return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
-      getDefaultLibFileName: () => 'lib.d.ts',
+      getDefaultLibFileName: () => ts.getDefaultLibFilePath(COMPILER_OPTIONS),
       useCaseSensitiveFileNames: () => true,
       getCanonicalFileName: (filename) => filename,
       getCurrentDirectory: () => '',
@@ -162,7 +162,29 @@ export class Transpiler {
     return this.output.getResult();
   }
 
-  private checkForErrors() {
+  private checkForErrors(program: ts.Program) {
+    var errors = this.errors.slice();
+
+    if (this.options.translateBuiltins) {
+      var diag = program.getGlobalDiagnostics()
+                     .concat(program.getSyntacticDiagnostics())
+                     .concat(program.getSemanticDiagnostics())
+                     .filter((d) => d.category === ts.DiagnosticCategory.Error);
+
+      var errs = diag.map((d) => {
+        var msg = ts.DiagnosticCategory[d.category] + ' ' + d.code;
+        if (d.file) {
+          let pos = d.file.getLineAndCharacterOfPosition(d.start);
+          msg += ` ${d.file.fileName}:${pos.line + 1}:${pos.character + 1}`;
+        }
+        msg += ': ';
+        msg += ts.flattenDiagnosticMessageText(d.messageText, '\n');
+        return msg;
+      });
+
+      if (errs) this.errors = this.errors.concat(errs);
+    }
+
     if (this.errors.length) {
       var e = new Error(this.errors.join('\n'));
       e.name = 'TS2DartError';
@@ -178,7 +200,7 @@ export class Transpiler {
     if (filePath === undefined) filePath = this.currentFile.fileName;
     if (filePath.indexOf('/') !== 0) return filePath;  // doesn't start with / => is a relative path
     var base = this.options.basePath || '';
-    if (filePath.indexOf(base) !== 0) {
+    if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
     return path.relative(base, filePath);
@@ -283,7 +305,7 @@ class Output {
 if (require.main === module) {
   var args = require('minimist')(process.argv.slice(2), {base: 'string'});
   try {
-    let transpiler = new Transpiler(args)
+    let transpiler = new Transpiler(args);
     transpiler.transpile(args._, args.destination);
   } catch (e) {
     if (e.name !== 'TS2DartError') throw e;

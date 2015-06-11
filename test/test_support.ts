@@ -20,23 +20,20 @@ export function expectErroneousCode(tsCode: Input, options: main.TranspilerOptio
   return chai.expect(() => translateSource(tsCode, options));
 }
 
-var libSource =
-    fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), 'lib.d.ts'), 'utf-8');
+var compilerOptions = main.COMPILER_OPTIONS;
+var defaultLibName = ts.getDefaultLibFileName(compilerOptions);
+var libSource = fs.readFileSync(ts.getDefaultLibFilePath(compilerOptions), 'utf-8');
 var libSourceFile: ts.SourceFile;
 
 export function parseFiles(nameToContent: StringMap): ts.Program {
   var result: string;
-  var compilerOptions: ts.CompilerOptions = {
-    target: ts.ScriptTarget.ES6,
-    module: ts.ModuleKind.CommonJS,
-  };
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function(sourceName, languageVersion) {
       if (nameToContent.hasOwnProperty(sourceName)) {
         return ts.createSourceFile(sourceName, nameToContent[sourceName], compilerOptions.target,
                                    true);
       }
-      if (sourceName === 'lib.d.ts') {
+      if (sourceName === defaultLibName) {
         if (!libSourceFile) {
           // Cache to avoid excessive test times.
           libSourceFile = ts.createSourceFile(sourceName, libSource, compilerOptions.target, true);
@@ -46,7 +43,7 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
       return undefined;
     },
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
-    getDefaultLibFileName: () => 'lib.d.ts',
+    getDefaultLibFileName: () => defaultLibName,
     useCaseSensitiveFileNames: () => false,
     getCanonicalFileName: (filename) => filename,
     getCurrentDirectory: () => '',
@@ -73,8 +70,8 @@ export function translateSources(contents: Input, options: main.TranspilerOption
   } else {
     namesToContent = contents;
   }
-  var program = parseFiles(namesToContent);
   var transpiler = new main.Transpiler(options);
+  var program = parseFiles(namesToContent);
   return transpiler.translateProgram(program);
 }
 

@@ -75,7 +75,10 @@ gulp.task('test.unit', ['test.compile'], function(done) {
     done();
     return;
   }
-  return gulp.src('build/test/**/*.js').pipe(mocha());
+  return gulp.src('build/test/**/*.js')
+      .pipe(mocha({
+        timeout: 4000,  // Needed by the type-based tests :-(
+      }));
 });
 
 // This test transpiles some unittests to dart and runs them in the Dart VM.

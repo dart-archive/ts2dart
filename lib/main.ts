@@ -282,5 +282,12 @@ class Output {
 // CLI entry point
 if (require.main === module) {
   var args = require('minimist')(process.argv.slice(2), {base: 'string'});
-  new Transpiler(args).transpile(args._, args.destination);
+  try {
+    let transpiler = new Transpiler(args)
+    transpiler.transpile(args._, args.destination);
+  } catch (e) {
+    if (e.name !== 'TS2DartError') throw e;
+    console.log(e.message);
+    process.exit(1);
+  }
 }

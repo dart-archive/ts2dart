@@ -38,6 +38,12 @@ class TypeTranspiler extends base.TranspilerBase {
           this.visit(typeParam.constraint);
         }
         break;
+      case ts.SyntaxKind.ArrayType:
+        this.emit('List');
+        this.emit('<');
+        this.visit((<ts.ArrayTypeNode>node).elementType);
+        this.emit('>');
+        break;
       case ts.SyntaxKind.QualifiedName:
         var first = <ts.QualifiedName>node;
         this.visit(first.left);

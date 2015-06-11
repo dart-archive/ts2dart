@@ -20,8 +20,12 @@ describe('types', () => {
         .to.equal(' import "somewhere.dart" as toString ;');
   });
   it('should support union types', () => {
-    expectTranslate('var x:number|List<string> = 11;')
+    expectTranslate('var x: number|List<string> = 11;')
         .to.equal(' dynamic /* num | List < String > */ x = 11 ;');
+  });
+  it('should support array types', () => {
+    expectTranslate('var x: string[] = [];')
+        .to.equal(' List < String > x = [ ] ;');
   });
 });
 

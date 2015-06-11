@@ -44,6 +44,10 @@ class CallTranspiler extends base.TranspilerBase {
 
   private visitCall(c: ts.CallExpression) {
     this.visit(c.expression);
+    if (c.typeArguments && c.kind !== ts.SyntaxKind.NewExpression) {
+      this.reportError(c, 'Type arguments are only supported on new calls.');
+    }
+    this.maybeVisitTypeArguments(c);
     this.emit('(');
     if (!this.handleNamedParamsCall(c)) {
       this.visitList(c.arguments);

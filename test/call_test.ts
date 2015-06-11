@@ -27,6 +27,8 @@ describe('calls', () => {
   it('translates new calls', () => {
     expectTranslate('new Foo();').to.equal(' new Foo ( ) ;');
     expectTranslate('new Foo(1, 2);').to.equal(' new Foo ( 1 , 2 ) ;');
+    expectTranslate('new Foo<number, string>(1, 2);')
+        .to.equal(' new Foo < num , String > ( 1 , 2 ) ;');
   });
   it('translates "super()" constructor calls', () => {
     expectTranslate('class X { constructor() { super(1); } }')

@@ -7,15 +7,16 @@ type FacadeHandler = (c: ts.CallExpression, context: ts.Expression) => void;
 
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
-  private forbiddenNames: {[fileName: string]: boolean};
+  private candidateMethods: {[fileName: string]: boolean};
 
   constructor(transpiler: ts2dart.Transpiler) {
     super(transpiler);
-    this.forbiddenNames = {};
+    this.candidateMethods = {};
     for (var fileName in this.subs) {
       Object.keys(this.subs[fileName])
+          .filter((k) => this.subs[fileName].hasOwnProperty(k))
           .map((fnName) => fnName.substring(fnName.lastIndexOf('.') + 1))
-          .forEach((fnName) => this.forbiddenNames[fnName] = true);
+          .forEach((fnName) => this.candidateMethods[fnName] = true);
     }
   }
 
@@ -30,19 +31,17 @@ export class FacadeConverter extends base.TranspilerBase {
 
     if (c.expression.kind === ts.SyntaxKind.Identifier) {
       // Function call.
-      symbol = this.tc.getSymbolAtLocation(c.expression);
       ident = base.ident(c.expression);
+      if (!this.candidateMethods.hasOwnProperty(ident)) return false;
+      symbol = this.tc.getSymbolAtLocation(c.expression);
       context = null;
     } else if (c.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
       // Method call.
       var pa = <ts.PropertyAccessExpression>c.expression;
-      var sig = this.tc.getResolvedSignature(c);
-      symbol = this.tc.getSymbolAtLocation(pa);
       ident = base.ident(pa.name);
-      // if (pa.name.text === 'map') {
-      //   console.log(sig);
-      //   console.log(symbol);
-      // }
+      if (!this.candidateMethods.hasOwnProperty(ident)) return false;
+
+      symbol = this.tc.getSymbolAtLocation(pa);
       context = pa.expression;
     } else {
       // Not a call we recognize.
@@ -50,7 +49,7 @@ export class FacadeConverter extends base.TranspilerBase {
     }
 
     if (!symbol) {
-      if (this.forbiddenNames[ident]) this.reportMissingType(c, ident);
+      this.reportMissingType(c, ident);
       return false;
     }
 
@@ -61,7 +60,7 @@ export class FacadeConverter extends base.TranspilerBase {
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
-    console.log('fn:', fileName);
+    // console.log('fn:', fileName);
     var fileSubs = this.subs[fileName];
     if (!fileSubs) return false;
     var qn = this.tc.getFullyQualifiedName(symbol);
@@ -69,8 +68,7 @@ export class FacadeConverter extends base.TranspilerBase {
     // time being just special case.
     if (symbol.flags & ts.SymbolFlags.Function) qn = symbol.getName();
 
-    console.log('qn', qn);
-
+    // console.log('qn', qn);
     var qnSub = fileSubs[qn];
     if (!qnSub) return false;
 
@@ -113,21 +111,20 @@ export class FacadeConverter extends base.TranspilerBase {
       },
     },
     'angular2/traceur-runtime': {
-        // TODO(martinprobst): enable these once the Angular code base is sufficiently typed.
-        // 'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
-        //   this.visit(context);
-        //   this.emit('[');
-        //   this.visit(c.arguments[0]);
-        //   this.emit(']');
-        //   this.emit('=');
-        //   this.visit(c.arguments[1]);
-        // },
-        // 'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
-        //   this.visit(context);
-        //   this.emit('[');
-        //   this.visit(c.arguments[0]);
-        //   this.emit(']');
-        // },
+      'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
+        this.visit(context);
+        this.emit('[');
+        this.visit(c.arguments[0]);
+        this.emit(']');
+        this.emit('=');
+        this.visit(c.arguments[1]);
+      },
+      'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
+        this.visit(context);
+        this.emit('[');
+        this.visit(c.arguments[0]);
+        this.emit(']');
+      },
     },
     'angular2/src/facade/lang': {
       'CONST_EXPR': (c: ts.CallExpression, context: ts.Expression) => {
@@ -157,14 +154,15 @@ export class FacadeConverter extends base.TranspilerBase {
   checkPropertyAccess(pa: ts.PropertyAccessExpression) {
     if (!this.tc) return;
     var ident = pa.name.text;
-    if (this.forbiddenNames[ident] && !this.tc.getSymbolAtLocation(pa)) {
+    if (this.candidateMethods.hasOwnProperty(ident) && !this.tc.getSymbolAtLocation(pa)) {
       this.reportMissingType(pa, ident);
     }
   }
 
   reportMissingType(n: ts.Node, ident: string) {
-    this.reportError(n, `Untyped property access to "${ident}" which could be a special` +
-                            ` ts2dart builtin.\n Please add type declarations to disambiguate.`);
+    this.reportError(n, `Untyped property access to "${ident}" which could be` +
+                            ` a special ts2dart builtin.\n` +
+                            ` Please add type declarations to disambiguate.`);
   }
 
   isInsideConstExpr(node: ts.Node): boolean {

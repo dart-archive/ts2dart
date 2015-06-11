@@ -27,6 +27,10 @@ describe('types', () => {
     expectTranslate('var x: string[] = [];')
         .to.equal(' List < String > x = [ ] ;');
   });
+  it('should support function types (by ignoring them)', () => {
+    expectTranslate('var x: (a: string) => string;')
+        .to.equal(' dynamic /* (a: string) => string */ x ;');
+  });
 });
 
 describe('type arguments', () => {

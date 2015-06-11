@@ -44,6 +44,11 @@ class TypeTranspiler extends base.TranspilerBase {
         this.visit((<ts.ArrayTypeNode>node).elementType);
         this.emit('>');
         break;
+      case ts.SyntaxKind.FunctionType:
+        this.emit('dynamic /*');
+        this.emit(node.getText());
+        this.emit('*/');
+        break;
       case ts.SyntaxKind.QualifiedName:
         var first = <ts.QualifiedName>node;
         this.visit(first.left);

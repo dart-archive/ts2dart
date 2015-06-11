@@ -28,10 +28,13 @@ var langDeclarations = `
   `;
 
 var otherFile = `
-  export class X { map(x: number): string { return String(x); } }
+  export class X {
+    map(x: number): string { return String(x); }
+    static get<K, V>(m: {[k: K]: V}, k: K): V { return m[k]; }
+  }
   `;
 
-function getSrcs(str: string): {[k: string]: string} {
+function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
     'angular2/src/facade/lang.d.ts': langDeclarations,
@@ -44,11 +47,11 @@ function getSrcs(str: string): {[k: string]: string} {
 const COMPILE_OPTS = {translateBuiltins: true, failFast: true};
 
 function expectWithTypes(str: string) {
-  return expectTranslate(getSrcs(str), COMPILE_OPTS);
+  return expectTranslate(getSources(str), COMPILE_OPTS);
 }
 
 function expectErroneousWithType(str: string) {
-  return chai.expect(() => translateSource(getSrcs(str), COMPILE_OPTS));
+  return chai.expect(() => translateSource(getSources(str), COMPILE_OPTS));
 }
 
 
@@ -97,9 +100,14 @@ describe('error detection', () => {
   });
   it('for untyped symbols matching special cased methods',
      () => { expectErroneousWithType('x.push(1)').to.throw(/Untyped property access to "push"/); });
-  it.only('allows unrelated methods', () => {
-    expectWithTypes('import {map} from "other/file";\n' +
+  it('allows unrelated methods', () => {
+    expectWithTypes('import {X} from "other/file";\n' +
                     'new X().map(1)')
-        .to.equal(' import "package:other/file.dart" show map ; new X ( ) . map ( 1 ) ;');
+        .to.equal(' import "package:other/file.dart" show X ; new X ( ) . map ( 1 ) ;');
+    expectWithTypes('import {X} from "other/file";\n' +
+                    'X.get({"a": 1}, "a");')
+        .to.equal(' import "package:other/file.dart" show X ; X . get ( { "a" : 1 } , "a" ) ;');
+    expectWithTypes('["a", "b"].forEach((x) => x);')
+        .to.equal(' [ "a" , "b" ] . forEach ( ( x ) => x ) . toList ( ) ;');
   });
 });

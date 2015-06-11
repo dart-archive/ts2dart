@@ -76,8 +76,7 @@ export class FacadeConverter extends base.TranspilerBase {
     return true;
   }
 
-  private subs: ts.Map<ts.Map<FacadeHandler>> = {
-    'lib': {
+  private stdlibSubs: ts.Map<FacadeHandler> = {
       'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
         this.emitCall('add', c.arguments);
@@ -109,7 +108,11 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visit(context);
         this.emit('is List');
       },
-    },
+    };
+
+  private subs: ts.Map<ts.Map<FacadeHandler>> = {
+    'lib': this.stdlibSubs,
+    'lib.es6': this.stdlibSubs,
     'angular2/traceur-runtime': {
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);

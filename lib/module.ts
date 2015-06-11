@@ -117,8 +117,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
       // Unprefixed imports are package imports.
       text = 'package:' + text;
     }
-    moduleName.text = text + '.dart';
-    this.visit(expr);
+    this.emit(JSON.stringify(text + '.dart'));
   }
 
   private isEmptyImport(n: ts.ImportDeclaration): boolean {

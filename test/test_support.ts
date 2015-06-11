@@ -7,7 +7,8 @@ import main = require('../lib/main');
 import path = require('path');
 import ts = require('typescript');
 
-export type Input = string | { [k: string]: string };
+export type StringMap = { [k: string]: string };
+export type Input = string | StringMap;
 
 export function expectTranslate(tsCode: Input, options: main.TranspilerOptions = {}) {
   var result = translateSource(tsCode, options);
@@ -19,22 +20,11 @@ export function expectErroneousCode(tsCode: Input, options: main.TranspilerOptio
   return chai.expect(() => translateSource(tsCode, options));
 }
 
-export function parseProgram(contents: Input, fileName = 'file.ts'): ts.Program {
-  var namesToContent: {[k: string]: string};
-  if (typeof contents === 'string') {
-    namesToContent = {};
-    namesToContent[fileName] = contents;
-  } else {
-    namesToContent = contents;
-  }
-  return parseFiles(namesToContent);
-}
-
 var libSource =
     fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), 'lib.d.ts'), 'utf-8');
 var libSourceFile: ts.SourceFile;
 
-export function parseFiles(nameToContent: {[k: string]: string}): ts.Program {
+export function parseFiles(nameToContent: StringMap): ts.Program {
   var result: string;
   var compilerOptions: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES6,
@@ -73,10 +63,24 @@ export function parseFiles(nameToContent: {[k: string]: string}): ts.Program {
   return program;
 }
 
-export function translateSource(contents: Input, options: main.TranspilerOptions = {}): string {
+export function translateSources(contents: Input, options: main.TranspilerOptions = {}): StringMap {
   // Default to quick stack traces.
   if (!options.hasOwnProperty('failFast')) options.failFast = true;
-  var program = parseProgram(contents);
+  var namesToContent: StringMap;
+  if (typeof contents === 'string') {
+    namesToContent = {};
+    namesToContent['main.ts'] = contents;
+  } else {
+    namesToContent = contents;
+  }
+  var program = parseFiles(namesToContent);
   var transpiler = new main.Transpiler(options);
   return transpiler.translateProgram(program);
+}
+
+
+export function translateSource(contents: Input, options: main.TranspilerOptions = {}): string {
+  var results = translateSources(contents, options);
+  // Return the main outcome, from 'main.ts'.
+  return results['main.ts'];
 }

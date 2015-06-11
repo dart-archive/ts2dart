@@ -84,7 +84,14 @@ export class Transpiler {
     if (this.options.translateBuiltins) {
       this.fc.setTypeChecker(program.getTypeChecker());
     }
+
+    // Only write files that were explicitly passed in.
+    var fileMap: {[s: string]: boolean} = {};
+    fileNames.forEach((f) => fileMap[f] = true);
+
+    this.errors = [];
     program.getSourceFiles()
+        .filter((sourceFile) => fileMap[sourceFile.fileName])
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
         .forEach((f: ts.SourceFile) => {
@@ -93,24 +100,21 @@ export class Transpiler {
           fsx.mkdirsSync(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
+    this.checkForErrors();
   }
 
-  translateProgram(program: ts.Program): string {
+  translateProgram(program: ts.Program): {[path: string]: string} {
     if (this.options.translateBuiltins) {
       this.fc.setTypeChecker(program.getTypeChecker());
     }
-    var src = program.getSourceFiles()
-                  .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
-                                                          !!sourceFile.fileName.match(/\.[jt]s$/)))
-                  .map((f) => this.translate(f))
-                  .join('\n');
-    return src;
-  }
-
-  translateFile(fileName: string): string {
-    var host = this.createCompilerHost([fileName]);
-    var program = ts.createProgram([fileName], this.getCompilerOptions(), host);
-    return this.translateProgram(program);
+    var paths: {[path: string]: string} = {};
+    this.errors = [];
+    program.getSourceFiles()
+        .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
+                                                !!sourceFile.fileName.match(/\.[jt]s$/)))
+        .forEach((f) => paths[f.fileName] = this.translate(f));
+    this.checkForErrors();
+    return paths;
   }
 
   private getCompilerOptions() {
@@ -124,19 +128,14 @@ export class Transpiler {
   }
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
-    var fileMap: {[s: string]: boolean} = {};
-    files.forEach((f) => fileMap[f] = true);
     return {
       getSourceFile: (sourceName, languageVersion) => {
-        // Only transpile the files directly passed in, do not transpile transitive dependencies.
-        if (fileMap.hasOwnProperty(sourceName)) {
-          var contents = fs.readFileSync(sourceName, 'UTF-8');
-          return ts.createSourceFile(sourceName, contents, this.getCompilerOptions().target, true);
-        }
         if (sourceName === 'lib.d.ts') {
           return ts.createSourceFile(sourceName, '', this.getCompilerOptions().target, true);
         }
-        return undefined;
+        if (!fs.existsSync(sourceName)) return undefined;
+        var contents = fs.readFileSync(sourceName, 'UTF-8');
+        return ts.createSourceFile(sourceName, contents, this.getCompilerOptions().target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
       getDefaultLibFileName: () => 'lib.d.ts',
@@ -158,16 +157,17 @@ export class Transpiler {
     this.currentFile = sourceFile;
     this.output =
         new Output(sourceFile, this.getRelativeFileName(), this.options.generateSourceMap);
-    this.errors = [];
     this.lastCommentIdx = -1;
     this.visit(sourceFile);
+    return this.output.getResult();
+  }
+
+  private checkForErrors() {
     if (this.errors.length) {
       var e = new Error(this.errors.join('\n'));
       e.name = 'TS2DartError';
       throw e;
     }
-
-    return this.output.getResult();
   }
 
   /**

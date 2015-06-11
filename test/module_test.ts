@@ -3,7 +3,7 @@ import chai = require('chai');
 import main = require('../lib/main');
 import ModuleTranspiler from '../lib/module';
 
-import {expectTranslate, expectErroneousCode, parseProgram} from './test_support';
+import {expectTranslate, expectErroneousCode, translateSources} from './test_support';
 
 describe('imports', () => {
   it('translates import equals statements', () => {
@@ -60,9 +60,9 @@ describe('library name', () => {
     modTranspiler = new ModuleTranspiler(transpiler, true);
   });
   it('adds a library name', () => {
-    var program = parseProgram('var x;', '/a/b/c.ts');
-    var res = transpiler.translateProgram(program);
-    chai.expect(res).to.equal(' library b.c ; var x ;');
+    var results = translateSources({'/a/b/c.ts': 'var x;'},
+                                   {failFast: true, generateLibraryName: true, basePath: '/a'});
+    chai.expect(results['/a/b/c.ts']).to.equal(' library b.c ; var x ;');
   });
   it('leaves relative paths alone',
      () => { chai.expect(modTranspiler.getLibraryName('a/b')).to.equal('a.b'); });

@@ -6,7 +6,7 @@ import chai = require('chai');
 import main = require('../lib/main');
 import ts = require('typescript');
 
-import {expectTranslate, expectErroneousCode, parseProgram} from './test_support';
+import {expectTranslate, expectErroneousCode, translateSources} from './test_support';
 
 describe('main transpiler functionality', () => {
   describe('comments', () => {
@@ -28,9 +28,12 @@ describe('main transpiler functionality', () => {
       expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
     it('reports relative paths in errors', () => {
-      var transpiler = new main.Transpiler({basePath: '/a'});
-      var program = parseProgram('delete x["y"];', '/a/b/c.ts');
-      chai.expect(() => transpiler.translateProgram(program)).to.throw(/^b\/c.ts:1/);
+      chai.expect(() => expectTranslate({'/a/b/c.ts': 'delete x["y"];'}, {basePath: '/a'}))
+          .to.throw(/^b\/c.ts:1/);
+    });
+    it('reports errors across multiple files', () => {
+      expectErroneousCode({'a.ts': 'delete x["y"];', 'b.ts': 'delete x["y"];'}, {failFast: false})
+          .to.throw(/^a\.ts.*\nb\.ts/);
     });
   });
 
@@ -56,20 +59,17 @@ describe('main transpiler functionality', () => {
   });
 
   describe('source maps', () => {
-    var transpiler: main.Transpiler;
-    beforeEach(() => {
-      transpiler = new main.Transpiler({generateSourceMap: true, basePath: '/absolute/'});
-    });
-    function translateMap(source: string) {
-      var program = parseProgram(source, '/absolute/path/test.ts');
-      return transpiler.translateProgram(program);
+    function translateWithSourceMap(source: string): string {
+      var results = translateSources({'/absolute/path/test.ts': source},
+                                     {generateSourceMap: true, basePath: '/absolute/'});
+      return results['/absolute/path/test.ts'];
     }
     it('generates a source map', () => {
-      chai.expect(translateMap('var x;'))
+      chai.expect(translateWithSourceMap('var x;'))
           .to.contain('//# sourceMappingURL=data:application/json;base64,');
     });
     it('maps locations', () => {
-      var withMap = translateMap('var xVar: number;\nvar yVar: string;');
+      var withMap = translateWithSourceMap('var xVar: number;\nvar yVar: string;');
       chai.expect(withMap).to.contain(' num xVar ; String yVar ;');
       var b64string = withMap.match(/sourceMappingURL=data:application\/json;base64,(.*)/)[1];
       var mapString = new Buffer(b64string, 'base64').toString();

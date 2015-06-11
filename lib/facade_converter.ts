@@ -5,6 +5,8 @@ import ts2dart = require('./main');
 
 type FacadeHandler = (c: ts.CallExpression, context: ts.Expression) => void;
 
+const FACADE_DEBUG = false;
+
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private candidateMethods: {[fileName: string]: boolean};
@@ -42,6 +44,8 @@ export class FacadeConverter extends base.TranspilerBase {
       if (!this.candidateMethods.hasOwnProperty(ident)) return false;
 
       symbol = this.tc.getSymbolAtLocation(pa);
+
+      if (FACADE_DEBUG) console.log('s:', symbol);
       context = pa.expression;
     } else {
       // Not a call we recognize.
@@ -60,7 +64,7 @@ export class FacadeConverter extends base.TranspilerBase {
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
-    // console.log('fn:', fileName);
+    if (FACADE_DEBUG) console.log('fn:', fileName);
     var fileSubs = this.subs[fileName];
     if (!fileSubs) return false;
     var qn = this.tc.getFullyQualifiedName(symbol);
@@ -68,7 +72,7 @@ export class FacadeConverter extends base.TranspilerBase {
     // time being just special case.
     if (symbol.flags & ts.SymbolFlags.Function) qn = symbol.getName();
 
-    // console.log('qn', qn);
+    if (FACADE_DEBUG) console.log('qn', qn);
     var qnSub = fileSubs[qn];
     if (!qnSub) return false;
 
@@ -163,9 +167,9 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   reportMissingType(n: ts.Node, ident: string) {
-    this.reportError(n, `Untyped property access to "${ident}" which could be` +
-                            ` a special ts2dart builtin.\n` +
-                            ` Please add type declarations to disambiguate.`);
+    this.reportError(n, `Untyped property access to "${ident}" which could be ` +
+                            `a special ts2dart builtin. ` +
+                            `Please add type declarations to disambiguate.`);
   }
 
   isInsideConstExpr(node: ts.Node): boolean {

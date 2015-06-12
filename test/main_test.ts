@@ -5,8 +5,9 @@ import SourceMap = require('source-map');
 import chai = require('chai');
 import main = require('../lib/main');
 import ts = require('typescript');
+import path = require('path');
 
-import {expectTranslate, expectErroneousCode, translateSources} from './test_support';
+import {expectTranslate, expectErroneousCode, translateSources, StringMap} from './test_support';
 
 describe('main transpiler functionality', () => {
   describe('comments', () => {
@@ -29,7 +30,7 @@ describe('main transpiler functionality', () => {
     });
     it('reports relative paths in errors', () => {
       chai.expect(() => expectTranslate({'/a/b/c.ts': 'delete x["y"];'}, {basePath: '/a'}))
-          .to.throw(/^b\/c.ts:1/);
+          .to.throw(/^b(\/|\\)c.ts:1/);
     });
     it('reports errors across multiple files', () => {
       expectErroneousCode({'a.ts': 'delete x["y"];', 'b.ts': 'delete x["y"];'}, {failFast: false})
@@ -37,19 +38,40 @@ describe('main transpiler functionality', () => {
     });
   });
 
+  function makeNativePath(filePath: string): string {
+    if (process.platform === 'win32') {
+      if (path.isAbsolute(filePath)) {
+        filePath = filePath.replace(/\//, 'c:\\');
+      }
+      filePath = filePath.replace(/\//g, '\\');
+    }
+    return filePath;
+  }
+
+  function getNormalizedPath(transpiler: any, filePath: string, destinationRoot: string): string {
+    var nativeFilePath = makeNativePath(filePath);
+    var nativeDestinationRoot = makeNativePath(destinationRoot);
+    var output = transpiler.getOutputPath(nativeFilePath, nativeDestinationRoot);
+    output = output.replace(/c:/, '');
+    output = output.replace(/\\/g, '/');
+    return output;
+  }
+
   describe('output paths', () => {
     it('writes within the path', () => {
-      var transpiler = new main.Transpiler({basePath: '/a'});
-      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
-      chai.expect(transpiler.getOutputPath('b/c.js', '/x')).to.equal('/x/b/c.dart');
-      chai.expect(transpiler.getOutputPath('b/c.js', 'x')).to.equal('x/b/c.dart');
-      chai.expect(() => transpiler.getOutputPath('/outside/b/c.js', '/x'))
+      var transpiler = new main.Transpiler({basePath: makeNativePath('/a')});
+      chai.expect(getNormalizedPath(transpiler, '/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
+      chai.expect(getNormalizedPath(transpiler, 'e/f.js', '/x')).to.equal('/x/e/f.dart');
+      chai.expect(getNormalizedPath(transpiler, 'g/h.js', 'x')).to.equal('x/g/h.dart');
+      chai.expect(() => getNormalizedPath(transpiler, '/outside/b/c.js', '/x'))
           .to.throw(/must be located under base/);
     });
     it('defaults to writing to the same location', () => {
       var transpiler = new main.Transpiler({basePath: undefined});
-      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/e')).to.equal('/a/b/c.dart');
-      chai.expect(transpiler.getOutputPath('b/c.js', '')).to.equal('b/c.dart');
+      chai.expect(getNormalizedPath(transpiler, '/a/b/c.js', '/e')).to.equal('/a/b/c.dart');
+      chai.expect(getNormalizedPath(transpiler, '/a/b/c.js', '/e/f/g/h/i/j/k/l'))
+          .to.equal('/a/b/c.dart');
+      chai.expect(getNormalizedPath(transpiler, 'b/c.js', '')).to.equal('b/c.dart');
     });
     it('translates .es6, .ts, and .js', () => {
       var transpiler = new main.Transpiler({basePath: undefined});
@@ -77,7 +99,8 @@ describe('main transpiler functionality', () => {
       var expectedColumn = ' num xVar ; String yVar ;'.indexOf('yVar') + 1;
       var pos = consumer.originalPositionFor({line: 1, column: expectedColumn});
       chai.expect(pos).to.include({line: 2, column: 4});
-      chai.expect(consumer.sourceContentFor('path/test.ts')).to.contain('yVar: string');
+      chai.expect(consumer.sourceContentFor('path' + path.sep + 'test.ts'))
+          .to.contain('yVar: string');
     });
   });
 });

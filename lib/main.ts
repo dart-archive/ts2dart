@@ -156,9 +156,15 @@ export class Transpiler {
 
   // Visible for testing.
   getOutputPath(filePath: string, destinationRoot: string): string {
-    var relative = this.getRelativeFileName(filePath);
-    var dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
-    return path.join(destinationRoot, dartFile);
+    var dartFile = filePath.replace(/.(js|es6|ts)$/, '.dart');
+    var base = this.options.basePath || '';
+    if (this.isAbsolute(filePath) && this.isAbsolute(destinationRoot) &&
+        filePath.indexOf(destinationRoot) !== 0 && (base === undefined || base === '')) {
+      return dartFile;
+    } else {
+      var relative = this.getRelativeFileName(dartFile);
+      return path.join(destinationRoot, relative);
+    }
   }
 
   private translate(sourceFile: ts.SourceFile): string {
@@ -208,8 +214,7 @@ export class Transpiler {
    */
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
-    if (filePath.indexOf('/') !== 0 && filePath.indexOf(':/') !== 1)
-      return filePath;  // doesn't start with / => is a relative path
+    if (!this.isAbsolute(filePath)) return filePath;
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
@@ -254,6 +259,10 @@ export class Transpiler {
   }
 
   private normalizeSlashes(path: string) { return path.replace(/\\/g, "/"); }
+
+  private isAbsolute(p: string): boolean {
+    return p.indexOf('/') === 0 || p.indexOf(':/') === 1 || p.indexOf(':\\') === 1;
+  }
 }
 
 class Output {

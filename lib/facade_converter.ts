@@ -94,11 +94,6 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emitCall('map', c.arguments);
       this.emitCall('toList');
     },
-    'Array.forEach': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitCall('forEach', c.arguments);
-      this.emitCall('toList');
-    },
     'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
       this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
     },

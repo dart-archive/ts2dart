@@ -36,6 +36,12 @@ export class FacadeConverter extends base.TranspilerBase {
       ident = base.ident(c.expression);
       if (!this.candidateMethods.hasOwnProperty(ident)) return false;
       symbol = this.tc.getSymbolAtLocation(c.expression);
+
+      if (!symbol) {
+        this.reportMissingType(c, ident);
+        return false;
+      }
+
       context = null;
     } else if (c.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
       // Method call.
@@ -44,16 +50,14 @@ export class FacadeConverter extends base.TranspilerBase {
       if (!this.candidateMethods.hasOwnProperty(ident)) return false;
 
       symbol = this.tc.getSymbolAtLocation(pa);
-
       if (FACADE_DEBUG) console.log('s:', symbol);
+
+      // Error will be reported by PropertyAccess handling below.
+      if (!symbol) return false;
+
       context = pa.expression;
     } else {
       // Not a call we recognize.
-      return false;
-    }
-
-    if (!symbol) {
-      this.reportMissingType(c, ident);
       return false;
     }
 

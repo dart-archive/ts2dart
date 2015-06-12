@@ -175,7 +175,8 @@ export class Transpiler {
         var msg = ts.DiagnosticCategory[d.category] + ' ' + d.code;
         if (d.file) {
           let pos = d.file.getLineAndCharacterOfPosition(d.start);
-          msg += ` ${d.file.fileName}:${pos.line + 1}:${pos.character + 1}`;
+          let fn = this.getRelativeFileName(d.file.fileName);
+          msg += ` ${fn}:${pos.line + 1}:${pos.character + 1}`;
         }
         msg += ': ';
         msg += ts.flattenDiagnosticMessageText(d.messageText, '\n');

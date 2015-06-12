@@ -93,11 +93,12 @@ export default class ModuleTranspiler extends base.TranspilerBase {
   }
 
   private static isIgnoredImport(e: ts.ImportSpecifier) {
+    // TODO: unify with facade_converter.ts
     var name = base.ident(e.name);
     switch (name) {
       case 'CONST':
       case 'CONST_EXPR':
-      case 'FORWARD_REF':
+      case 'forwardRef':
       case 'ABSTRACT':
       case 'IMPLEMENTS':
         return true;

@@ -137,20 +137,22 @@ export class FacadeConverter extends base.TranspilerBase {
         this.emit(']');
       },
     },
+    'angular2/src/di/forward_ref': {
+      'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {
+        // The special function forwardRef translates to an unwrapped value in Dart.
+        const callback = <ts.FunctionExpression>c.arguments[0];
+        if (callback.kind !== ts.SyntaxKind.ArrowFunction) {
+          this.reportError(c, 'forwardRef takes only arrow functions');
+          return;
+        }
+        this.visit(callback.body);
+      },
+    },
     'angular2/src/facade/lang': {
       'CONST_EXPR': (c: ts.CallExpression, context: ts.Expression) => {
         // `const` keyword is emitted in the array literal handling, as it needs to be transitive.
         this.visitList(c.arguments);
       },
-      'FORWARD_REF': (c: ts.CallExpression, context: ts.Expression) => {
-        // The special function FORWARD_REF translates to an unwrapped value in Dart.
-        const callback = <ts.FunctionExpression>c.arguments[0];
-        if (callback.kind !== ts.SyntaxKind.ArrowFunction) {
-          this.reportError(c, 'FORWARD_REF takes only arrow functions');
-          return;
-        }
-        this.visit(callback.body);
-      }
     },
   };
 

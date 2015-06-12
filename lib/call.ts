@@ -61,11 +61,8 @@ class CallTranspiler extends base.TranspilerBase {
   }
 
   private isConstCall(node: ts.CallExpression): boolean {
+    // TODO: Align with facade_converter.ts
     return node && base.ident(node.expression) === 'CONST_EXPR';
-  }
-
-  private isForwardRef(node: ts.CallExpression): boolean {
-    return node && base.ident(node.expression) === 'FORWARD_REF';
   }
 
   private handleNamedParamsCall(c: ts.CallExpression): boolean {

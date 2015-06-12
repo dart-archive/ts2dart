@@ -20,10 +20,11 @@ var traceurRuntimeDeclarations = `
 function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
+    'angular2/src/di/forward_ref.d.ts': `
+        export declare function forwardRef<T>(x: T): T;`,
     'angular2/src/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
-        export declare function CONST_EXPR<T>(x: T): T;
-        export declare function FORWARD_REF<T>(x: T): T;`,
+        export declare function CONST_EXPR<T>(x: T): T;`,
     'other/file.ts': `
         export class X {
           map(x: number): string { return String(x); }
@@ -75,21 +76,20 @@ describe('type based translation', () => {
           .to.equal(' const x = const { "one" : 1 } ;');
     });
 
-    it('translates FORWARD_REF(() => T) to T', () => {
-      expectWithTypes('import {FORWARD_REF} from "angular2/src/facade/lang";\n' +
+    it('translates forwardRef(() => T) to T', () => {
+      expectWithTypes('import {forwardRef} from "angular2/src/di/forward_ref";\n' +
                       'var SomeType = 1;\n' +
-                      'var x = FORWARD_REF(() => SomeType);')
+                      'var x = forwardRef(() => SomeType);')
           .to.equal(' var SomeType = 1 ; var x = SomeType ;');
-      expectErroneousWithType('import {FORWARD_REF} from "angular2/src/facade/lang";\n' +
-                              'FORWARD_REF(1)')
+      expectErroneousWithType('import {forwardRef} from "angular2/src/di/forward_ref";\n' +
+                              'forwardRef(1)')
           .to.throw(/only arrow functions/);
     });
   });
 
   describe('error detection', () => {
     it('for untyped symbols matching special cased fns', () => {
-      expectErroneousWithType('FORWARD_REF(1)')
-          .to.throw(/Untyped property access to "FORWARD_REF"/);
+      expectErroneousWithType('forwardRef(1)').to.throw(/Untyped property access to "forwardRef"/);
     });
     it('for untyped symbols matching special cased methods', () => {
       expectErroneousWithType('x.push(1)').to.throw(/Untyped property access to "push"/);
@@ -101,8 +101,8 @@ describe('type based translation', () => {
       expectWithTypes('import {X} from "other/file";\n' +
                       'X.get({"a": 1}, "a");')
           .to.equal(' import "package:other/file.dart" show X ; X . get ( { "a" : 1 } , "a" ) ;');
-      expectWithTypes('["a", "b"].forEach((x) => x);')
-          .to.equal(' [ "a" , "b" ] . forEach ( ( x ) => x ) . toList ( ) ;');
+      expectWithTypes('["a", "b"].map((x) => x);')
+          .to.equal(' [ "a" , "b" ] . map ( ( x ) => x ) . toList ( ) ;');
     });
   });
 });

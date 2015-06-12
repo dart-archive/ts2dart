@@ -168,16 +168,18 @@ export class Transpiler {
   }
 
   private checkForErrors(program: ts.Program) {
-    var errors = this.errors.slice();
+    var errors = this.errors;
 
-    if (this.options.translateBuiltins) {
+    if (errors.length && this.options.translateBuiltins) {
+      // Only report TS related errors if ts2dart failed; this code is not a generic compiler, so
+      // only yields TS errors if they could be the cause of ts2dart issues.
       var diag = program.getGlobalDiagnostics()
                      .concat(program.getSyntacticDiagnostics())
                      .concat(program.getSemanticDiagnostics())
                      .filter((d) => d.category === ts.DiagnosticCategory.Error);
 
       var errs = diag.map((d) => {
-        var msg = ts.DiagnosticCategory[d.category] + ' ' + d.code;
+        var msg = '';
         if (d.file) {
           let pos = d.file.getLineAndCharacterOfPosition(d.start);
           let fn = this.getRelativeFileName(d.file.fileName);
@@ -188,11 +190,11 @@ export class Transpiler {
         return msg;
       });
 
-      if (errs) this.errors = this.errors.concat(errs);
+      if (errs) errors = errors.concat(errs);
     }
 
-    if (this.errors.length) {
-      var e = new Error(this.errors.join('\n'));
+    if (errors.length) {
+      var e = new Error(errors.join('\n'));
       e.name = 'TS2DartError';
       throw e;
     }

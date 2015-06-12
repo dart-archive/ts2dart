@@ -23,10 +23,8 @@ describe('types', () => {
     expectTranslate('var x: number|List<string> = 11;')
         .to.equal(' dynamic /* num | List < String > */ x = 11 ;');
   });
-  it('should support array types', () => {
-    expectTranslate('var x: string[] = [];')
-        .to.equal(' List < String > x = [ ] ;');
-  });
+  it('should support array types',
+     () => { expectTranslate('var x: string[] = [];').to.equal(' List < String > x = [ ] ;'); });
   it('should support function types (by ignoring them)', () => {
     expectTranslate('var x: (a: string) => string;')
         .to.equal(' dynamic /* (a: string) => string */ x ;');

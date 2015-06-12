@@ -131,14 +131,19 @@ export class Transpiler {
   }
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
+    var defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
     return {
       getSourceFile: (sourceName, languageVersion) => {
-        if (!fs.existsSync(sourceName)) return undefined;
-        var contents = fs.readFileSync(sourceName, 'UTF-8');
+        var path = sourceName;
+        if (sourceName === defaultLibFileName) {
+          path = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
+        }
+        if (!fs.existsSync(path)) return undefined;
+        var contents = fs.readFileSync(path, 'UTF-8');
         return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
-      getDefaultLibFileName: () => ts.getDefaultLibFilePath(COMPILER_OPTIONS),
+      getDefaultLibFileName: () => defaultLibFileName,
       useCaseSensitiveFileNames: () => true,
       getCanonicalFileName: (filename) => filename,
       getCurrentDirectory: () => '',

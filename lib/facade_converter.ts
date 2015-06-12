@@ -85,38 +85,38 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private stdlibSubs: ts.Map<FacadeHandler> = {
-      'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emitCall('add', c.arguments);
-      },
-      'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emitCall('map', c.arguments);
-        this.emitCall('toList');
-      },
-      'Array.forEach': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emitCall('forEach', c.arguments);
-        this.emitCall('toList');
-      },
-      'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
-        this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
-      },
-      'Array.splice': (c: ts.CallExpression, context: ts.Expression) => {
-        this.emitCall('ListWrapper.splice', [context, ...c.arguments]);
-      },
-      'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
-        this.emit('new List . from (');
-        this.visit(context);
-        this.emit(') .. addAll (');
-        this.visit(c.arguments[0]);
-        this.emit(')');
-      },
-      'Array.isArray': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('is List');
-      },
-    };
+    'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('add', c.arguments);
+    },
+    'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('map', c.arguments);
+      this.emitCall('toList');
+    },
+    'Array.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('forEach', c.arguments);
+      this.emitCall('toList');
+    },
+    'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
+    },
+    'Array.splice': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emitCall('ListWrapper.splice', [context, ...c.arguments]);
+    },
+    'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emit('new List . from (');
+      this.visit(context);
+      this.emit(') .. addAll (');
+      this.visit(c.arguments[0]);
+      this.emit(')');
+    },
+    'Array.isArray': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('is List');
+    },
+  };
 
   private subs: ts.Map<ts.Map<FacadeHandler>> = {
     'lib': this.stdlibSubs,

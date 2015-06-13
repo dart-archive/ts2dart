@@ -93,7 +93,14 @@ class LiteralTranspiler extends base.TranspilerBase {
         this.emit('null');
         break;
       case ts.SyntaxKind.RegularExpressionLiteral:
-        this.emit((<ts.LiteralExpression>node).text);
+        this.emit('new RegExp (');
+        this.emit('r\'');
+        var regExp = (<ts.LiteralExpression>node).text;
+        regExp = regExp.substring(1, regExp.length - 1);  // cut off /.../ chars.
+        regExp = regExp.replace('\'', '\' + "\'" + r\'');  // handle nested quotes by concatenation.
+        this.emitNoSpace(regExp);
+        this.emitNoSpace('\'');
+        this.emit(')');
         break;
       case ts.SyntaxKind.ThisKeyword:
         this.emit('this');

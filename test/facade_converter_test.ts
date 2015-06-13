@@ -62,6 +62,11 @@ describe('type based translation', () => {
     });
   });
 
+  describe('regexp', () => {
+    expectWithTypes('var x = /a/; x.test("a");')
+        .to.equal(' var x = new RegExp ( r\'a\' ) ; x . hasMatch ( "a" ) ;');
+  });
+
   describe('builtin functions', () => {
     it('translates CONST_EXPR(...) to const (...)', () => {
       expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +

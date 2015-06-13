@@ -40,8 +40,10 @@ describe('literals', () => {
     expectTranslate('1.23e-4').to.equal(' 1.23e-4 ;');
   });
 
-  it('translates regexp literals',
-     () => { expectTranslate('/wo\\/t?/').to.equal(' /wo\\/t?/ ;'); });
+  it('translates regexp literals', () => {
+    expectTranslate('/wo\\/t?/').to.equal(' new RegExp ( r\'wo\\/t?\' ) ;');
+    expectTranslate('/\'/').to.equal(' new RegExp ( r\'\' + "\'" + r\'\' ) ;');
+  });
 
   it('translates array literals', () => {
     expectTranslate('[1,2]').to.equal(' [ 1 , 2 ] ;');

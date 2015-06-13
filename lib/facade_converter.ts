@@ -111,6 +111,15 @@ export class FacadeConverter extends base.TranspilerBase {
       this.visit(context);
       this.emit('is List');
     },
+    'RegExp.test': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('hasMatch', c.arguments);
+    },
+    'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('allMatches', c.arguments);
+      this.emitCall('toList');
+    },
   };
 
   private subs: ts.Map<ts.Map<FacadeHandler>> = {

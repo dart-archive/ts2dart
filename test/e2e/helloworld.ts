@@ -21,5 +21,9 @@ function main(): void {
     var b = "world";
     t.expect(`${a} ${b}`, t.equals("hello world"));
   });
+  t.test("regexp", function() {
+    t.expect(/o\./.test("fo.o"), t.equals(true));
+    t.expect(/o/.exec("fo.o").length, t.equals(2));
+  });
   t.test("const expr", function() { t.expect(SomeArray[0], t.equals(1)); });
 }

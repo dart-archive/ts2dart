@@ -170,28 +170,27 @@ export class Transpiler {
   private checkForErrors(program: ts.Program) {
     var errors = this.errors;
 
-    if (errors.length && this.options.translateBuiltins) {
-      // Only report TS related errors if ts2dart failed; this code is not a generic compiler, so
+    var diagnostics = program.getGlobalDiagnostics().concat(program.getSyntacticDiagnostics());
+
+    if ((errors.length || diagnostics.length) && this.options.translateBuiltins) {
+      // Only report semantic diagnostics if ts2dart failed; this code is not a generic compiler, so
       // only yields TS errors if they could be the cause of ts2dart issues.
-      var diag = program.getGlobalDiagnostics()
-                     .concat(program.getSyntacticDiagnostics())
-                     .concat(program.getSemanticDiagnostics())
-                     .filter((d) => d.category === ts.DiagnosticCategory.Error);
-
-      var errs = diag.map((d) => {
-        var msg = '';
-        if (d.file) {
-          let pos = d.file.getLineAndCharacterOfPosition(d.start);
-          let fn = this.getRelativeFileName(d.file.fileName);
-          msg += ` ${fn}:${pos.line + 1}:${pos.character + 1}`;
-        }
-        msg += ': ';
-        msg += ts.flattenDiagnosticMessageText(d.messageText, '\n');
-        return msg;
-      });
-
-      if (errs) errors = errors.concat(errs);
+      // This greatly speeds up tests and execution.
+      diagnostics = diagnostics.concat(program.getSemanticDiagnostics());
     }
+
+    var diagnosticErrs = diagnostics.map((d) => {
+      var msg = '';
+      if (d.file) {
+        let pos = d.file.getLineAndCharacterOfPosition(d.start);
+        let fn = this.getRelativeFileName(d.file.fileName);
+        msg += ` ${fn}:${pos.line + 1}:${pos.character + 1}`;
+      }
+      msg += ': ';
+      msg += ts.flattenDiagnosticMessageText(d.messageText, '\n');
+      return msg;
+    });
+    if (diagnosticErrs.length) errors = errors.concat(diagnosticErrs);
 
     if (errors.length) {
       var e = new Error(errors.join('\n'));

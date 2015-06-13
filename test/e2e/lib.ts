@@ -1,4 +1,4 @@
-import {CONST, CONST_EXPR, FORWARD_REF} from "angular2/src/facade/lang";
+import {CONST, CONST_EXPR, forwardRef} from "angular2/src/facade/lang";
 
 @CONST
 export class MyClass {
@@ -30,4 +30,4 @@ export class MySubclass extends MyClass implements Observer {
 }
 
 export const SomeArray = CONST_EXPR([1, 2, 3]);
-const someArray = FORWARD_REF(() => SomeArray);
+const someArray = forwardRef(() => SomeArray);

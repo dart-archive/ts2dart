@@ -35,7 +35,10 @@ function getSources(str: string): {[k: string]: string} {
   return srcs;
 }
 
-const COMPILE_OPTS = {translateBuiltins: true, failFast: true};
+const COMPILE_OPTS = {
+  translateBuiltins: true,
+  failFast: true
+};
 
 function expectWithTypes(str: string) {
   return expectTranslate(getSources(str), COMPILE_OPTS);

@@ -81,6 +81,9 @@ export class Transpiler {
    */
   transpile(fileNames: string[], destination?: string): void {
     var host = this.createCompilerHost(fileNames);
+    if (this.options.basePath) {
+      this.options.basePath = this.normalizeSlashes(this.options.basePath);
+    }
     if (this.options.basePath && destination === undefined) {
       throw new Error('Must have a destination path when a basePath is specified ' +
                       this.options.basePath);
@@ -93,7 +96,7 @@ export class Transpiler {
 
     // Only write files that were explicitly passed in.
     var fileMap: {[s: string]: boolean} = {};
-    fileNames.forEach((f) => fileMap[f] = true);
+    fileNames.forEach((f) => fileMap[this.normalizeSlashes(f)] = true);
 
     this.errors = [];
     program.getSourceFiles()
@@ -205,7 +208,8 @@ export class Transpiler {
    */
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
-    if (filePath.indexOf('/') !== 0) return filePath;  // doesn't start with / => is a relative path
+    if (filePath.indexOf('/') !== 0 && filePath.indexOf(':/') !== 1)
+      return filePath;  // doesn't start with / => is a relative path
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
@@ -248,6 +252,8 @@ export class Transpiler {
     this.reportError(node, 'Unsupported node type ' + (<any>ts).SyntaxKind[node.kind] + ': ' +
                                node.getFullText());
   }
+
+  private normalizeSlashes(path: string) { return path.replace(/\\/g, "/"); }
 }
 
 class Output {

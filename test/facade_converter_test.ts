@@ -92,6 +92,10 @@ describe('type based translation', () => {
     });
   });
 
+  it('translates array façades', () => {
+    expectWithTypes('var x = []; Array.isArray(x);').to.equal(' var x = [ ] ; ( ( x ) is List ) ;');
+  });
+
   describe('error detection', () => {
     it('for untyped symbols matching special cased fns', () => {
       expectErroneousWithType('forwardRef(1)').to.throw(/Untyped property access to "forwardRef"/);

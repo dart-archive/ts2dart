@@ -43,6 +43,8 @@ describe('literals', () => {
   it('translates regexp literals', () => {
     expectTranslate('/wo\\/t?/').to.equal(' new RegExp ( r\'wo\\/t?\' ) ;');
     expectTranslate('/\'/').to.equal(' new RegExp ( r\'\' + "\'" + r\'\' ) ;');
+    expectTranslate('/abc/gmi')
+        .to.equal(' new RegExp ( r\'abc\' , multiline: true , caseSensitive: false ) ;');
   });
 
   it('translates array literals', () => {

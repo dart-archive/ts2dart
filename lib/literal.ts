@@ -102,6 +102,10 @@ class LiteralTranspiler extends base.TranspilerBase {
         regExp = regExp.replace('\'', '\' + "\'" + r\'');  // handle nested quotes by concatenation.
         this.emitNoSpace(regExp);
         this.emitNoSpace('\'');
+        if (flags.indexOf('g') === -1) {
+          // Dart RegExps are always global, so JS regexps must use 'g' so that semantics match.
+          this.reportError(node, 'Regular Expressions must use the //g flag');
+        }
         if (flags.indexOf('m') !== -1) {
           this.emit(', multiline: true');
         }

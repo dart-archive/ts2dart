@@ -66,7 +66,7 @@ describe('type based translation', () => {
   });
 
   describe('regexp', () => {
-    expectWithTypes('var x = /a/; x.test("a");')
+    expectWithTypes('var x = /a/g; x.test("a");')
         .to.equal(' var x = new RegExp ( r\'a\' ) ; x . hasMatch ( "a" ) ;');
   });
 

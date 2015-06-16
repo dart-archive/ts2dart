@@ -89,6 +89,10 @@ export class FacadeConverter extends base.TranspilerBase {
       this.visit(context);
       this.emitCall('add', c.arguments);
     },
+    'Array.pop': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitCall('removeLast');
+    },
     'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
       this.emitCall('map', c.arguments);

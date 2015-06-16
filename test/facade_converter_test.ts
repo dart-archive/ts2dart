@@ -51,8 +51,8 @@ function expectErroneousWithType(str: string) {
 describe('type based translation', () => {
   describe('collection façade', () => {
     it('translates array operations to dartisms', () => {
-      expectWithTypes('var x: Array<number> = []; x.push(1);')
-          .to.equal(' List < num > x = [ ] ; x . add ( 1 ) ;');
+      expectWithTypes('var x: Array<number> = []; x.push(1); x.pop();')
+          .to.equal(' List < num > x = [ ] ; x . add ( 1 ) ; x . removeLast ( ) ;');
       expectWithTypes('var x: Array<number> = []; x.map((e) => e);')
           .to.equal(' List < num > x = [ ] ; x . map ( ( e ) => e ) . toList ( ) ;');
     });

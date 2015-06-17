@@ -55,6 +55,9 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; x . add ( 1 ) ; x . removeLast ( ) ;');
       expectWithTypes('var x: Array<number> = []; x.map((e) => e);')
           .to.equal(' List < num > x = [ ] ; x . map ( ( e ) => e ) . toList ( ) ;');
+      expectWithTypes('var x: Array<number> = []; x.unshift(1, 2, 3); x.shift();')
+          .to.equal(' List < num > x = [ ] ; ( x .. insertAll ' +
+                    '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
     });
 
     it('translates map operations to dartisms', () => {

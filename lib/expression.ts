@@ -68,14 +68,15 @@ class ExpressionTranspiler extends base.TranspilerBase {
 
       case ts.SyntaxKind.PropertyAccessExpression:
         var propAccess = <ts.PropertyAccessExpression>node;
-        this.visit(propAccess.expression);
         if (propAccess.name.text === 'stack' &&
             this.hasAncestor(propAccess, ts.SyntaxKind.CatchClause)) {
           // Handle `e.stack` accesses in catch clauses by mangling to `e_stack`.
           // FIXME: Use type checker/FacadeConverter to make sure this is actually Error.stack.
+          this.visit(propAccess.expression);
           this.emitNoSpace('_stack');
         } else {
-          this.fc.checkPropertyAccess(propAccess);
+          if (this.fc.handlePropertyAccess(propAccess)) break;
+          this.visit(propAccess.expression);
           this.emit('.');
           this.visit(propAccess.name);
         }

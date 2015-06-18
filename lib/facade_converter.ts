@@ -3,22 +3,27 @@ import base = require('./base');
 import ts = require('typescript');
 import ts2dart = require('./main');
 
-type FacadeHandler = (c: ts.CallExpression, context: ts.Expression) => void;
+type CallHandler = (c: ts.CallExpression, context: ts.Expression) => void;
+type PropertyHandler = (c: ts.PropertyAccessExpression) => void;
 
 const FACADE_DEBUG = false;
 
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
-  private candidateMethods: {[fileName: string]: boolean};
+  private candidateProperties: {[propertyName: string]: boolean} = {};
 
   constructor(transpiler: ts2dart.Transpiler) {
     super(transpiler);
-    this.candidateMethods = {};
-    for (var fileName in this.subs) {
-      Object.keys(this.subs[fileName])
-          .filter((k) => this.subs[fileName].hasOwnProperty(k))
-          .map((fnName) => fnName.substring(fnName.lastIndexOf('.') + 1))
-          .forEach((fnName) => this.candidateMethods[fnName] = true);
+    this.extractPropertyNames(this.callHandlers);
+    this.extractPropertyNames(this.propertyHandlers);
+  }
+
+  private extractPropertyNames(m: ts.Map<ts.Map<any>>) {
+    for (var fileName in m) {
+      Object.keys(m[fileName])
+          .filter((k) => m[fileName].hasOwnProperty(k))
+          .map((propName) => propName.substring(propName.lastIndexOf('.') + 1))
+          .forEach((propName) => this.candidateProperties[propName] = true);
     }
   }
 
@@ -34,7 +39,7 @@ export class FacadeConverter extends base.TranspilerBase {
     if (c.expression.kind === ts.SyntaxKind.Identifier) {
       // Function call.
       ident = base.ident(c.expression);
-      if (!this.candidateMethods.hasOwnProperty(ident)) return false;
+      if (!this.candidateProperties.hasOwnProperty(ident)) return false;
       symbol = this.tc.getSymbolAtLocation(c.expression);
       if (FACADE_DEBUG) console.log('s:', symbol);
 
@@ -48,7 +53,7 @@ export class FacadeConverter extends base.TranspilerBase {
       // Method call.
       var pa = <ts.PropertyAccessExpression>c.expression;
       ident = base.ident(pa.name);
-      if (!this.candidateMethods.hasOwnProperty(ident)) return false;
+      if (!this.candidateProperties.hasOwnProperty(ident)) return false;
 
       symbol = this.tc.getSymbolAtLocation(pa);
       if (FACADE_DEBUG) console.log('s:', symbol);
@@ -62,16 +67,35 @@ export class FacadeConverter extends base.TranspilerBase {
       return false;
     }
 
+    var handler = this.getHandler(symbol, this.callHandlers);
+    return handler && !handler(c, context);
+  }
+
+  handlePropertyAccess(pa: ts.PropertyAccessExpression): boolean {
+    if (!this.tc) return;
+    var ident = pa.name.text;
+    if (!this.candidateProperties.hasOwnProperty(ident)) return false;
+    var symbol = this.tc.getSymbolAtLocation(pa.name);
+    if (!symbol) {
+      this.reportMissingType(pa, ident);
+      return false;
+    }
+
+    var handler = this.getHandler(symbol, this.propertyHandlers);
+    return handler && !handler(pa);
+  }
+
+  private getHandler<T>(symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
     if (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
-    if (!symbol.valueDeclaration) return false;
+    if (!symbol.valueDeclaration) return null;
 
     var fileName = symbol.valueDeclaration.getSourceFile().fileName;
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
     if (FACADE_DEBUG) console.log('fn:', fileName);
-    var fileSubs = this.subs[fileName];
-    if (!fileSubs) return false;
+    var fileSubs = m[fileName];
+    if (!fileSubs) return null;
     var qn = this.tc.getFullyQualifiedName(symbol);
     // Function and Variable Qualified Names include their file name. Might be a bug in TypeScript,
     // for the time being just special case.
@@ -80,14 +104,33 @@ export class FacadeConverter extends base.TranspilerBase {
     }
 
     if (FACADE_DEBUG) console.log('qn', qn);
-    var qnSub = fileSubs[qn];
-    if (!qnSub) return false;
-
-    if (qnSub(c, context)) return false;  // true ==> not handled.
-    return true;
+    return fileSubs[qn];
   }
 
-  private stdlibSubs: ts.Map<FacadeHandler> = {
+  reportMissingType(n: ts.Node, ident: string) {
+    this.reportError(n, `Untyped property access to "${ident}" which could be ` +
+                            `a special ts2dart builtin. ` +
+                            `Please add type declarations to disambiguate.`);
+  }
+
+  isInsideConstExpr(node: ts.Node): boolean {
+    return this.isConstCall(
+        <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
+  }
+
+  private isConstCall(node: ts.CallExpression): boolean {
+    return node && base.ident(node.expression) === 'CONST_EXPR';
+  }
+
+  private emitCall(name: string, args?: ts.Expression[]) {
+    this.emit('.');
+    this.emit(name);
+    this.emit('(');
+    if (args) this.visitList(args);
+    this.emit(')');
+  }
+
+  private stdlibHandlers: ts.Map<CallHandler> = {
     'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
       this.emitCall('add', c.arguments);
@@ -132,9 +175,9 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
 
-  private subs: ts.Map<ts.Map<FacadeHandler>> = {
-    'lib': this.stdlibSubs,
-    'lib.es6': this.stdlibSubs,
+  private callHandlers: ts.Map<ts.Map<CallHandler>> = {
+    'lib': this.stdlibHandlers,
+    'lib.es6': this.stdlibHandlers,
     'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
         // The actual Map constructor is special cased for const calls.
@@ -190,34 +233,13 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
 
-  private emitCall(name: string, args?: ts.Expression[]) {
-    this.emit('.');
-    this.emit(name);
-    this.emit('(');
-    if (args) this.visitList(args);
-    this.emit(')');
-  }
-
-  checkPropertyAccess(pa: ts.PropertyAccessExpression) {
-    if (!this.tc) return;
-    var ident = pa.name.text;
-    if (this.candidateMethods.hasOwnProperty(ident) && !this.tc.getSymbolAtLocation(pa)) {
-      this.reportMissingType(pa, ident);
-    }
-  }
-
-  reportMissingType(n: ts.Node, ident: string) {
-    this.reportError(n, `Untyped property access to "${ident}" which could be ` +
-                            `a special ts2dart builtin. ` +
-                            `Please add type declarations to disambiguate.`);
-  }
-
-  isInsideConstExpr(node: ts.Node): boolean {
-    return this.isConstCall(
-        <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
-  }
-
-  private isConstCall(node: ts.CallExpression): boolean {
-    return node && base.ident(node.expression) === 'CONST_EXPR';
-  }
+  private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
+    'angular2/traceur-runtime': {
+      'Map.size': (p: ts.PropertyAccessExpression) => {
+        this.visit(p.expression);
+        this.emit('.');
+        this.emit('length');
+      },
+    },
+  };
 }

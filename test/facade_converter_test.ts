@@ -82,6 +82,9 @@ describe('type based translation', () => {
       expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
                       'const x = CONST_EXPR({"one":1});')
           .to.equal(' const x = const { "one" : 1 } ;');
+      expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+                      'const x = CONST_EXPR(new Map());')
+          .to.equal(' const x = const { } ;');
     });
 
     it('translates forwardRef(() => T) to T', () => {

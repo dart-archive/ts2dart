@@ -36,6 +36,7 @@ export class FacadeConverter extends base.TranspilerBase {
       ident = base.ident(c.expression);
       if (!this.candidateMethods.hasOwnProperty(ident)) return false;
       symbol = this.tc.getSymbolAtLocation(c.expression);
+      if (FACADE_DEBUG) console.log('s:', symbol);
 
       if (!symbol) {
         this.reportMissingType(c, ident);
@@ -80,7 +81,7 @@ export class FacadeConverter extends base.TranspilerBase {
     var qnSub = fileSubs[qn];
     if (!qnSub) return false;
 
-    qnSub(c, context);
+    if (qnSub(c, context)) return false; // true ==> not handled.
     return true;
   }
 
@@ -133,6 +134,20 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib': this.stdlibSubs,
     'lib.es6': this.stdlibSubs,
     'angular2/traceur-runtime': {
+      'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
+        // The actual Map constructor.
+        if (this.isInsideConstExpr(c)) {
+          if (c.typeArguments) {
+            this.reportError(c, 'Type arguments on a Map constructor in a const are unsupported');
+          }
+          this.emit('{ }');
+        } else if (!c.typeArguments && !c.arguments.length) {
+          this.emit('{ }');
+        } else {
+          return true;
+        }
+        return false;
+      },
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
         this.emit('[');

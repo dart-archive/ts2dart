@@ -25,7 +25,9 @@ class CallTranspiler extends base.TranspilerBase {
         } else {
           this.emit('new');
         }
-        this.visitCall(<ts.NewExpression>node);
+        var newExpr = <ts.NewExpression>node;
+        if (this.fc.maybeHandleCall(newExpr)) break;
+        this.visitCall(newExpr);
         break;
       case ts.SyntaxKind.CallExpression:
         var callExpr = <ts.CallExpression>node;

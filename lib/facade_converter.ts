@@ -73,9 +73,11 @@ export class FacadeConverter extends base.TranspilerBase {
     var fileSubs = this.subs[fileName];
     if (!fileSubs) return false;
     var qn = this.tc.getFullyQualifiedName(symbol);
-    // Function Qualified Names include their file name. Might be a bug in TypeScript, for the
-    // time being just special case.
-    if (symbol.flags & ts.SymbolFlags.Function) qn = symbol.getName();
+    // Function and Variable Qualified Names include their file name. Might be a bug in TypeScript,
+    // for the time being just special case.
+    if (symbol.flags & ts.SymbolFlags.Function || symbol.flags & ts.SymbolFlags.Variable) {
+      qn = symbol.getName();
+    }
 
     if (FACADE_DEBUG) console.log('qn', qn);
     var qnSub = fileSubs[qn];
@@ -133,16 +135,23 @@ export class FacadeConverter extends base.TranspilerBase {
   private subs: ts.Map<ts.Map<FacadeHandler>> = {
     'lib': this.stdlibSubs,
     'lib.es6': this.stdlibSubs,
-    'angular2/traceur-runtime': {
+    'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
         // The actual Map constructor is special cased for const calls.
         if (!this.isInsideConstExpr(c)) return true;
+        if (c.arguments.length) {
+          this.reportError(c, 'Arguments on a Map constructor in a const are unsupported');
+        }
         if (c.typeArguments) {
-          this.reportError(c, 'Type arguments on a Map constructor in a const are unsupported');
+          this.emit('<');
+          this.visitList(c.typeArguments);
+          this.emit('>');
         }
         this.emit('{ }');
         return false;
       },
+    },
+    'angular2/traceur-runtime': {
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
         this.emit('[');

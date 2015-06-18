@@ -23,6 +23,9 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
     'angular2/src/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
+    'angular2/src/facade/collection.d.ts': `
+        export declare var Map: typeof Map;
+    `,
     'angular2/src/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
         export declare function CONST_EXPR<T>(x: T): T;`,
@@ -86,8 +89,15 @@ describe('type based translation', () => {
                       'const x = CONST_EXPR({"one":1});')
           .to.equal(' const x = const { "one" : 1 } ;');
       expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+                      'import {Map} from "angular2/src/facade/collection";\n' +
                       'const x = CONST_EXPR(new Map());')
-          .to.equal(' const x = const { } ;');
+          .to.equal(' import "package:angular2/src/facade/collection.dart" show Map ;' +
+                    ' const x = const { } ;');
+      expectWithTypes('import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+                      'import {Map} from "angular2/src/facade/collection";\n' +
+                      'const x = CONST_EXPR(new Map<number, string>());')
+          .to.equal(' import "package:angular2/src/facade/collection.dart" show Map ;' +
+                    ' const x = const < num , String > { } ;');
     });
 
     it('translates forwardRef(() => T) to T', () => {

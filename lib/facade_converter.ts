@@ -135,17 +135,12 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibSubs,
     'angular2/traceur-runtime': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
-        // The actual Map constructor.
-        if (this.isInsideConstExpr(c)) {
-          if (c.typeArguments) {
-            this.reportError(c, 'Type arguments on a Map constructor in a const are unsupported');
-          }
-          this.emit('{ }');
-        } else if (!c.typeArguments && !c.arguments.length) {
-          this.emit('{ }');
-        } else {
-          return true;
+        // The actual Map constructor is special cased for const calls.
+        if (!this.isInsideConstExpr(c)) return true;
+        if (c.typeArguments) {
+          this.reportError(c, 'Type arguments on a Map constructor in a const are unsupported');
         }
+        this.emit('{ }');
         return false;
       },
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {

@@ -81,7 +81,7 @@ export class FacadeConverter extends base.TranspilerBase {
     var qnSub = fileSubs[qn];
     if (!qnSub) return false;
 
-    if (qnSub(c, context)) return false; // true ==> not handled.
+    if (qnSub(c, context)) return false;  // true ==> not handled.
     return true;
   }
 

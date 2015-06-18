@@ -162,6 +162,10 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visit(c.arguments[0]);
         this.emit(']');
       },
+      'Map.has': (c: ts.CallExpression, context: ts.Expression) => {
+        this.visit(context);
+        this.emitCall('containsKey', c.arguments);
+      },
     },
     'angular2/src/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {

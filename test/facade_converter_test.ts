@@ -7,10 +7,11 @@ var traceurRuntimeDeclarations = `
     interface Symbol {}
     interface Map<K, V> {
       get(key: K): V;
+      has(key: K): boolean;
       set(key: K, value: V): Map<K, V>;
     }
     declare var Map: {
-      new<K, V>(): Map<K, V>;
+      new<K, V>(): Map<any, any>;
       prototype: Map<any, any>;
     };
     declare var Symbol;
@@ -62,6 +63,8 @@ describe('type based translation', () => {
           .to.equal(' var x = new Map < String , String > ( ) ; x [ "k" ] = "v" ;');
       expectWithTypes('var x = new Map<string, string>(); x.get("k");')
           .to.equal(' var x = new Map < String , String > ( ) ; x [ "k" ] ;');
+      expectWithTypes('var x = new Map<string, string>(); x.has("k");')
+          .to.equal(' var x = new Map < String , String > ( ) ; x . containsKey ( "k" ) ;');
     });
   });
 

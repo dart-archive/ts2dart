@@ -10,6 +10,7 @@ var traceurRuntimeDeclarations = `
       has(key: K): boolean;
       set(key: K, value: V): Map<K, V>;
       size: number;
+      delete(key: K): boolean;
     }
     declare var Map: {
       new<K, V>(): Map<any, any>;
@@ -69,7 +70,11 @@ describe('type based translation', () => {
           .to.equal(' var x = new Map < String , String > ( ) ; x [ "k" ] ;');
       expectWithTypes('var x = new Map<string, string>(); x.has("k");')
           .to.equal(' var x = new Map < String , String > ( ) ; x . containsKey ( "k" ) ;');
+      expectWithTypes('var x = new Map<string, string>(); x.delete("k");')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    '( x . containsKey ( "k" ) && ( x . remove ( "k" ) != null || true ) ) ;');
     });
+
     it('translates map properties to dartisms', () => {
       expectWithTypes('var x = new Map<string, string>(); x.size;')
           .to.equal(' var x = new Map < String , String > ( ) ; x . length ;');

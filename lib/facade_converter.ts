@@ -213,6 +213,20 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visit(context);
         this.emitCall('containsKey', c.arguments);
       },
+      'Map.delete': (c: ts.CallExpression, context: ts.Expression) => {
+        // JS Map.delete(k) returns whether k was present in the map,
+        // convert to:
+        // (Map.containsKey(k) && (Map.remove(k) != null || true))
+        // (Map.remove(k) != null || true) is required to always returns true
+        // when Map.containsKey(k)
+        this.emit('(');
+        this.visit(context);
+        this.emitCall('containsKey', c.arguments);
+        this.emit('&& (');
+        this.visit(context);
+        this.emitCall('remove', c.arguments);
+        this.emit('!= null || true ) )');
+      },
     },
     'angular2/src/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {

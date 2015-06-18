@@ -319,6 +319,7 @@ if (require.main === module) {
   var args = require('minimist')(process.argv.slice(2), {base: 'string'});
   try {
     let transpiler = new Transpiler(args);
+    console.log('Transpiling', args._, 'to', args.destination);
     transpiler.transpile(args._, args.destination);
   } catch (e) {
     if (e.name !== 'TS2DartError') throw e;

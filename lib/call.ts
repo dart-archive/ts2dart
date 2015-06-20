@@ -118,13 +118,14 @@ class CallTranspiler extends base.TranspilerBase {
     var errorThisAssignment = 'assignments in const constructors must assign into this.';
 
     var parent = <base.ClassLike>ctor.parent;
+    var parentIsConst = this.isConst(parent);
     var superCall: ts.CallExpression;
     var expressions: ts.Expression[] = [];
     // Find super() calls and (if in a const ctor) collect assignment expressions (not statements!)
     body.statements.forEach((stmt) => {
       if (stmt.kind !== ts.SyntaxKind.ExpressionStatement) {
-        if (this.isConst(parent)) this.reportError(stmt, errorAssignmentsSuper);
-        return false;
+        if (parentIsConst) this.reportError(stmt, errorAssignmentsSuper);
+        return;
       }
       var nestedExpr = (<ts.ExpressionStatement>stmt).expression;
 
@@ -132,7 +133,7 @@ class CallTranspiler extends base.TranspilerBase {
       if (nestedExpr.kind === ts.SyntaxKind.CallExpression) {
         var callExpr = <ts.CallExpression>nestedExpr;
         if (callExpr.expression.kind !== ts.SyntaxKind.SuperKeyword) {
-          if (this.isConst(parent)) this.reportError(stmt, errorAssignmentsSuper);
+          if (parentIsConst) this.reportError(stmt, errorAssignmentsSuper);
           return;
         }
         superCall = callExpr;
@@ -140,7 +141,7 @@ class CallTranspiler extends base.TranspilerBase {
       }
 
       // this.x assignment?
-      if (this.isConst(parent)) {
+      if (parentIsConst) {
         // Check for assignment.
         if (nestedExpr.kind !== ts.SyntaxKind.BinaryExpression) {
           this.reportError(nestedExpr, errorAssignmentsSuper);
@@ -181,7 +182,7 @@ class CallTranspiler extends base.TranspilerBase {
       }
       this.emit(')');
     }
-    if (this.isConst(parent)) {
+    if (parentIsConst) {
       // Const ctors don't have bodies.
       this.emit(';');
       return true;  // completely handled.

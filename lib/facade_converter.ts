@@ -86,7 +86,14 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private getHandler<T>(symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
-    if (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
+    var {fileName, qname} = this.getFileAndName(symbol);
+    var fileSubs = m[fileName];
+    if (!fileSubs) return null;
+    return fileSubs[qname];
+  }
+
+  private getFileAndName(symbol: ts.Symbol): {fileName: string, qname: string} {
+    while (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
     if (!symbol.valueDeclaration) return null;
 
     var fileName = symbol.valueDeclaration.getSourceFile().fileName;
@@ -94,20 +101,29 @@ export class FacadeConverter extends base.TranspilerBase {
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
     if (FACADE_DEBUG) console.log('fn:', fileName);
-    var fileSubs = m[fileName];
-    if (!fileSubs) return null;
-    var qn = this.tc.getFullyQualifiedName(symbol);
+    var qname = this.tc.getFullyQualifiedName(symbol);
     // Function and Variable Qualified Names include their file name. Might be a bug in TypeScript,
     // for the time being just special case.
     if (symbol.flags & ts.SymbolFlags.Function || symbol.flags & ts.SymbolFlags.Variable) {
-      qn = symbol.getName();
+      qname = symbol.getName();
     }
-
-    if (FACADE_DEBUG) console.log('qn', qn);
-    return fileSubs[qn];
+    if (FACADE_DEBUG) console.log('qn', qname);
+    return {fileName, qname};
   }
 
-  reportMissingType(n: ts.Node, ident: string) {
+  private isNamedType(node: ts.Node, fileName: string, qname: string): boolean {
+    var symbol = this.tc.getTypeAtLocation(node).getSymbol();
+    if (!symbol) return false;
+    var actual = this.getFileAndName(symbol);
+    if (fileName === 'lib' && !(actual.fileName === 'lib' || actual.fileName === 'lib.es6')) {
+      return false;
+    } else {
+      if (fileName !== actual.fileName) return false;
+    }
+    return qname === actual.qname;
+  }
+
+  private reportMissingType(n: ts.Node, ident: string) {
     this.reportError(n, `Untyped property access to "${ident}" which could be ` +
                             `a special ts2dart builtin. ` +
                             `Please add type declarations to disambiguate.`);
@@ -170,9 +186,15 @@ export class FacadeConverter extends base.TranspilerBase {
     'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('new List . from (');
       this.visit(context);
-      this.emit(') .. addAll (');
-      this.visit(c.arguments[0]);
       this.emit(')');
+      c.arguments.forEach(arg => {
+        if (!this.isNamedType(arg, 'lib', 'Array')) {
+          this.reportError(arg, 'Array.concat only takes Array arguments');
+        }
+        this.emit('.. addAll (');
+        this.visit(arg);
+        this.emit(')');
+      });
     },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');

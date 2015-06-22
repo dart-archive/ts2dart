@@ -91,7 +91,7 @@ export class FacadeConverter extends base.TranspilerBase {
 
     var fileName = symbol.valueDeclaration.getSourceFile().fileName;
     fileName = this.getRelativeFileName(fileName);
-    fileName = fileName.replace(/(\.d)?\.ts$/, '');
+    fileName = fileName.replace(/(\.d)?\.ts$/, '').replace(/\\/g, '/');
 
     if (FACADE_DEBUG) console.log('fn:', fileName);
     var fileSubs = m[fileName];

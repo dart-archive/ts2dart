@@ -66,6 +66,10 @@ describe('type based translation', () => {
                     '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
       expectWithTypes('var x: Array<number> = []; x.unshift(1);')
           .to.equal(' List < num > x = [ ] ; ( x .. insert ( 0, 1 ) ) . length ;');
+      expectWithTypes('var x: Array<number> = []; x.forEach((v) => v);')
+          .to.equal(' List < num > x = [ ] ; x . forEach ( ( v ) => v ) ;');
+      expectWithTypes('var x: Array<number> = []; x.forEach(function (v) { return v; });')
+          .to.equal(' List < num > x = [ ] ; x . forEach ( ( v ) { return v ; } ) ;');
 
     });
 
@@ -132,9 +136,18 @@ describe('type based translation', () => {
   });
 
   describe('error detection', () => {
+    describe('Array', () => {
+      it('.forEach should error on multiple arguments', () => {
+        chai.expect(() => translateSource('var x: Array<number> = []; x.forEach((v, i) => v);',
+                                          COMPILE_OPTS))
+            .to.throw('Array.forEach callback supports a single argument only');
+      });
+    });
+
     it('for untyped symbols matching special cased fns', () => {
       expectErroneousWithType('forwardRef(1)').to.throw(/Untyped property access to "forwardRef"/);
     });
+
     it('for untyped symbols matching special cased methods', () => {
       expectErroneousWithType('x.push(1)').to.throw(/Untyped property access to "push"/);
     });

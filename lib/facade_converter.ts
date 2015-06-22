@@ -244,6 +244,16 @@ export class FacadeConverter extends base.TranspilerBase {
         this.emitCall('remove', c.arguments);
         this.emit('!= null || true ) )');
       },
+      'Map.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+        const callback = <ts.FunctionExpression>c.arguments[0];
+        let params = callback.parameters;
+        if (params.length !== 2) {
+          this.reportError(c, 'Map.forEach callback supports two arguments only');
+        }
+        [params[0], params[1]] = [params[1], params[0]];
+        this.visit(context);
+        this.emitCall('forEach', [callback]);
+      },
     },
     'angular2/src/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {

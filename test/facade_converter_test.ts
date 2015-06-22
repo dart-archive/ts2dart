@@ -11,6 +11,7 @@ var traceurRuntimeDeclarations = `
       set(key: K, value: V): Map<K, V>;
       size: number;
       delete(key: K): boolean;
+      forEach(callbackfn: (value: V, index: K, map: Map<K, V>) => void, thisArg?: any): void;
     }
     declare var Map: {
       new<K, V>(): Map<any, any>;
@@ -79,6 +80,14 @@ describe('type based translation', () => {
       expectWithTypes('var x = new Map<string, string>(); x.delete("k");')
           .to.equal(' var x = new Map < String , String > ( ) ; ' +
                     '( x . containsKey ( "k" ) && ( x . remove ( "k" ) != null || true ) ) ;');
+      expectWithTypes('var x = new Map<string, string>(); x.forEach((v, k) => null);')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) => null ) ;');
+      expectWithTypes(
+          'var x = new Map<string, string>(); x.forEach(function (v, k) { return null; });')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) { return null ; } ) ;');
+
     });
 
     it('translates map properties to dartisms', () => {
@@ -132,6 +141,16 @@ describe('type based translation', () => {
   });
 
   describe('error detection', () => {
+    describe('Map', () => {
+      it('.forEach should error if the callback does not take exactly 2 arguments', () => {
+        chai.expect(() => translateSource(
+                        getSources(
+                            'var x: Map<string, string> = new Map(); x.forEach((v, k, m) => v);'),
+                        COMPILE_OPTS))
+            .to.throw('Map.forEach callback supports two arguments only');
+      });
+    });
+
     it('for untyped symbols matching special cased fns', () => {
       expectErroneousWithType('forwardRef(1)').to.throw(/Untyped property access to "forwardRef"/);
     });

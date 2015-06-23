@@ -133,6 +133,17 @@ describe('interfaces', () => {
   });
 });
 
+describe('single call signature interfaces', () => {
+  it('should support declaration', () => {
+    expectTranslate('interface F { (n: number): boolean; }')
+        .to.equal(' typedef bool F ( num n ) ;');
+  });
+  it('should support generics', () => {
+    expectTranslate('interface F<A, B> { (a: A): B; }')
+        .to.equal(' typedef B F < A , B > ( A a ) ;');
+  });
+});
+
 describe('enums', () => {
   it('should support basic enum declaration', () => {
     expectTranslate('enum Color { Red, Green, Blue }')

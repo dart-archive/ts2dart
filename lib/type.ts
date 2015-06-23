@@ -45,9 +45,8 @@ class TypeTranspiler extends base.TranspilerBase {
         this.emit('>');
         break;
       case ts.SyntaxKind.FunctionType:
-        this.emit('dynamic /*');
-        this.emit(node.getText());
-        this.emit('*/');
+        this.reportError(node, 'Inline function type declarations not supported. ' +
+                                   'Use function types instead (http://goo.gl/ROC5jN).');
         break;
       case ts.SyntaxKind.QualifiedName:
         var first = <ts.QualifiedName>node;

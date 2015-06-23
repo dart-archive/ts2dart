@@ -1,5 +1,5 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import {expectTranslate} from './test_support';
+import {expectTranslate, expectErroneousCode} from './test_support';
 
 describe('types', () => {
   it('supports qualified names',
@@ -25,9 +25,10 @@ describe('types', () => {
   });
   it('should support array types',
      () => { expectTranslate('var x: string[] = [];').to.equal(' List < String > x = [ ] ;'); });
-  it('should support function types (by ignoring them)', () => {
-    expectTranslate('var x: (a: string) => string;')
-        .to.equal(' dynamic /* (a: string) => string */ x ;');
+  it('should not support inline function types', () => {
+    expectErroneousCode('var x: (a: string) => string;')
+        .to.throw('Inline function type declarations not supported. ' +
+                  'Use function types instead (http://goo.gl/ROC5jN).');
   });
 });
 

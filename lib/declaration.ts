@@ -29,7 +29,14 @@ class DeclarationTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.InterfaceDeclaration:
         var ifDecl = <ts.InterfaceDeclaration>node;
-        this.visitClassLike('abstract class', ifDecl);
+        // Function type interface in an interface with a single declaration
+        // of a call signature (http://goo.gl/ROC5jN).
+        if (ifDecl.members.length === 1 && ifDecl.members[0].kind === ts.SyntaxKind.CallSignature) {
+          this.visitFunctionTypedefInterface(
+              ifDecl.name.text, <ts.SignatureDeclaration>ifDecl.members[0], ifDecl.typeParameters);
+        } else {
+          this.visitClassLike('abstract class', ifDecl);
+        }
         break;
       case ts.SyntaxKind.HeritageClause:
         var heritageClause = <ts.HeritageClause>node;
@@ -438,6 +445,26 @@ class DeclarationTranspiler extends base.TranspilerBase {
                          'initializers for named parameters must be empty object literals');
       }
     }
+  }
+
+  /**
+   * Handles a function typedef-like interface, i.e. an interface that only declares a single
+   * call signature, by translating to a Dart `typedef`.
+   */
+  private visitFunctionTypedefInterface(name: string, signature: ts.SignatureDeclaration,
+                                        typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>) {
+    this.emit('typedef');
+    if (signature.type) {
+      this.visit(signature.type);
+    }
+    this.emit(name);
+    if (typeParameters) {
+      this.emit('<');
+      this.visitList(typeParameters);
+      this.emit('>');
+    }
+    this.visitParameters(signature.parameters);
+    this.emit(';');
   }
 }
 

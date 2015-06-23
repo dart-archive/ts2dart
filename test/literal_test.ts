@@ -4,7 +4,7 @@ import {expectTranslate, expectErroneousCode} from './test_support';
 describe('literals', () => {
   it('translates string literals', () => {
     expectTranslate(`'hello\\' "world'`).to.equal(` "hello' \\"world" ;`);
-      expectTranslate(`"hello\\" 'world"`).to.equal(` "hello\\" 'world" ;`);
+    expectTranslate(`"hello\\" 'world"`).to.equal(` "hello\\" 'world" ;`);
   });
 
   it('translates string templates', () => {

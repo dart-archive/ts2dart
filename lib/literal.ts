@@ -33,7 +33,7 @@ class LiteralTranspiler extends base.TranspilerBase {
         if (tmpl.templateSpans) this.visitEach(tmpl.templateSpans);
         break;
       case ts.SyntaxKind.TemplateHead:
-        this.emit(`'''${this.escapeTextForTemplateString(node)}`); //highlighting bug:'
+        this.emit(`'''${this.escapeTextForTemplateString(node)}`);  // highlighting bug:'
         break;
       case ts.SyntaxKind.TemplateTail:
         this.emitNoSpace(this.escapeTextForTemplateString(node));

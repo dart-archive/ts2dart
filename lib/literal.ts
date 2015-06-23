@@ -99,7 +99,7 @@ class LiteralTranspiler extends base.TranspilerBase {
         var slashIdx = regExp.lastIndexOf('/');
         var flags = regExp.substring(slashIdx + 1);
         regExp = regExp.substring(1, slashIdx);  // cut off /.../ chars.
-        regExp = regExp.replace('\'', '\' + "\'" + r\'');  // handle nested quotes by concatenation.
+        regExp = regExp.replace(/'/g, '\' + "\'" + r\'');  // handle nested quotes by concatenation.
         this.emitNoSpace(regExp);
         this.emitNoSpace('\'');
         if (flags.indexOf('g') === -1) {

@@ -43,6 +43,7 @@ describe('literals', () => {
   it('translates regexp literals', () => {
     expectTranslate('/wo\\/t?/g').to.equal(' new RegExp ( r\'wo\\/t?\' ) ;');
     expectTranslate('/\'/g').to.equal(' new RegExp ( r\'\' + "\'" + r\'\' ) ;');
+    expectTranslate('/\'o\'/g').to.equal(' new RegExp ( r\'\' + "\'" + r\'o\' + "\'" + r\'\' ) ;');
     expectTranslate('/abc/gmi')
         .to.equal(' new RegExp ( r\'abc\' , multiline: true , caseSensitive: false ) ;');
     expectErroneousCode('/abc/').to.throw(/Regular Expressions must use the \/\/g flag/);

@@ -174,6 +174,14 @@ export class FacadeConverter extends base.TranspilerBase {
       this.visit(c.arguments[0]);
       this.emit(')');
     },
+    'Array.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+      const callback = <ts.FunctionExpression>c.arguments[0];
+      if (callback.parameters.length !== 1) {
+        this.reportError(c, 'Array.forEach callback supports a single argument only');
+      }
+      this.visit(context);
+      this.emitCall('forEach', [callback]);
+    },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');
       this.visitList(c.arguments);  // Should only be 1.

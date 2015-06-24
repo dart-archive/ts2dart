@@ -141,8 +141,11 @@ export class Transpiler {
         if (sourceName === defaultLibFileName) {
           path = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
         }
+        // if (process.platform === 'win32') path = sourceName.replace(/\//g, '\\');
         if (!fs.existsSync(path)) return undefined;
         var contents = fs.readFileSync(path, 'UTF-8');
+        // Make sure all file names use forward slashes.
+        var sourceName = this.normalizeSlashes(sourceName);
         return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
@@ -253,7 +256,7 @@ export class Transpiler {
                                node.getFullText());
   }
 
-  private normalizeSlashes(path: string) { return path.replace(/\\/g, "/"); }
+  private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
 }
 
 class Output {

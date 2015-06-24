@@ -80,10 +80,11 @@ export class Transpiler {
    * @param destination Location to write files to. Creates files next to their sources if absent.
    */
   transpile(fileNames: string[], destination?: string): void {
-    var host = this.createCompilerHost(fileNames);
     if (this.options.basePath) {
       this.options.basePath = this.normalizeSlashes(this.options.basePath);
     }
+    fileNames = fileNames.map((f) => this.normalizeSlashes(f));
+    var host = this.createCompilerHost();
     if (this.options.basePath && destination === undefined) {
       throw new Error('Must have a destination path when a basePath is specified ' +
                       this.options.basePath);
@@ -95,12 +96,12 @@ export class Transpiler {
     }
 
     // Only write files that were explicitly passed in.
-    var fileMap: {[s: string]: boolean} = {};
-    fileNames.forEach((f) => fileMap[this.normalizeSlashes(f)] = true);
+    var fileSet: {[s: string]: boolean} = {};
+    fileNames.forEach((f) => fileSet[f] = true);
 
     this.errors = [];
     program.getSourceFiles()
-        .filter((sourceFile) => fileMap[sourceFile.fileName])
+        .filter((sourceFile) => fileSet[sourceFile.fileName])
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
         .forEach((f: ts.SourceFile) => {
@@ -133,8 +134,9 @@ export class Transpiler {
     return opts;
   }
 
-  private createCompilerHost(files: string[]): ts.CompilerHost {
+  private createCompilerHost(): ts.CompilerHost {
     var defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
+    defaultLibFileName = this.normalizeSlashes(defaultLibFileName);
     return {
       getSourceFile: (sourceName, languageVersion) => {
         var path = sourceName;
@@ -158,7 +160,7 @@ export class Transpiler {
   getOutputPath(filePath: string, destinationRoot: string): string {
     var relative = this.getRelativeFileName(filePath);
     var dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
-    return path.join(destinationRoot, dartFile);
+    return this.normalizeSlashes(path.join(destinationRoot, dartFile));
   }
 
   private translate(sourceFile: ts.SourceFile): string {
@@ -209,12 +211,14 @@ export class Transpiler {
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
     // TODO(martinprobst): Use path.isAbsolute on node v0.12.
-    if (path.resolve('/', filePath) !== filePath) return filePath; // already relative.
+    if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
+      return filePath;  // already relative.
+    }
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
-    return path.relative(base, filePath);
+    return this.normalizeSlashes(path.relative(base, filePath));
   }
 
   emit(s: string) { this.output.emit(s); }
@@ -253,7 +257,7 @@ export class Transpiler {
                                node.getFullText());
   }
 
-  private normalizeSlashes(path: string) { return path.replace(/\\/g, "/"); }
+  private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
 }
 
 class Output {

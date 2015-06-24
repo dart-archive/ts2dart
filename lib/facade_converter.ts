@@ -170,9 +170,16 @@ export class FacadeConverter extends base.TranspilerBase {
     'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('new List . from (');
       this.visit(context);
-      this.emit(') .. addAll (');
-      this.visit(c.arguments[0]);
       this.emit(')');
+      c.arguments.forEach(arg => {
+        var symbol = this.tc.getTypeAtLocation(arg).getSymbol();
+        if (!symbol || this.tc.getFullyQualifiedName(symbol) !== 'Array') {
+          this.reportError(arg, 'Array.concat only supports Array args');
+        }
+        this.emit('.. addAll (');
+        this.visit(arg);
+        this.emit(')');
+      });
     },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');

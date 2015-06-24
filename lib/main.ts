@@ -135,6 +135,7 @@ export class Transpiler {
 
   private createCompilerHost(files: string[]): ts.CompilerHost {
     var defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
+    defaultLibFileName = this.normalizeSlashes(defaultLibFileName);
     return {
       getSourceFile: (sourceName, languageVersion) => {
         var path = sourceName;

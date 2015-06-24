@@ -208,8 +208,8 @@ export class Transpiler {
    */
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
-    if (filePath.indexOf('/') !== 0 && filePath.indexOf(':/') !== 1)
-      return filePath;  // doesn't start with / => is a relative path
+    // TODO(martinprobst): Use path.isAbsolute on node v0.12.
+    if (path.resolve('/', filePath) !== filePath) return filePath; // already relative.
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);

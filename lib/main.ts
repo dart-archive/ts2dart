@@ -145,8 +145,8 @@ export class Transpiler {
         // if (process.platform === 'win32') path = sourceName.replace(/\//g, '\\');
         if (!fs.existsSync(path)) return undefined;
         var contents = fs.readFileSync(path, 'UTF-8');
-        // Make sure all file names use forward slashes.
-        var sourceName = this.normalizeSlashes(sourceName);
+        // Make sure the file path is relative and all file names use forward slashes.
+        var sourceName = this.getRelativeFileName(sourceName);
         return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
@@ -162,7 +162,7 @@ export class Transpiler {
   getOutputPath(filePath: string, destinationRoot: string): string {
     var relative = this.getRelativeFileName(filePath);
     var dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
-    return path.join(destinationRoot, dartFile);
+    return this.normalizeSlashes(path.join(destinationRoot, dartFile));
   }
 
   private translate(sourceFile: ts.SourceFile): string {
@@ -213,12 +213,14 @@ export class Transpiler {
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
     // TODO(martinprobst): Use path.isAbsolute on node v0.12.
-    if (path.resolve('/', filePath) !== filePath) return filePath; // already relative.
+    if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
+      return filePath;  // already relative.
+    }
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
-    return path.relative(base, filePath);
+    return this.normalizeSlashes(path.relative(base, filePath));
   }
 
   emit(s: string) { this.output.emit(s); }

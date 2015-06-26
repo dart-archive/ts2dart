@@ -136,7 +136,7 @@ describe('type based translation', () => {
   describe('error detection', () => {
     describe('Array', () => {
       it('.concat() should report an error if any arg is not an Array', () => {
-        chai.expect(() => translateSource('var x: Array<number> = []; x.concat(1);', COMPILE_OPTS))
+        expectErroneousWithType('var x: Array<number> = []; x.concat(1);')
             .to.throw('Array.concat only takes Array arguments');
       });
     });

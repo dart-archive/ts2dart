@@ -2,9 +2,9 @@ language: dart # NodeJS is available everywhere
 node_js:
   - "stable"
 before_script:
-    - npm install
+  - npm install
 script:
-    - npm test
+  - npm test
 cache:
   directories:
     - node_modules
@@ -17,4 +17,4 @@ env:
   # because those are not visible for pull requests, and those should also be reliable.
   # This SSO token belongs to github account angular-github-ratelimit-token which has no access
   # (password is in Valentine)
-  - TSDRC='{"token":"ef474500309daea53d5991b3079159a29520a40b"}'
+  - TSD_GITHUB_TOKEN=ef474500309daea53d5991b3079159a29520a40b

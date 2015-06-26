@@ -52,7 +52,9 @@ export default class ModuleTranspiler extends base.TranspilerBase {
         this.visitList(used);
         break;
       case ts.SyntaxKind.NamedExports:
+        var exportElements = (<ts.NamedExports>node).elements;
         this.emit('show');
+        if (exportElements.length === 0) this.reportError(node, 'empty export list');
         this.visitList((<ts.NamedExports>node).elements);
         break;
       case ts.SyntaxKind.ImportSpecifier:
@@ -124,7 +126,11 @@ export default class ModuleTranspiler extends base.TranspilerBase {
   private isEmptyImport(n: ts.ImportDeclaration): boolean {
     var bindings = n.importClause.namedBindings;
     if (bindings.kind != ts.SyntaxKind.NamedImports) return false;
-    return (<ts.NamedImports>bindings).elements.every(ModuleTranspiler.isIgnoredImport);
+    var elements = (<ts.NamedImports>bindings).elements;
+    // An import list being empty *after* filtering is ok, but if it's empty in the code itself,
+    // it's nonsensical code, so probably a programming error.
+    if (elements.length === 0) this.reportError(n, 'empty import list');
+    return elements.every(ModuleTranspiler.isIgnoredImport);
   }
 
   private filterImports(ns: ts.ImportOrExportSpecifier[]) {

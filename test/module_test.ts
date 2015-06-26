@@ -28,6 +28,8 @@ describe('imports', () => {
     expectErroneousCode('import {Foo as Bar} from "baz";')
         .to.throw(/import\/export renames are unsupported in Dart/);
   });
+  it('ignores empty import specs',
+     () => { expectErroneousCode('import {} from "baz";').to.throw(/empty import list/); });
 });
 
 describe('exports', () => {
@@ -50,6 +52,8 @@ describe('exports', () => {
   it('fails for exports without URLs', () => {
     expectErroneousCode('export {a as b};').to.throw('re-exports must have a module URL');
   });
+  it('fails for empty export specs',
+     () => { expectErroneousCode('export {} from "baz";').to.throw(/empty export list/); });
 });
 
 describe('library name', () => {

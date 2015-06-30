@@ -12,6 +12,7 @@ describe('types', () => {
     expectTranslate('import Promise = require("./somewhere");')
         .to.equal(' import "somewhere.dart" as Future ;');
     expectTranslate('x instanceof Promise;').to.equal(' x is Future ;');
+    expectTranslate('x instanceof XMLHttpRequest;').to.equal(' x is HttpRequest ;');
   });
   it('allows typecasts',
      () => { expectTranslate('<MyType>ref').to.equal(' ( ref as MyType ) ;'); });

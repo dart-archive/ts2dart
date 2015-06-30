@@ -81,6 +81,7 @@ export class TranspilerBase {
     'Date': 'DateTime',
     'StringMap': 'Map',
     'Array': 'List',
+    'XMLHttpRequest': 'HttpRequest'
   };
 
   visitTypeName(typeName: ts.EntityName) {

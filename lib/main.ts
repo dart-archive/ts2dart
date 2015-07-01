@@ -65,12 +65,12 @@ export class Transpiler {
     this.fc = new FacadeConverter(this);
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
-      new DeclarationTranspiler(this),
+      new DeclarationTranspiler(this, this.fc),
       new ExpressionTranspiler(this, this.fc),
       new LiteralTranspiler(this, this.fc),
-      new ModuleTranspiler(this, options.generateLibraryName),
+      new ModuleTranspiler(this, this.fc, options.generateLibraryName),
       new StatementTranspiler(this),
-      new TypeTranspiler(this),
+      new TypeTranspiler(this, this.fc),
     ];
   }
 

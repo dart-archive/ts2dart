@@ -2,9 +2,13 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from './facade_converter';
 
 export default class ModuleTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private generateLibraryName: boolean) { super(tr); }
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter,
+              private generateLibraryName: boolean) {
+    super(tr);
+  }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -33,7 +37,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.ImportClause:
         var importClause = <ts.ImportClause>node;
-        if (importClause.name) this.visitTypeName(importClause.name);
+        if (importClause.name) this.fc.visitTypeName(importClause.name);
         if (importClause.namedBindings) {
           this.visit(importClause.namedBindings);
         }
@@ -41,7 +45,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.NamespaceImport:
         var nsImport = <ts.NamespaceImport>node;
         this.emit('as');
-        this.visitTypeName(nsImport.name);
+        this.fc.visitTypeName(nsImport.name);
         break;
       case ts.SyntaxKind.NamedImports:
         this.emit('show');
@@ -63,7 +67,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
         if (spec.propertyName) {
           this.reportError(spec.propertyName, 'import/export renames are unsupported in Dart');
         }
-        this.visitTypeName(spec.name);
+        this.fc.visitTypeName(spec.name);
         break;
       case ts.SyntaxKind.ExportDeclaration:
         var exportDecl = <ts.ExportDeclaration>node;
@@ -81,7 +85,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
         this.emit('import');
         this.visit(importEqDecl.moduleReference);
         this.emit('as');
-        this.visitTypeName(importEqDecl.name);
+        this.fc.visitTypeName(importEqDecl.name);
         this.emit(';');
         break;
       case ts.SyntaxKind.ExternalModuleReference:

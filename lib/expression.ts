@@ -24,7 +24,7 @@ class ExpressionTranspiler extends base.TranspilerBase {
           this.visit(binExpr.left);
           if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
             this.emit('is');
-            this.visitTypeName(<ts.Identifier>binExpr.right);
+            this.fc.visitTypeName(<ts.Identifier>binExpr.right);
           } else {
             this.emit(ts.tokenToString(binExpr.operatorToken.kind));
             this.visit(binExpr.right);

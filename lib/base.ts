@@ -74,27 +74,6 @@ export class TranspilerBase {
     return this.transpiler.getRelativeFileName(fileName);
   }
 
-  private static TS_TO_DART_TYPENAMES: {[k: string]: string} = {
-    'Promise': 'Future',
-    'Observable': 'Stream',
-    'ObservableController': 'StreamController',
-    'Date': 'DateTime',
-    'StringMap': 'Map',
-    'Array': 'List',
-  };
-
-  visitTypeName(typeName: ts.EntityName) {
-    if (typeName.kind !== ts.SyntaxKind.Identifier) {
-      this.visit(typeName);
-      return;
-    }
-    var identifier = ident(typeName);
-    if (TranspilerBase.TS_TO_DART_TYPENAMES.hasOwnProperty(identifier)) {
-      identifier = TranspilerBase.TS_TO_DART_TYPENAMES[identifier];
-    }
-    this.emit(identifier);
-  }
-
   maybeVisitTypeArguments(n: {typeArguments?: ts.NodeArray<ts.TypeNode>}) {
     if (n.typeArguments) {
       this.emit('<');

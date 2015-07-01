@@ -6,13 +6,6 @@ describe('types', () => {
      () => { expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
   it('drops type literals',
      () => { expectTranslate('var x: {x: string, y: number};').to.equal(' dynamic x ;'); });
-  it('substitutes Dart-ism', () => {
-    expectTranslate('import {Promise} from "./somewhere"; var p: Promise<Date>;')
-        .to.equal(' import "somewhere.dart" show Future ; Future < DateTime > p ;');
-    expectTranslate('import Promise = require("./somewhere");')
-        .to.equal(' import "somewhere.dart" as Future ;');
-    expectTranslate('x instanceof Promise;').to.equal(' x is Future ;');
-  });
   it('allows typecasts',
      () => { expectTranslate('<MyType>ref').to.equal(' ( ref as MyType ) ;'); });
   it('does not mangle prototype names', () => {

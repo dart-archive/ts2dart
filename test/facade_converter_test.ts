@@ -25,9 +25,11 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
     'angular2/src/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
+    'angular2/src/facade/async.d.ts': `
+        export declare var Promise = (<any>global).Promise;
+        export declare class Observable {};`,
     'angular2/src/facade/collection.d.ts': `
-        export declare var Map: typeof Map;
-    `,
+        export declare var Map: typeof Map;`,
     'angular2/src/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
         export declare function CONST_EXPR<T>(x: T): T;`,
@@ -55,6 +57,16 @@ function expectErroneousWithType(str: string) {
 }
 
 describe('type based translation', () => {
+  it('substitutes Dart types', () => {
+    expectWithTypes(
+        'import {Promise, Observable} from "angular2/src/facade/async"; var p: Promise<Date>;')
+        .to.equal(
+            ' import "package:angular2/src/facade/async.dart" show Future , Stream ; Future < DateTime > p ;');
+    expectWithTypes('import {Promise} from "angular2/src/facade/async"; x instanceof Promise;')
+        .to.equal(' import "package:angular2/src/facade/async.dart" show Future ; x is Future ;');
+    expectWithTypes('var n: Node;').to.equal(' dynamic n ;');
+  });
+
   describe('collection façade', () => {
     it('translates array operations to dartisms', () => {
       expectWithTypes('var x: Array<number> = []; x.push(1); x.pop();')

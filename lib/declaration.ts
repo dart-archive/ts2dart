@@ -2,9 +2,10 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from './facade_converter';
 
 class DeclarationTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -61,7 +62,7 @@ class DeclarationTranspiler extends base.TranspilerBase {
           this.reportError(node, 'const enums are not supported');
         }
         this.emit('enum');
-        this.visitTypeName(decl.name);
+        this.fc.visitTypeName(decl.name);
         this.emit('{');
         // Enums can be empty in TS ...
         if (decl.members.length === 0) {
@@ -318,7 +319,7 @@ class DeclarationTranspiler extends base.TranspilerBase {
   private visitClassLike(keyword: string, decl: base.ClassLike) {
     this.visitDecorators(decl.decorators);
     this.emit(keyword);
-    this.visitTypeName(decl.name);
+    this.fc.visitTypeName(decl.name);
     if (decl.typeParameters) {
       this.emit('<');
       this.visitList(decl.typeParameters);
@@ -357,7 +358,7 @@ class DeclarationTranspiler extends base.TranspilerBase {
     // Generate a constructor to host the const modifier, if needed
     if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
       this.emit("const");
-      this.visitTypeName(decl.name);
+      this.fc.visitTypeName(decl.name);
       this.emit("();")
     }
     this.emit('}');

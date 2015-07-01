@@ -1,5 +1,6 @@
 require('source-map-support').install();
 
+var clangFormat = require('clang-format');
 var formatter = require('gulp-clang-format');
 var fs = require('fs');
 var fsx = require('fs-extra');
@@ -28,7 +29,7 @@ var tsProject = ts.createProject(TSC_OPTIONS);
 
 gulp.task('test.check-format', function() {
   return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
-      .pipe(formatter.checkFormat('file'))
+      .pipe(formatter.checkFormat('file', clangFormat))
       .on('warning', onError);
 });
 

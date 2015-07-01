@@ -98,7 +98,7 @@ class LiteralTranspiler extends base.TranspilerBase {
         var regExp = (<ts.LiteralExpression>node).text;
         var slashIdx = regExp.lastIndexOf('/');
         var flags = regExp.substring(slashIdx + 1);
-        regExp = regExp.substring(1, slashIdx);  // cut off /.../ chars.
+        regExp = regExp.substring(1, slashIdx);            // cut off /.../ chars.
         regExp = regExp.replace(/'/g, '\' + "\'" + r\'');  // handle nested quotes by concatenation.
         this.emitNoSpace(regExp);
         this.emitNoSpace('\'');

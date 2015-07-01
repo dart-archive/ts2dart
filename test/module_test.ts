@@ -2,6 +2,7 @@
 import chai = require('chai');
 import main = require('../lib/main');
 import ModuleTranspiler from '../lib/module';
+import {FacadeConverter} from '../lib/facade_converter';
 
 import {expectTranslate, expectErroneousCode, translateSources} from './test_support';
 
@@ -57,7 +58,7 @@ describe('library name', () => {
   var modTranspiler: ModuleTranspiler;
   beforeEach(() => {
     transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: '/a'});
-    modTranspiler = new ModuleTranspiler(transpiler, true);
+    modTranspiler = new ModuleTranspiler(transpiler, new FacadeConverter(transpiler), true);
   });
   it('adds a library name', () => {
     var results = translateSources({'/a/b/c.ts': 'var x;'},

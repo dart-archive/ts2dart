@@ -2,9 +2,10 @@
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');
+import {FacadeConverter} from './facade_converter';
 
 class TypeTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -19,7 +20,7 @@ class TypeTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.TypeReference:
         var typeRef = <ts.TypeReferenceNode>node;
-        this.visitTypeName(typeRef.typeName);
+        this.fc.visitTypeName(typeRef.typeName);
         this.maybeVisitTypeArguments(typeRef);
         break;
       case ts.SyntaxKind.TypeAssertionExpression:

@@ -107,7 +107,7 @@ class LiteralTranspiler extends base.TranspilerBase {
           this.reportError(node, 'Regular Expressions must use the //g flag');
         }
         if (flags.indexOf('m') !== -1) {
-          this.emit(', multiline: true');
+          this.emit(', multiLine: true');
         }
         if (flags.indexOf('i') !== -1) {
           this.emit(', caseSensitive: false');

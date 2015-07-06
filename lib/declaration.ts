@@ -299,13 +299,19 @@ class DeclarationTranspiler extends base.TranspilerBase {
                         isParameter: boolean = false) {
     if (!isParameter) this.visitDeclarationMetadata(decl);
     var containingClass = <base.ClassLike>(isParameter ? decl.parent.parent : decl.parent);
-    var hasConstCtor = this.isConst(containingClass);
-    if (hasConstCtor) {
-      this.emit('final');
+    var isConstField = this.hasAnnotation(decl.decorators, 'CONST');
+    if (isConstField) {
+      // const implies final
+      this.emit('const');
+    } else {
+      var hasConstCtor = this.isConst(containingClass);
+      if (hasConstCtor) {
+        this.emit('final');
+      }
     }
     if (decl.type) {
       this.visit(decl.type);
-    } else if (!hasConstCtor) {
+    } else if (!isConstField && !hasConstCtor) {
       this.emit('var');
     }
     this.visit(decl.name);

@@ -28,6 +28,8 @@ describe('decorators', () => {
         .to.equal(' class X {' +
                   ' final num x ; final y ;' +
                   ' const X ( ) : x = 1 , y = 2 , super ( 3 ) ; }');
+
+    // @CONST constructors.
     expectTranslate('@CONST class X { constructor() {} }').to.equal(' class X { const X ( ) ; }');
     // For backwards-compatibility for traceur inputs (not valid TS input)
     expectTranslate('class X { @CONST constructor() {} }').to.equal(' class X { const X ( ) ; }');
@@ -41,6 +43,10 @@ describe('decorators', () => {
         .to.throw('assignments in const constructors must assign into this.');
     expectErroneousCode('class X { @CONST constructor() { thax = 1; } }')
         .to.throw('assignments in const constructors must assign into this.');
+
+    // @CONST properties.
+    expectTranslate('class Foo { @CONST() static foo = 1; }')
+        .to.equal(' class Foo { static const foo = 1 ; }');
   });
   it('special cases @ABSTRACT',
      () => { expectTranslate('@ABSTRACT class X {}').to.equal(' abstract class X { }'); });

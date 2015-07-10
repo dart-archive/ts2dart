@@ -153,7 +153,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
         // Property parameters will have an explicit property declaration, so we just
         // need the dart assignment shorthand to reference the property.
         if (this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Public) ||
-            this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Private)) {
+            this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Private) ||
+            this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Protected)) {
           this.emit('this .');
           this.visit(paramDecl.name);
           if (paramDecl.initializer) {
@@ -351,7 +352,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
     // Synthesize explicit properties for ctor with 'property parameters'
     let synthesizePropertyParam = (param: ts.ParameterDeclaration) => {
       if (this.hasFlag(param.modifiers, ts.NodeFlags.Public) ||
-          this.hasFlag(param.modifiers, ts.NodeFlags.Private)) {
+          this.hasFlag(param.modifiers, ts.NodeFlags.Private) ||
+          this.hasFlag(param.modifiers, ts.NodeFlags.Protected)) {
         // TODO: we should enforce the underscore prefix on privates
         this.visitProperty(param, true);
       }

@@ -103,11 +103,13 @@ describe('classes', () => {
     });
     it('supports parameter properties', () => {
       expectTranslate(
-          'class X { c: number; constructor(private bar: B, public foo: string = "hello") {} }')
+          'class X { c: number; constructor(private bar: B, public foo: string = "hello", protected goggles: boolean = true) {} }')
           .to.equal(
-              ' class X { B bar ; String foo ; num c ; X ( this . bar , [ this . foo = \"hello\" ] ) { } }');
-      expectTranslate('@CONST class X { constructor(public foo: string, b: number) {} }')
-          .to.equal(' class X { final String foo ; const X ( this . foo , num b ) ; }');
+              ' class X { B bar ; String foo ; bool goggles ; num c ; X ( this . bar , [ this . foo = \"hello\" , this . goggles = true ] ) { } }');
+      expectTranslate(
+          '@CONST class X { constructor(public foo: string, b: number, protected marbles: boolean = true) {} }')
+          .to.equal(
+              ' class X { final String foo ; final bool marbles ; const X ( this . foo , num b , [ this . marbles = true ] ) ; }');
     });
   });
 });

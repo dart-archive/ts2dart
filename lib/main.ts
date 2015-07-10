@@ -45,6 +45,7 @@ export interface TranspilerOptions {
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
   allowNonTsExtensions: true,
+  experimentalDecorators: true,
   module: ts.ModuleKind.CommonJS,
   target: ts.ScriptTarget.ES5,
 };

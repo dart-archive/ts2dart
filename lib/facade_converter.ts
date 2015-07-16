@@ -88,6 +88,36 @@ export class FacadeConverter extends base.TranspilerBase {
     return handler && !handler(pa);
   }
 
+  buildImports(sourceFile: ts.SourceFile) {
+    var imports: {[type: string]: boolean} = {};
+
+    function getNodes(sourceFile: ts.SourceFile): ts.Node[] {
+      var nodes: ts.Node[] = [];
+      function allNodes(n: ts.Node){ts.forEachChild(n, n => {
+        nodes.push(n);
+        allNodes(n);
+        return false;
+      })};
+      allNodes(sourceFile);
+      return nodes;
+    }
+
+    var types = getNodes(sourceFile)
+                    .filter(n => n.kind === ts.SyntaxKind.TypeReference)
+                    .map(n => base.ident((<ts.TypeReferenceNode>n).typeName));
+
+
+    for (var iType in types) {
+      var type = types[iType];
+      if (this.TS_TO_DART_TYPE_IMPORTS[type]) {
+        imports[this.TS_TO_DART_TYPE_IMPORTS[type]] = true;
+      }
+    }
+    for (var imp in imports) {
+      this.emit('import "' + imp + '";');
+    }
+  }
+
   visitTypeName(typeName: ts.EntityName) {
     if (typeName.kind !== ts.SyntaxKind.Identifier) {
       this.visit(typeName);
@@ -198,6 +228,8 @@ export class FacadeConverter extends base.TranspilerBase {
     'History': 'dynamic',
     'Location': 'dynamic',
   };
+
+  private TS_TO_DART_TYPE_IMPORTS: ts.Map<string> = {'XMLHttpRequest': 'dart:html'};
 
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,

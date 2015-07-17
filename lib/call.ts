@@ -46,10 +46,13 @@ class CallTranspiler extends base.TranspilerBase {
 
   private visitCall(c: ts.CallExpression) {
     this.visit(c.expression);
-    if (c.typeArguments && c.kind !== ts.SyntaxKind.NewExpression) {
-      this.reportError(c, 'Type arguments are only supported on new calls.');
+    // Type arguments on methods are ignored. Dart doesn't support
+    // generic methods, and while we don't allow them to be declared
+    // in ts2dart, it's possible the method being called is not
+    // transpiled by ts2dart.
+    if (c.typeArguments && c.kind === ts.SyntaxKind.NewExpression) {
+      this.maybeVisitTypeArguments(c);
     }
-    this.maybeVisitTypeArguments(c);
     this.emit('(');
     if (!this.handleNamedParamsCall(c)) {
       this.visitList(c.arguments);

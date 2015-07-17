@@ -30,6 +30,8 @@ describe('calls', () => {
     expectTranslate('new Foo<number, string>(1, 2);')
         .to.equal(' new Foo < num , String > ( 1 , 2 ) ;');
   });
+  it('throws away generic type parameters',
+     () => { expectTranslate('var s = foo<string>();').to.equal(' var s = foo ( ) ;'); });
   it('translates "super()" constructor calls', () => {
     expectTranslate('class X { constructor() { super(1); } }')
         .to.equal(' class X { X ( ) : super ( 1 ) { /* super call moved to initializer */ ; } }');

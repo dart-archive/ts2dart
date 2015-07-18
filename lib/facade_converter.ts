@@ -88,6 +88,34 @@ export class FacadeConverter extends base.TranspilerBase {
     return handler && !handler(pa);
   }
 
+  extraImports(sourceFile: ts.SourceFile) {
+    var breakException = {};
+
+    function maybeEmitDartHtmlImport(sourceFile: ts.SourceFile, fc: FacadeConverter) {
+      function allNodes(n: ts.Node, fc: FacadeConverter) {
+        ts.forEachChild(n, n => {
+          if (n.kind === ts.SyntaxKind.TypeReference) {
+            var type: string = base.ident((<ts.TypeReferenceNode>n).typeName);
+            if (fc.DART_HTML_IMPORT_TYPES[type]) {
+              fc.emit('import "dart:html";');
+              throw breakException;
+            }
+          }
+          allNodes(n, fc);
+        });
+      };
+      allNodes(sourceFile, fc);
+    }
+
+    try {
+      maybeEmitDartHtmlImport(sourceFile, this);
+    } catch (e) {
+      if (e !== breakException) {
+        throw e;
+      }
+    }
+  }
+
   visitTypeName(typeName: ts.EntityName) {
     if (typeName.kind !== ts.SyntaxKind.Identifier) {
       this.visit(typeName);
@@ -198,6 +226,8 @@ export class FacadeConverter extends base.TranspilerBase {
     'History': 'dynamic',
     'Location': 'dynamic',
   };
+
+  private DART_HTML_IMPORT_TYPES: ts.Map<boolean> = {'XMLHttpRequest': true};
 
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,

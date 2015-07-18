@@ -18,6 +18,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
           this.emit(this.getLibraryName());
           this.emit(';');
         }
+        this.fc.extraImports(<ts.SourceFile>node);
         ts.forEachChild(node, this.visit.bind(this));
         break;
       case ts.SyntaxKind.EndOfFileToken:

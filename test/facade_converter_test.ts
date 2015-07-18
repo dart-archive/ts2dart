@@ -67,6 +67,8 @@ describe('type based translation', () => {
       expectWithTypes('import {Promise} from "angular2/src/facade/async"; x instanceof Promise;')
           .to.equal(' import "package:angular2/src/facade/async.dart" show Future ; x is Future ;');
       expectWithTypes('var n: Node;').to.equal(' dynamic n ;');
+      expectWithTypes('var _xhr: XMLHttpRequest;')
+          .to.equal(' import "dart:html"; HttpRequest _xhr ;');
     });
 
     it('allows undeclared types',

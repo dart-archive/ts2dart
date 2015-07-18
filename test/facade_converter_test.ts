@@ -94,6 +94,10 @@ describe('type based translation', () => {
       expectWithTypes('var x: Array<number> = []; x.concat([1], x);')
           .to.equal(
               ' List < num > x = [ ] ; new List . from ( x ) .. addAll ( [ 1 ] ) .. addAll ( x ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.slice(0);')
+          .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.slice ( x , 0 ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.splice(0,1);')
+          .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.splice ( x , 0 , 1 ) ;');
     });
 
     it('translates map operations to dartisms', () => {

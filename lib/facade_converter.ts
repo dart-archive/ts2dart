@@ -88,33 +88,31 @@ export class FacadeConverter extends base.TranspilerBase {
     return handler && !handler(pa);
   }
 
-  buildImports(sourceFile: ts.SourceFile) {
-    var imports: {[type: string]: boolean} = {};
+  extraImports(sourceFile: ts.SourceFile) {
+    var breakException = {};
 
-    function getNodes(sourceFile: ts.SourceFile): ts.Node[] {
-      var nodes: ts.Node[] = [];
-      function allNodes(n: ts.Node){ts.forEachChild(n, n => {
-        nodes.push(n);
-        allNodes(n);
-        return false;
-      })};
-      allNodes(sourceFile);
-      return nodes;
+    function maybeEmitDartHtmlImport(sourceFile: ts.SourceFile, fc: FacadeConverter) {
+      function allNodes(n: ts.Node, fc: FacadeConverter) {
+        ts.forEachChild(n, n => {
+          if (n.kind === ts.SyntaxKind.TypeReference) {
+            var type: string = base.ident((<ts.TypeReferenceNode>n).typeName);
+            if (fc.DART_HTML_IMPORT_TYPES[type]) {
+              fc.emit('import "dart:html";');
+              throw breakException;
+            }
+          }
+          allNodes(n, fc);
+        });
+      };
+      allNodes(sourceFile, fc);
     }
 
-    var types = getNodes(sourceFile)
-                    .filter(n => n.kind === ts.SyntaxKind.TypeReference)
-                    .map(n => base.ident((<ts.TypeReferenceNode>n).typeName));
-
-
-    for (var iType in types) {
-      var type = types[iType];
-      if (this.TS_TO_DART_TYPE_IMPORTS[type]) {
-        imports[this.TS_TO_DART_TYPE_IMPORTS[type]] = true;
+    try {
+      maybeEmitDartHtmlImport(sourceFile, this);
+    } catch (e) {
+      if (e !== breakException) {
+        throw e;
       }
-    }
-    for (var imp in imports) {
-      this.emit('import "' + imp + '";');
     }
   }
 
@@ -229,7 +227,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'Location': 'dynamic',
   };
 
-  private TS_TO_DART_TYPE_IMPORTS: ts.Map<string> = {'XMLHttpRequest': 'dart:html'};
+  private DART_HTML_IMPORT_TYPES: ts.Map<boolean> = {'XMLHttpRequest': true};
 
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,

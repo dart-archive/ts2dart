@@ -171,8 +171,12 @@ export class FacadeConverter extends base.TranspilerBase {
     return node && base.ident(node.expression) === 'CONST_EXPR';
   }
 
-  private emitCall(name: string, args?: ts.Expression[]) {
+  private emitMethodCall(name: string, args?: ts.Expression[]) {
     this.emit('.');
+    this.emitCall(name, args);
+  }
+
+  private emitCall(name: string, args?: ts.Expression[]) {
     this.emit(name);
     this.emit('(');
     if (args) this.visitList(args);
@@ -212,11 +216,11 @@ export class FacadeConverter extends base.TranspilerBase {
   private stdlibHandlers: ts.Map<CallHandler> = {
     'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitCall('add', c.arguments);
+      this.emitMethodCall('add', c.arguments);
     },
     'Array.pop': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitCall('removeLast');
+      this.emitMethodCall('removeLast');
     },
     'Array.shift': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
@@ -237,8 +241,8 @@ export class FacadeConverter extends base.TranspilerBase {
     },
     'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitCall('map', c.arguments);
-      this.emitCall('toList');
+      this.emitMethodCall('map', c.arguments);
+      this.emitMethodCall('toList');
     },
     'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
       this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
@@ -268,12 +272,12 @@ export class FacadeConverter extends base.TranspilerBase {
     },
     'RegExp.test': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitCall('hasMatch', c.arguments);
+      this.emitMethodCall('hasMatch', c.arguments);
     },
     'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitCall('allMatches', c.arguments);
-      this.emitCall('toList');
+      this.emitMethodCall('allMatches', c.arguments);
+      this.emitMethodCall('toList');
     },
   };
 
@@ -313,7 +317,7 @@ export class FacadeConverter extends base.TranspilerBase {
       },
       'Map.has': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
-        this.emitCall('containsKey', c.arguments);
+        this.emitMethodCall('containsKey', c.arguments);
       },
       'Map.delete': (c: ts.CallExpression, context: ts.Expression) => {
         // JS Map.delete(k) returns whether k was present in the map,
@@ -323,10 +327,10 @@ export class FacadeConverter extends base.TranspilerBase {
         // when Map.containsKey(k)
         this.emit('(');
         this.visit(context);
-        this.emitCall('containsKey', c.arguments);
+        this.emitMethodCall('containsKey', c.arguments);
         this.emit('&& (');
         this.visit(context);
-        this.emitCall('remove', c.arguments);
+        this.emitMethodCall('remove', c.arguments);
         this.emit('!= null || true ) )');
       },
     },

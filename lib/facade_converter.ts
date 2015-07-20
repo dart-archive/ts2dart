@@ -92,8 +92,6 @@ export class FacadeConverter extends base.TranspilerBase {
    * Searches for type references that require extra imports and emits the imports as necessary.
    */
   emitExtraImports(sourceFile: ts.SourceFile) {
-    var breakException = {};
-
     var hasXmlHttpRequest = (n: ts.Node): boolean => {
       if (n.kind === ts.SyntaxKind.TypeReference) {
         var type = base.ident((<ts.TypeReferenceNode>n).typeName);

@@ -370,7 +370,7 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visitList(c.arguments);
       },
       'normalizeBlank': (c: ts.CallExpression, context: ts.Expression) => {
-        // normalizeBlank is a noop in Dart, so erase it
+        // normalizeBlank is a noop in Dart, so erase it.
         this.visitList(c.arguments);
       }
     },

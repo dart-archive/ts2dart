@@ -105,6 +105,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
     switch (name) {
       case 'CONST':
       case 'CONST_EXPR':
+      case 'normalizeBlank':
       case 'forwardRef':
       case 'ABSTRACT':
       case 'IMPLEMENTS':

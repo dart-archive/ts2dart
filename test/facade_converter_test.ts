@@ -32,7 +32,8 @@ function getSources(str: string): {[k: string]: string} {
         export declare var Map: typeof Map;`,
     'angular2/src/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
-        export declare function CONST_EXPR<T>(x: T): T;`,
+        export declare function CONST_EXPR<T>(x: T): T;
+        export declare var normalizeBlank: (x: Object) => any;`,
     'other/file.ts': `
         export class X {
           map(x: number): string { return String(x); }
@@ -155,6 +156,12 @@ describe('type based translation', () => {
       expectErroneousWithType('import {forwardRef} from "angular2/src/di/forward_ref";\n' +
                               'forwardRef(1)')
           .to.throw(/only arrow functions/);
+    });
+
+    it('erases calls to normalizeBlank', () => {
+      expectWithTypes('import {normalizeBlank} from "angular2/src/facade/lang";\n' +
+                      'var x = normalizeBlank([]);')
+          .to.equal(' var x = [ ] ;');
     });
   });
 

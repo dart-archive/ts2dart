@@ -369,6 +369,10 @@ export class FacadeConverter extends base.TranspilerBase {
         // `const` keyword is emitted in the array literal handling, as it needs to be transitive.
         this.visitList(c.arguments);
       },
+      'normalizeBlank': (c: ts.CallExpression, context: ts.Expression) => {
+        // normalizeBlank is a noop in Dart, so erase it
+        this.visitList(c.arguments);
+      }
     },
   };
 

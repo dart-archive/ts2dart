@@ -245,7 +245,7 @@ export class Transpiler {
         this.lastCommentIdx = c.pos;
         var text = this.currentFile.text.substring(c.pos, c.end);
         this.emitNoSpace('\n');
-        this.emit(text);
+        this.emit(this.translateComment(text));
         if (c.hasTrailingNewLine) this.emitNoSpace('\n');
       });
     }
@@ -259,6 +259,10 @@ export class Transpiler {
   }
 
   private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
+
+  private translateComment(comment: string): string {
+    return comment.replace(/\{@link ([^\}]+)\}/g, '[$1]');
+  }
 }
 
 class Output {

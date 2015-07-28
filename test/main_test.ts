@@ -18,6 +18,10 @@ describe('main transpiler functionality', () => {
       expectTranslate('/** A */ class A {\n /** ctor */ constructor() {}}')
           .to.equal('\n /** A */ class A {\n /** ctor */ A ( ) { } }');
     });
+    it('translates links to dart doc format', () => {
+      expectTranslate('/** {@link this/place} */ a').to.equal('\n /** [this/place] */ a ;');
+      expectTranslate('/* {@link 1} {@link 2} */ a').to.equal('\n /* [1] [2] */ a ;');
+    });
   });
 
   describe('errors', () => {

@@ -1,4 +1,5 @@
 language: dart # NodeJS is available everywhere
+sudo: false
 node_js:
   - "stable"
 before_script:

@@ -225,8 +225,9 @@ export class FacadeConverter extends base.TranspilerBase {
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,
     'lib.es6': this.stdlibTypeReplacements,
+    'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/src/facade/async':
-        {'Promise': 'Future', 'Observable': 'Stream', 'ObservableController': 'StreamController'},
+        {'Observable': 'Stream', 'ObservableController': 'StreamController'},
     'angular2/src/facade/collection': {'StringMap': 'Map'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
     'angular2/globals': {'StringMap': 'Map'},

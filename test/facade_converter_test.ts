@@ -25,8 +25,10 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
     'angular2/src/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
+    'angular2/typings/es6-promise/es6-promise.d.ts': `
+        declare class Promise<R> {}`,
     'angular2/src/facade/async.d.ts': `
-        export declare var Promise = (<any>global).Promise;
+        export {Promise};
         export declare class Observable {};`,
     'angular2/src/facade/collection.d.ts': `
         export declare var Map: typeof Map;`,

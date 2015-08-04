@@ -11,6 +11,7 @@ var traceurRuntimeDeclarations = `
       set(key: K, value: V): Map<K, V>;
       size: number;
       delete(key: K): boolean;
+      forEach(callbackfn: (value: V, index: K, map: Map<K, V>) => void, thisArg?: any): void;
     }
     declare var Map: {
       new<K, V>(): Map<any, any>;
@@ -113,6 +114,16 @@ describe('type based translation', () => {
       expectWithTypes('var x = new Map<string, string>(); x.delete("k");')
           .to.equal(' var x = new Map < String , String > ( ) ; ' +
                     '( x . containsKey ( "k" ) && ( x . remove ( "k" ) != null || true ) ) ;');
+      expectWithTypes('var x = new Map<string, string>(); x.forEach((v, k) => null);')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) => null ) ;');
+      expectWithTypes(
+          'var x = new Map<string, string>(); x.forEach(function (v, k) { return null; });')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) { return null ; } ) ;');
+      expectWithTypes('var x = new Map<string, string>(); x.forEach(fn);')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) => ( fn ) ( v , k ) ) ;');
     });
 
     it('translates map properties to dartisms', () => {
@@ -172,6 +183,13 @@ describe('type based translation', () => {
   });
 
   describe('error detection', () => {
+    describe('Map', () => {
+      it('.forEach() should report an error when the callback doesn\'t have 2 args', () => {
+        expectErroneousWithType('var x = new Map<string, string>(); x.forEach((v, k, m) => null);')
+            .to.throw('Map.forEach callback requires exactly two arguments');
+      });
+    });
+
     describe('Array', () => {
       it('.concat() should report an error if any arg is not an Array', () => {
         expectErroneousWithType('var x: Array<number> = []; x.concat(1);')

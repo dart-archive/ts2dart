@@ -353,6 +353,53 @@ export class FacadeConverter extends base.TranspilerBase {
         this.emitMethodCall('remove', c.arguments);
         this.emit('!= null || true ) )');
       },
+      'Map.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+        let cb: any;
+        let params: any;
+
+        switch (c.arguments[0].kind) {
+          case ts.SyntaxKind.FunctionExpression:
+            cb = <ts.FunctionExpression>(c.arguments[0]);
+            params = cb.parameters;
+            if (params.length != 2) {
+              this.reportError(c, 'Map.forEach callback requires exactly two arguments');
+              return;
+            }
+            this.visit(context);
+            this.emit('. forEach ( (');
+            this.visit(params[1]);
+            this.emit(',');
+            this.visit(params[0]);
+            this.emit(')');
+            this.visit(cb.body);
+            this.emit(')');
+            break;
+
+          case ts.SyntaxKind.ArrowFunction:
+            cb = <ts.ArrowFunction>(c.arguments[0]);
+            params = cb.parameters;
+            if (params.length != 2) {
+              this.reportError(c, 'Map.forEach callback requires exactly two arguments');
+              return;
+            }
+            this.visit(context);
+            this.emit('. forEach ( (');
+            this.visit(params[1]);
+            this.emit(',');
+            this.visit(params[0]);
+            this.emit(') =>');
+            this.visit(cb.body);
+            this.emit(')');
+            break;
+
+          default:
+            this.visit(context);
+            this.emit('. forEach ( ( k , v ) => (');
+            this.visit(c.arguments[0]);
+            this.emit(') ( v , k ) )');
+            break;
+        }
+      },
     },
     'angular2/src/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {

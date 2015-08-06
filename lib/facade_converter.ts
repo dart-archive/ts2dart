@@ -283,6 +283,31 @@ export class FacadeConverter extends base.TranspilerBase {
         this.emit(')');
       });
     },
+    'Array.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+      let cb: any;
+      let params: any[];
+
+      switch (c.arguments[0].kind) {
+        case ts.SyntaxKind.FunctionExpression:
+          cb = <ts.FunctionExpression>(c.arguments[0]);
+          params = cb.parameters;
+          if (params.length != 1) {
+            this.reportError(c, 'Array.forEach callback requires exactly one argument');
+          }
+          break;
+
+        case ts.SyntaxKind.ArrowFunction:
+          cb = <ts.ArrowFunction>(c.arguments[0]);
+          params = cb.parameters;
+          if (params.length != 1) {
+            this.reportError(c, 'Array.forEach callback requires exactly one argument');
+          }
+          break;
+      }
+
+      this.visit(context);
+      this.emitMethodCall('forEach', c.arguments);
+    },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');
       this.visitList(c.arguments);  // Should only be 1.
@@ -355,7 +380,7 @@ export class FacadeConverter extends base.TranspilerBase {
       },
       'Map.forEach': (c: ts.CallExpression, context: ts.Expression) => {
         let cb: any;
-        let params: any;
+        let params: any[];
 
         switch (c.arguments[0].kind) {
           case ts.SyntaxKind.FunctionExpression:

@@ -102,6 +102,8 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.slice ( x , 0 ) ;');
       expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.splice(0,1);')
           .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.splice ( x , 0 , 1 ) ;');
+      expectWithTypes('var x: Array<number> = []; x.forEach(item => log(item));')
+          .to.equal(' List < num > x = [ ] ; x . forEach ( ( item ) => log ( item ) ) ;');
     });
 
     it('translates map operations to dartisms', () => {
@@ -194,6 +196,11 @@ describe('type based translation', () => {
       it('.concat() should report an error if any arg is not an Array', () => {
         expectErroneousWithType('var x: Array<number> = []; x.concat(1);')
             .to.throw('Array.concat only takes Array arguments');
+      });
+
+      it('.forEach() should report an error when the callback doesn\'t have 1 arg', () => {
+        expectErroneousWithType('var x: Array<number> = []; x.forEach((item, idx, arr) => null);')
+            .to.throw('Array.forEach callback requires exactly one argument');
       });
     });
 

@@ -71,8 +71,12 @@ describe('type based translation', () => {
       expectWithTypes('import {Promise} from "angular2/src/facade/async"; x instanceof Promise;')
           .to.equal(' import "package:angular2/src/facade/async.dart" show Future ; x is Future ;');
       expectWithTypes('var n: Node;').to.equal(' dynamic n ;');
-      expectWithTypes('var _xhr: XMLHttpRequest;')
-          .to.equal(' import "dart:html"; HttpRequest _xhr ;');
+      expectWithTypes('var xhr: XMLHttpRequest;')
+          .to.equal(' import "dart:html"; HttpRequest xhr ;');
+      expectWithTypes('var intArray: Uint8Array;')
+          .to.equal(' import "dart:typed_arrays"; Uint8List intArray ;');
+      expectWithTypes('var buff: ArrayBuffer;')
+          .to.equal(' import "dart:typed_arrays"; ByteBuffer buff ;');
     });
 
     it('allows undeclared types',

@@ -5,6 +5,9 @@ import ts2dart = require('./main');
 
 type CallHandler = (c: ts.CallExpression, context: ts.Expression) => void;
 type PropertyHandler = (c: ts.PropertyAccessExpression) => void;
+type Set = {
+  [s: string]: boolean
+};
 
 const FACADE_DEBUG = false;
 
@@ -91,19 +94,30 @@ export class FacadeConverter extends base.TranspilerBase {
    * Searches for type references that require extra imports and emits the imports as necessary.
    */
   emitExtraImports(sourceFile: ts.SourceFile) {
-    var hasXmlHttpRequest = (n: ts.Node): boolean => {
-      if (n.kind === ts.SyntaxKind.TypeReference) {
-        var type = base.ident((<ts.TypeReferenceNode>n).typeName);
-        if (type === 'XMLHttpRequest') {
-          return true;
+    var libraries = <ts.Map<string>>{
+      "XMLHttpRequest": "dart:html",
+      "Uint8Array": "dart:typed_arrays",
+      "ArrayBuffer": "dart:typed_arrays"
+    };
+    var emitted: Set = {};
+    this.emitImports(sourceFile, libraries, emitted, sourceFile);
+  }
+
+  private emitImports(n: ts.Node, libraries: ts.Map<string>, emitted: Set,
+                      sourceFile: ts.SourceFile): void {
+    if (n.kind === ts.SyntaxKind.TypeReference) {
+      var type = base.ident((<ts.TypeReferenceNode>n).typeName);
+      if (libraries.hasOwnProperty(type)) {
+        var toEmit = libraries[type];
+        if (!emitted[toEmit]) {
+          this.emit(`import "${toEmit}";`);
+          emitted[toEmit] = true;
         }
       }
-      return n.getChildren(sourceFile).some(hasXmlHttpRequest);
-    };
-
-    if (hasXmlHttpRequest(sourceFile)) {
-      this.emit('import "dart:html";');
     }
+
+    n.getChildren(sourceFile)
+        .forEach((n: ts.Node) => this.emitImports(n, libraries, emitted, sourceFile));
   }
 
   visitTypeName(typeName: ts.EntityName) {
@@ -209,6 +223,8 @@ export class FacadeConverter extends base.TranspilerBase {
     'Date': 'DateTime',
     'Array': 'List',
     'XMLHttpRequest': 'HttpRequest',
+    'Uint8Array': 'Uint8List',
+    'ArrayBuffer': 'ByteBuffer',
 
     // Dart has two different incompatible DOM APIs
     // https://github.com/angular/angular/issues/2770

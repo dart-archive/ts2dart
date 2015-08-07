@@ -46,4 +46,6 @@ describe('calls', () => {
     expectTranslate('class X { y() { super.z(1); } }')
         .to.equal(' class X { y ( ) { super . z ( 1 ) ; } }');
   });
+  it('transpiles new calls without arguments',
+     () => { expectTranslate('new Foo;').to.equal(' new Foo ( ) ;'); });
 });

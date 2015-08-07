@@ -54,7 +54,7 @@ class CallTranspiler extends base.TranspilerBase {
       this.maybeVisitTypeArguments(c);
     }
     this.emit('(');
-    if (!this.handleNamedParamsCall(c)) {
+    if (c.arguments && !this.handleNamedParamsCall(c)) {
       this.visitList(c.arguments);
     }
     this.emit(')');

@@ -15,13 +15,12 @@ export class FacadeConverter extends base.TranspilerBase {
 
   constructor(transpiler: ts2dart.Transpiler) {
     super(transpiler);
-    this.extractPropertyNames(this.callHandlers);
-    this.extractPropertyNames(this.propertyHandlers);
+    this.extractPropertyNames(this.callHandlers, this.candidateProperties);
+    this.extractPropertyNames(this.propertyHandlers, this.candidateProperties);
     this.extractPropertyNames(this.TS_TO_DART_TYPENAMES, this.candidateTypes);
   }
 
-  private extractPropertyNames(m: ts.Map<ts.Map<any>>,
-                               candidates: {[k: string]: boolean} = this.candidateProperties) {
+  private extractPropertyNames(m: ts.Map<ts.Map<any>>, candidates: {[k: string]: boolean}) {
     for (var fileName in m) {
       Object.keys(m[fileName])
           .filter((k) => m[fileName].hasOwnProperty(k))

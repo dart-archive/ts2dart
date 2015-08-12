@@ -69,7 +69,7 @@ export class FacadeConverter extends base.TranspilerBase {
       return false;
     }
 
-    var handler = this.getHandler(symbol, this.callHandlers);
+    var handler = this.getHandler(c, symbol, this.callHandlers);
     return handler && !handler(c, context);
   }
 
@@ -83,7 +83,7 @@ export class FacadeConverter extends base.TranspilerBase {
       return false;
     }
 
-    var handler = this.getHandler(symbol, this.propertyHandlers);
+    var handler = this.getHandler(pa, symbol, this.propertyHandlers);
     return handler && !handler(pa);
   }
 
@@ -118,7 +118,7 @@ export class FacadeConverter extends base.TranspilerBase {
         this.reportMissingType(typeName, ident);
         return;
       }
-      let fileAndName = this.getFileAndName(symbol);
+      let fileAndName = this.getFileAndName(typeName, symbol);
       if (fileAndName) {
         var fileSubs = this.TS_TO_DART_TYPENAMES[fileAndName.fileName];
         if (fileSubs && fileSubs.hasOwnProperty(fileAndName.qname)) {
@@ -130,19 +130,23 @@ export class FacadeConverter extends base.TranspilerBase {
     this.emit(ident);
   }
 
-  private getHandler<T>(symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
-    var {fileName, qname} = this.getFileAndName(symbol);
+  private getHandler<T>(n: ts.Node, symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
+    var {fileName, qname} = this.getFileAndName(n, symbol);
     var fileSubs = m[fileName];
     if (!fileSubs) return null;
     return fileSubs[qname];
   }
 
-  private getFileAndName(symbol: ts.Symbol): {fileName: string, qname: string} {
+  private getFileAndName(n: ts.Node, symbol: ts.Symbol): {fileName: string, qname: string} {
     while (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
     let decl = symbol.valueDeclaration;
     if (!decl) {
       // In the case of a pure declaration with no assignment, there is no value declared.
       // Just grab the first declaration, hoping it is declared once.
+      if (!symbol.declarations || symbol.declarations.length === 0) {
+        this.reportError(n, 'no declarations for symbol ' + symbol.name);
+        return;
+      }
       decl = symbol.declarations[0];
     }
 
@@ -165,7 +169,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private isNamedType(node: ts.Node, fileName: string, qname: string): boolean {
     var symbol = this.tc.getTypeAtLocation(node).getSymbol();
     if (!symbol) return false;
-    var actual = this.getFileAndName(symbol);
+    var actual = this.getFileAndName(node, symbol);
     if (fileName === 'lib' && !(actual.fileName === 'lib' || actual.fileName === 'lib.es6')) {
       return false;
     } else {

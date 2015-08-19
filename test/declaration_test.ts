@@ -102,23 +102,27 @@ describe('classes', () => {
       expectTranslate('class X { constructor() { } }').to.equal(' class X { X ( ) { } }');
     });
     it('supports parameter properties', () => {
+      expectTranslate('class X { c: number; \n' +
+                      '  constructor(private bar: B, ' +
+                      'public foo: string = "hello", ' +
+                      'protected goggles: boolean = true) {} }')
+          .to.equal(' class X { B bar ; String foo ; bool goggles ; num c ;' +
+                    ' X ( this . bar , [ this . foo = \"hello\" , this . goggles = true ] ) { } }');
       expectTranslate(
-          'class X { c: number; constructor(private bar: B, public foo: string = "hello", protected goggles: boolean = true) {} }')
-          .to.equal(
-              ' class X { B bar ; String foo ; bool goggles ; num c ; X ( this . bar , [ this . foo = \"hello\" , this . goggles = true ] ) { } }');
-      expectTranslate(
-          '@CONST class X { constructor(public foo: string, b: number, protected marbles: boolean = true) {} }')
-          .to.equal(
-              ' class X { final String foo ; final bool marbles ; const X ( this . foo , num b , [ this . marbles = true ] ) ; }');
+          '@CONST class X { ' +
+          'constructor(public foo: string, b: number, protected marbles: boolean = true) {} }')
+          .to.equal(' class X { final String foo ; final bool marbles ;' +
+                    ' const X ( this . foo , num b , [ this . marbles = true ] ) ; }');
     });
   });
 });
 
 describe('interfaces', () => {
-  it('should translate interfaces',
+  it('translates interfaces to abstract classes',
      () => { expectTranslate('interface X {}').to.equal(' abstract class X { }'); });
-  it('should support extends', () => {
-    expectTranslate('interface X extends Y, Z {}').to.equal(' abstract class X extends Y , Z { }');
+  it('translates interface extends to class implements', () => {
+    expectTranslate('interface X extends Y, Z {}')
+        .to.equal(' abstract class X implements Y , Z { }');
   });
   it('supports abstract methods',
      () => { expectTranslate('interface X { x(); }').to.equal(' abstract class X { x ( ) ; }'); });

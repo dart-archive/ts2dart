@@ -41,7 +41,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.HeritageClause:
         var heritageClause = <ts.HeritageClause>node;
-        if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword) {
+        if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword &&
+            heritageClause.parent.kind != ts.SyntaxKind.InterfaceDeclaration) {
           this.emit('extends');
         } else {
           this.emit('implements');

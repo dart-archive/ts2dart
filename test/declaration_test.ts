@@ -120,13 +120,6 @@ describe('interfaces', () => {
   it('should support extends', () => {
     expectTranslate('interface X extends Y, Z {}').to.equal(' abstract class X extends Y , Z { }');
   });
-  it('should support implements', () => {
-    expectTranslate('class X implements Y, Z {}').to.equal(' class X implements Y , Z { }');
-  });
-  it('should support implements', () => {
-    expectTranslate('class X extends Y implements Z {}')
-        .to.equal(' class X extends Y implements Z { }');
-  });
   it('supports abstract methods',
      () => { expectTranslate('interface X { x(); }').to.equal(' abstract class X { x ( ) ; }'); });
   it('supports interface properties', () => {

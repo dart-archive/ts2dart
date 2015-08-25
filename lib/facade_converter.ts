@@ -420,7 +420,7 @@ export class FacadeConverter extends base.TranspilerBase {
         }
       },
     },
-    'angular2/src/di/forward_ref': {
+    'angular2/src/core/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {
         // The special function forwardRef translates to an unwrapped value in Dart.
         const callback = <ts.FunctionExpression>c.arguments[0];

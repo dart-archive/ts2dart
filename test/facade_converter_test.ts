@@ -24,7 +24,7 @@ var traceurRuntimeDeclarations = `
 function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
     'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
-    'angular2/src/di/forward_ref.d.ts': `
+    'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
         declare class Promise<R> {}`,
@@ -168,11 +168,11 @@ describe('type based translation', () => {
     });
 
     it('translates forwardRef(() => T) to T', () => {
-      expectWithTypes('import {forwardRef} from "angular2/src/di/forward_ref";\n' +
+      expectWithTypes('import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
                       'var SomeType = 1;\n' +
                       'var x = forwardRef(() => SomeType);')
           .to.equal(' var SomeType = 1 ; var x = SomeType ;');
-      expectErroneousWithType('import {forwardRef} from "angular2/src/di/forward_ref";\n' +
+      expectErroneousWithType('import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
                               'forwardRef(1)')
           .to.throw(/only arrow functions/);
     });

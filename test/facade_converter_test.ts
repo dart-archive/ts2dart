@@ -23,7 +23,7 @@ var traceurRuntimeDeclarations = `
 
 function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
-    'angular2/traceur-runtime.d.ts': traceurRuntimeDeclarations,
+    'angular2/manual_typings/traceur-runtime.d.ts': traceurRuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `

@@ -249,7 +249,7 @@ export class FacadeConverter extends base.TranspilerBase {
         {'Observable': 'Stream', 'ObservableController': 'StreamController'},
     'angular2/src/core/facade/collection': {'StringMap': 'Map'},
     'angular2/src/core/facade/lang': {'Date': 'DateTime'},
-    'angular2/globals': {'StringMap': 'Map'},
+    'angular2/manual_typings/globals': {'StringMap': 'Map'},
   };
 
   private stdlibHandlers: ts.Map<CallHandler> = {
@@ -339,7 +339,7 @@ export class FacadeConverter extends base.TranspilerBase {
         return false;
       },
     },
-    'angular2/traceur-runtime': {
+    'angular2/manual_typings/traceur-runtime': {
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
         this.emit('[');
@@ -444,7 +444,7 @@ export class FacadeConverter extends base.TranspilerBase {
   };
 
   private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
-    'angular2/traceur-runtime': {
+    'angular2/manual_typings/traceur-runtime': {
       'Map.size': (p: ts.PropertyAccessExpression) => {
         this.visit(p.expression);
         this.emit('.');

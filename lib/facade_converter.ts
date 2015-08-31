@@ -290,7 +290,7 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emitCall('ListWrapper.splice', [context, ...c.arguments]);
     },
     'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emit('new List . from (');
+      this.emit('( new List . from (');
       this.visit(context);
       this.emit(')');
       c.arguments.forEach(arg => {
@@ -301,6 +301,7 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visit(arg);
         this.emit(')');
       });
+      this.emit(')');
     },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');

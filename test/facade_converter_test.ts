@@ -101,9 +101,9 @@ describe('type based translation', () => {
                     '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
       expectWithTypes('var x: Array<number> = []; x.unshift(1);')
           .to.equal(' List < num > x = [ ] ; ( x .. insert ( 0, 1 ) ) . length ;');
-      expectWithTypes('var x: Array<number> = []; x.concat([1], x);')
+      expectWithTypes('var x: Array<number> = []; x.concat([1], x).length;')
           .to.equal(
-              ' List < num > x = [ ] ; new List . from ( x ) .. addAll ( [ 1 ] ) .. addAll ( x ) ;');
+              ' List < num > x = [ ] ; ( new List . from ( x ) .. addAll ( [ 1 ] ) .. addAll ( x ) ) . length ;');
       expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.slice(0);')
           .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.slice ( x , 0 ) ;');
       expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.splice(0,1);')

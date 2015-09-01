@@ -1,6 +1,6 @@
 {
   "name": "ts2dart",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "description": "Transpile TypeScript code to Dart",
   "main": "build/lib/main.js",
   "directories": {

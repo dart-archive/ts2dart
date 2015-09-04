@@ -156,6 +156,7 @@ class DeclarationTranspiler extends base.TranspilerBase {
         if (this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Public) ||
             this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Private) ||
             this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Protected)) {
+          this.visitDeclarationMetadata(paramDecl);
           this.emit('this .');
           this.visit(paramDecl.name);
           if (paramDecl.initializer) {
@@ -197,6 +198,9 @@ class DeclarationTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.PrivateKeyword:
         // no-op, handled through '_' naming convention in Dart.
+        break;
+      case ts.SyntaxKind.PublicKeyword:
+        // Handled in `visitDeclarationMetadata` below.
         break;
       case ts.SyntaxKind.ProtectedKeyword:
         // Handled in `visitDeclarationMetadata` below.
@@ -422,13 +426,12 @@ class DeclarationTranspiler extends base.TranspilerBase {
     this.visitDecorators(decl.decorators);
     this.visitEachIfPresent(decl.modifiers);
 
-    // Temporarily deactivated to make migration of Angular code base easier.
-    return;
-
     if (this.hasFlag(decl.modifiers, ts.NodeFlags.Protected)) {
       this.reportError(decl, 'protected declarations are unsupported');
       return;
     }
+    // Early return in case this is a decl with no name, such as a constructor
+    if (!decl.name) return;
     var name = base.ident(decl.name);
     if (!name) return;
     var isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);

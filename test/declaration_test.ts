@@ -56,14 +56,16 @@ describe('classes', () => {
       expectTranslate('class X { x: number = 42; }').to.equal(' class X { num x = 42 ; }');
     });
     // TODO(martinprobst): Re-enable once Angular is migrated to TS.
-    it.skip('supports visibility modifiers', () => {
+    it('supports visibility modifiers', () => {
       expectTranslate('class X { private _x; x; }').to.equal(' class X { var _x ; var x ; }');
       expectErroneousCode('class X { private x; }')
+          .to.throw('private members must be prefixed with "_"');
+      expectErroneousCode('class X { constructor (private x) {} }')
           .to.throw('private members must be prefixed with "_"');
       expectErroneousCode('class X { _x; }')
           .to.throw('public members must not be prefixed with "_"');
     });
-    it.skip('does not support protected', () => {
+    it('does not support protected', () => {
       expectErroneousCode('class X { protected x; }')
           .to.throw('protected declarations are unsupported');
     });
@@ -103,16 +105,17 @@ describe('classes', () => {
     });
     it('supports parameter properties', () => {
       expectTranslate('class X { c: number; \n' +
-                      '  constructor(private bar: B, ' +
+                      '  constructor(private _bar: B, ' +
                       'public foo: string = "hello", ' +
-                      'protected goggles: boolean = true) {} }')
-          .to.equal(' class X { B bar ; String foo ; bool goggles ; num c ;' +
-                    ' X ( this . bar , [ this . foo = \"hello\" , this . goggles = true ] ) { } }');
+                      'private _goggles: boolean = true) {} }')
+          .to.equal(
+              ' class X { B _bar ; String foo ; bool _goggles ; num c ;' +
+              ' X ( this . _bar , [ this . foo = \"hello\" , this . _goggles = true ] ) { } }');
       expectTranslate(
           '@CONST class X { ' +
-          'constructor(public foo: string, b: number, protected marbles: boolean = true) {} }')
-          .to.equal(' class X { final String foo ; final bool marbles ;' +
-                    ' const X ( this . foo , num b , [ this . marbles = true ] ) ; }');
+          'constructor(public foo: string, b: number, private _marbles: boolean = true) {} }')
+          .to.equal(' class X { final String foo ; final bool _marbles ;' +
+                    ' const X ( this . foo , num b , [ this . _marbles = true ] ) ; }');
     });
   });
 });

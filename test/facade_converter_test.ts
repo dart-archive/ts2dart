@@ -108,6 +108,10 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.slice ( x , 0 ) ;');
       expectWithTypes('var x: Array<number> = []; var y: Array<number> = x.splice(0,1);')
           .to.equal(' List < num > x = [ ] ; List < num > y = ListWrapper.splice ( x , 0 , 1 ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: string = x.join("-");')
+          .to.equal(' List < num > x = [ ] ; String y = x . join ( "-" ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: string = x.join();')
+          .to.equal(' List < num > x = [ ] ; String y = x . join ( "," ) ;');
     });
 
     it('translates map operations to dartisms', () => {

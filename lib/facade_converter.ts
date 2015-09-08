@@ -303,6 +303,14 @@ export class FacadeConverter extends base.TranspilerBase {
       });
       this.emit(')');
     },
+    'Array.join': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      if (c.arguments.length) {
+        this.emitMethodCall('join', c.arguments);
+      } else {
+        this.emit('. join ( "," )');
+      }
+    },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');
       this.visitList(c.arguments);  // Should only be 1.

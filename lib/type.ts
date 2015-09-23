@@ -1,4 +1,3 @@
-/// <reference path='../node_modules/typescript/bin/typescript.d.ts' />
 import ts = require('typescript');
 import base = require('./base');
 import ts2dart = require('./main');

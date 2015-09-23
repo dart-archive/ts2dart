@@ -1,8 +1,7 @@
 /// <reference path='../typings/fs-extra/fs-extra.d.ts' />
 /// <reference path='../typings/node/node.d.ts' />
 /// <reference path='../typings/source-map/source-map.d.ts' />
-// Use the version of typescript installed by npm.
-/// <reference path='../node_modules/typescript/bin/typescript.d.ts' />
+
 /// <reference path='../typings/minimist/minimist.d.ts' />
 require('source-map-support').install();
 import SourceMap = require('source-map');
@@ -48,6 +47,7 @@ export const COMPILER_OPTIONS: ts.CompilerOptions = {
   experimentalDecorators: true,
   module: ts.ModuleKind.CommonJS,
   target: ts.ScriptTarget.ES5,
+  moduleResolution: ts.ModuleResolutionKind.Classic,
 };
 
 export class Transpiler {
@@ -149,6 +149,8 @@ export class Transpiler {
         return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
+      fileExists: (filename) => fs.existsSync(filename),
+      readFile: (filename) => fs.readFileSync(filename, 'utf-8'),
       getDefaultLibFileName: () => defaultLibFileName,
       useCaseSensitiveFileNames: () => true,
       getCanonicalFileName: (filename) => filename,

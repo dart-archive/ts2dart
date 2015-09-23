@@ -72,6 +72,7 @@ export function translateSources(contents: Input, options: main.TranspilerOption
   } else {
     namesToContent = contents;
   }
+  options.enforceUnderscoreConventions = true;
   var transpiler = new main.Transpiler(options);
   var program = parseFiles(namesToContent);
   return transpiler.translateProgram(program);

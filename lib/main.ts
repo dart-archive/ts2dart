@@ -40,6 +40,10 @@ export interface TranspilerOptions {
    * corresponding methods. Requires type checking.
    */
   translateBuiltins?: boolean;
+  /**
+   * Enforce conventions of public/private keyword and underscore prefix
+   */
+  enforceUnderscoreConventions?: boolean;
 }
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
@@ -66,7 +70,7 @@ export class Transpiler {
     this.fc = new FacadeConverter(this);
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
-      new DeclarationTranspiler(this, this.fc),
+      new DeclarationTranspiler(this, this.fc, options.enforceUnderscoreConventions),
       new ExpressionTranspiler(this, this.fc),
       new LiteralTranspiler(this, this.fc),
       new ModuleTranspiler(this, this.fc, options.generateLibraryName),

@@ -4,7 +4,10 @@ import ts2dart = require('./main');
 import {FacadeConverter} from './facade_converter';
 
 class DeclarationTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
+  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter,
+              private enforceUnderscoreConventions: boolean) {
+    super(tr);
+  }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -429,6 +432,7 @@ class DeclarationTranspiler extends base.TranspilerBase {
       this.reportError(decl, 'protected declarations are unsupported');
       return;
     }
+    if (!this.enforceUnderscoreConventions) return;
     // Early return in case this is a decl with no name, such as a constructor
     if (!decl.name) return;
     var name = base.ident(decl.name);

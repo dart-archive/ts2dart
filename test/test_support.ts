@@ -43,6 +43,8 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
       return undefined;
     },
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
+    fileExists: (filename) => !!nameToContent[filename],
+    readFile: (filename) => nameToContent[filename],
     getDefaultLibFileName: () => defaultLibName,
     useCaseSensitiveFileNames: () => false,
     getCanonicalFileName: (filename) => filename,

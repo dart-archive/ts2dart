@@ -46,10 +46,11 @@ var onError = function(err) {
 
 gulp.task('compile', function() {
   hasError = false;
-  var tsResult = gulp.src(['lib/**/*.ts', 'typings/**/*.d.ts'])
-                     .pipe(sourcemaps.init())
-                     .pipe(ts(tsProject))
-                     .on('error', onError);
+  var tsResult =
+      gulp.src(['lib/**/*.ts', 'typings/**/*.d.ts', 'node_modules/typescript/lib/typescript.d.ts'])
+          .pipe(sourcemaps.init())
+          .pipe(ts(tsProject))
+          .on('error', onError);
   return merge([
     tsResult.dts.pipe(gulp.dest('build/definitions')),
     // Write external sourcemap next to the js file

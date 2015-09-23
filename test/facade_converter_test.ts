@@ -27,12 +27,12 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
-        declare class Promise<R> {}`,
-    'angular2/src/core/facade/async.d.ts': `
-        export {Promise};
+        export declare class Promise<R> {}`,
+    'angular2/src/core/facade/async.ts': `
+        export {Promise} from "angular2/typings/es6-promise/es6-promise";
         export declare class Observable {};`,
-    'angular2/src/core/facade/collection.d.ts': `
-        export declare var Map: typeof Map;`,
+    'angular2/src/core/facade/collection.ts': `
+        export declare var Map;`,
     'angular2/src/core/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
         export declare function CONST_EXPR<T>(x: T): T;
@@ -42,7 +42,8 @@ function getSources(str: string): {[k: string]: string} {
           map(x: number): string { return String(x); }
           static get(m: any, k: string): number { return m[k]; }
         }
-        export declare var Promise = (<any>global).Promise;`,
+        var global: any;
+        export var Promise = global.Promise;`,
   };
   srcs['main.ts'] = str;
   return srcs;

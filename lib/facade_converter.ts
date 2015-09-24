@@ -151,11 +151,7 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private getFileAndName(n: ts.Node, symbol: ts.Symbol): {fileName: string, qname: string} {
-    while (symbol.flags & ts.SymbolFlags.Alias) {
-      let alias = this.tc.getAliasedSymbol(symbol);
-      if (alias.name === 'unknown') break;
-      symbol = alias;
-    }
+    while (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
     let decl = symbol.valueDeclaration;
     if (!decl) {
       // In the case of a pure declaration with no assignment, there is no value declared.

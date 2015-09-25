@@ -343,20 +343,6 @@ class DeclarationTranspiler extends base.TranspilerBase {
       this.emit('>');
     }
     this.visitEachIfPresent(decl.heritageClauses);
-    // Check for @IMPLEMENTS interfaces to add.
-    // TODO(martinprobst): Drop all special cases for @SOMETHING after migration to TypeScript.
-    var implIfs = this.getImplementsDecorators(decl.decorators);
-    if (implIfs.length > 0) {
-      // Check if we have to emit an 'implements ' or a ', '
-      if (decl.heritageClauses && decl.heritageClauses.length > 0 &&
-          decl.heritageClauses.some((hc) => hc.token === ts.SyntaxKind.ImplementsKeyword)) {
-        // There was some implements clause.
-        this.emit(',');
-      } else {
-        this.emit('implements');
-      }
-      this.emit(implIfs.join(' , '));
-    }
     this.emit('{');
 
     // Synthesize explicit properties for ctor with 'property parameters'
@@ -382,28 +368,11 @@ class DeclarationTranspiler extends base.TranspilerBase {
     this.emit('}');
   }
 
-  /** Returns the parameters passed to @IMPLEMENTS as the identifier's string values. */
-  private getImplementsDecorators(decorators: ts.NodeArray<ts.Decorator>): string[] {
-    var interfaces: string[] = [];
-    if (!decorators) return interfaces;
-    decorators.forEach((d) => {
-      if (d.expression.kind !== ts.SyntaxKind.CallExpression) return;
-      var funcExpr = <ts.CallExpression>d.expression;
-      if (base.ident(funcExpr.expression) !== 'IMPLEMENTS') return;
-      funcExpr.arguments.forEach((a) => {
-        var interf = base.ident(a);
-        if (!interf) this.reportError(a, '@IMPLEMENTS only supports literal identifiers');
-        interfaces.push(interf);
-      });
-    });
-    return interfaces;
-  }
-
   private visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
     if (!decorators) return;
 
     decorators.forEach((d) => {
-      // Special case @CONST, @IMPLEMENTS
+      // Special case @CONST
       var name = base.ident(d.expression);
       if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
         // Unwrap @CONST()
@@ -411,9 +380,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
         name = base.ident(callExpr.expression);
       }
       // Make sure these match IGNORED_ANNOTATIONS below.
-      if (name === 'CONST' || name === 'IMPLEMENTS') {
-        // Ignore @IMPLEMENTS and @CONST - they are handled above in visitClassLike.
-        // TODO(martinprobst): @IMPLEMENTS should be removed as TS supports it natively.
+      if (name === 'CONST') {
+        // Ignore @CONST - it is handled above in visitClassLike.
         return;
       }
       this.emit('@');

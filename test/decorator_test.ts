@@ -48,11 +48,4 @@ describe('decorators', () => {
     expectTranslate('class Foo { @CONST() static foo = 1; }')
         .to.equal(' class Foo { static const foo = 1 ; }');
   });
-  it('special cases @IMPLEMENTS', () => {
-    expectTranslate('@IMPLEMENTS(Y, Z) class X {}').to.equal(' class X implements Y , Z { }');
-    expectTranslate('@IMPLEMENTS(Z) class X extends Y {}')
-        .to.equal(' class X extends Y implements Z { }');
-    expectTranslate('@IMPLEMENTS(Z) class X implements Y {}')
-        .to.equal(' class X implements Y , Z { }');
-  });
 });

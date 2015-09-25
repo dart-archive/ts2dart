@@ -43,6 +43,8 @@ describe('classes', () => {
     expectTranslate('class X extends Y implements Z {}')
         .to.equal(' class X extends Y implements Z { }');
   });
+  it('should support abstract',
+     () => { expectTranslate('abstract class X {}').to.equal(' abstract class X { }'); });
 
   describe('members', () => {
     it('supports empty declarations',

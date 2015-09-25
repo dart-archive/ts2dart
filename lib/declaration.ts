@@ -28,6 +28,9 @@ class DeclarationTranspiler extends base.TranspilerBase {
 
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
+        if (classDecl.modifiers && (classDecl.modifiers.flags & ts.NodeFlags.Abstract)) {
+          this.emit('abstract');
+        }
         this.visitClassLike('class', classDecl);
         break;
       case ts.SyntaxKind.InterfaceDeclaration:
@@ -399,9 +402,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
   private visitDecorators(decorators: ts.NodeArray<ts.Decorator>) {
     if (!decorators) return;
 
-    var isAbstract = false;
     decorators.forEach((d) => {
-      // Special case @CONST, @IMPLEMENTS, & @ABSTRACT
+      // Special case @CONST, @IMPLEMENTS
       var name = base.ident(d.expression);
       if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
         // Unwrap @CONST()
@@ -409,10 +411,6 @@ class DeclarationTranspiler extends base.TranspilerBase {
         name = base.ident(callExpr.expression);
       }
       // Make sure these match IGNORED_ANNOTATIONS below.
-      if (name === 'ABSTRACT') {
-        isAbstract = true;
-        return;
-      }
       if (name === 'CONST' || name === 'IMPLEMENTS') {
         // Ignore @IMPLEMENTS and @CONST - they are handled above in visitClassLike.
         // TODO(martinprobst): @IMPLEMENTS should be removed as TS supports it natively.
@@ -421,7 +419,6 @@ class DeclarationTranspiler extends base.TranspilerBase {
       this.emit('@');
       this.visit(d.expression);
     });
-    if (isAbstract) this.emit('abstract');
   }
 
   private visitDeclarationMetadata(decl: ts.Declaration) {

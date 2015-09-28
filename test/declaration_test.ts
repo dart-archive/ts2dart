@@ -79,6 +79,10 @@ describe('classes', () => {
       expectTranslate('class X { x() { return 42; } }')
           .to.equal(' class X { x ( ) { return 42 ; } }');
     });
+    it('supports abstract methods', () => {
+      expectTranslate('abstract class X { abstract x(); }')
+          .to.equal(' abstract class X { x ( ) ; }');
+    });
     it('supports method return types', () => {
       expectTranslate('class X { x(): number { return 42; } }')
           .to.equal(' class X { num x ( ) { return 42 ; } }');

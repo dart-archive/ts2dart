@@ -201,6 +201,11 @@ class DeclarationTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.StaticKeyword:
         this.emit('static');
         break;
+      case ts.SyntaxKind.AbstractKeyword:
+        // Abstract methods in Dart simply lack implementation, 
+        // and don't use the 'abstract' modifier
+        // Abstract classes are handled in `case ts.SyntaxKind.ClassDeclaration` above.
+        break;
       case ts.SyntaxKind.PrivateKeyword:
         // no-op, handled through '_' naming convention in Dart.
         break;

@@ -244,6 +244,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib': this.stdlibTypeReplacements,
     'lib.es6': this.stdlibTypeReplacements,
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
+    'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
     'angular2/src/core/facade/async':
         {'Observable': 'Stream', 'ObservableController': 'StreamController'},
     'angular2/src/core/facade/collection': {'StringMap': 'Map'},
@@ -347,7 +348,7 @@ export class FacadeConverter extends base.TranspilerBase {
         return false;
       },
     },
-    'angular2/manual_typings/traceur-runtime': {
+    'angular2/typings/es6-shim/es6-shim': {
       'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
         this.visit(context);
         this.emit('[');
@@ -452,7 +453,7 @@ export class FacadeConverter extends base.TranspilerBase {
   };
 
   private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
-    'angular2/manual_typings/traceur-runtime': {
+    'angular2/typings/es6-shim/es6-shim': {
       'Map.size': (p: ts.PropertyAccessExpression) => {
         this.visit(p.expression);
         this.emit('.');

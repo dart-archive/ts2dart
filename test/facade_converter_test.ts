@@ -2,7 +2,7 @@
 import {parseFiles, expectTranslate, expectErroneousCode, translateSource} from './test_support';
 import chai = require('chai');
 
-var traceurRuntimeDeclarations = `
+var es6RuntimeDeclarations = `
     interface Iterable<T> {}
     interface Symbol {}
     interface Map<K, V> {
@@ -23,7 +23,7 @@ var traceurRuntimeDeclarations = `
 
 function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
-    'angular2/manual_typings/traceur-runtime.d.ts': traceurRuntimeDeclarations,
+    'angular2/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `

@@ -6,6 +6,11 @@ describe('types', () => {
      () => { expectTranslate('var x: foo.Bar;').to.equal(' foo . Bar x ;'); });
   it('drops type literals',
      () => { expectTranslate('var x: {x: string, y: number};').to.equal(' dynamic x ;'); });
+  it('translates string index signatures to dartisms', () => {
+    expectTranslate('var x: {[k: string]: any[]};')
+        .to.equal(' Map < String , List < dynamic > > x ;');
+    expectTranslate('var x: {[k: number]: number};').to.equal(' Map < num , num > x ;');
+  });
   it('allows typecasts',
      () => { expectTranslate('<MyType>ref').to.equal(' ( ref as MyType ) ;'); });
   it('does not mangle prototype names', () => {

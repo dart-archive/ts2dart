@@ -9,27 +9,21 @@ class TypeTranspiler extends base.TranspilerBase {
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
       case ts.SyntaxKind.TypeLiteral:
-        let foundIndexSignature = false;
-        (<ts.TypeLiteralNode>node)
-            .members.forEach((member) => {
-              if (member.kind == ts.SyntaxKind.IndexSignature) {
-                foundIndexSignature = true;
-                let indexSig = <ts.IndexSignatureDeclaration>member;
-                if (indexSig.parameters.length > 1) {
-                  this.reportError(indexSig,
-                                   "Expected an index signature to have a single parameter");
-                }
-                this.emit('Map <');
-                indexSig.parameters.forEach((param) => { this.visit(param.type); });
-                this.emit(',');
-                this.visit(indexSig.type);
-                this.emit('>');
-              }
-            });
-        if (!foundIndexSignature) {
-          // Dart doesn't support other type literals.
-          this.emit('dynamic');
+        let members = (<ts.TypeLiteralNode>node).members;
+        if (members.length == 1 && members[0].kind == ts.SyntaxKind.IndexSignature) {
+          let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
+          if (indexSig.parameters.length > 1) {
+            this.reportError(indexSig, "Expected an index signature to have a single parameter");
+          }
+          this.emit('Map <');
+          this.visit(indexSig.parameters[0].type);
+          this.emit(',');
+          this.visit(indexSig.type);
+          this.emit('>');
+          break;
         }
+        // Dart doesn't support other type literals.
+        this.emit('dynamic');
         break;
       case ts.SyntaxKind.UnionType:
         this.emit('dynamic /*');

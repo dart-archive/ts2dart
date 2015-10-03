@@ -11,6 +11,9 @@ describe('types', () => {
         .to.equal(' Map < String , List < dynamic > > x ;');
     expectTranslate('var x: {[k: number]: number};').to.equal(' Map < num , num > x ;');
   });
+  it('drops type literals with index signatures and other properties', () => {
+    expectTranslate('var x: {a: number, [k: string]: number};').to.equal(' dynamic x ;');
+  });
   it('allows typecasts',
      () => { expectTranslate('<MyType>ref').to.equal(' ( ref as MyType ) ;'); });
   it('does not mangle prototype names', () => {

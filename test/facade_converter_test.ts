@@ -13,6 +13,9 @@ var es6RuntimeDeclarations = `
       delete(key: K): boolean;
       forEach(callbackfn: (value: V, index: K, map: Map<K, V>) => void, thisArg?: any): void;
     }
+    interface Array<T> {
+      find(predicate: (value: T, index: number, obj: Array<T>) => boolean, thisArg?: any): T;
+    }
     declare var Map: {
       new<K, V>(): Map<any, any>;
       prototype: Map<any, any>;
@@ -97,6 +100,8 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; x . add ( 1 ) ; x . removeLast ( ) ;');
       expectWithTypes('var x: Array<number> = []; x.map((e) => e);')
           .to.equal(' List < num > x = [ ] ; x . map ( ( e ) => e ) . toList ( ) ;');
+      expectWithTypes('var x: Array<number> = []; x.filter((e) => true);')
+          .to.equal(' List < num > x = [ ] ; x . where ( ( e ) => true ) . toList ( ) ;');
       expectWithTypes('var x: Array<number> = []; x.unshift(1, 2, 3); x.shift();')
           .to.equal(' List < num > x = [ ] ; ( x .. insertAll ' +
                     '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
@@ -113,6 +118,14 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; String y = x . join ( "-" ) ;');
       expectWithTypes('var x: Array<number> = []; var y: string = x.join();')
           .to.equal(' List < num > x = [ ] ; String y = x . join ( "," ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: number = x.find((e) => e == 0);')
+          .to.equal(
+              ' List < num > x = [ ] ; num y = x . firstWhere ( ( e ) => e == 0 , orElse : ( ) => null ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: boolean = x.some((e) => e == 0);')
+          .to.equal(' List < num > x = [ ] ; bool y = x . any ( ( e ) => e == 0 ) ;');
+      expectWithTypes('var x: Array<number> = []; var y: number = x.reduce((a, b) => a + b, 0);')
+          .to.equal(' List < num > x = [ ] ; num y = x . fold ( 0 , ( a , b ) => a + b ) ;');
+
     });
 
     it('translates map operations to dartisms', () => {

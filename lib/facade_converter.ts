@@ -282,6 +282,15 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emitMethodCall('map', c.arguments);
       this.emitMethodCall('toList');
     },
+    'Array.filter': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('where', c.arguments);
+      this.emitMethodCall('toList');
+    },
+    'Array.some': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('any', c.arguments);
+    },
     'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
       this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
     },
@@ -309,6 +318,10 @@ export class FacadeConverter extends base.TranspilerBase {
       } else {
         this.emit('. join ( "," )');
       }
+    },
+    'Array.reduce': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('fold', [c.arguments[1], c.arguments[0]]);
     },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');
@@ -430,6 +443,12 @@ export class FacadeConverter extends base.TranspilerBase {
             break;
         }
       },
+      'Array.find': (c: ts.CallExpression, context: ts.Expression) => {
+        this.visit(context);
+        this.emit('. firstWhere (');
+        this.visit(c.arguments[0]);
+        this.emit(', orElse : ( ) => null )');
+      }
     },
     'angular2/src/core/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {

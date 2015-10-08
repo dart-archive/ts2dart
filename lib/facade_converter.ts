@@ -415,7 +415,10 @@ export class FacadeConverter extends base.TranspilerBase {
             this.visit(params[1]);
             this.emit(',');
             this.visit(params[0]);
-            this.emit(') =>');
+            this.emit(')');
+            if (cb.body.kind != ts.SyntaxKind.Block) {
+              this.emit('=>');
+            }
             this.visit(cb.body);
             this.emit(')');
             break;

@@ -132,6 +132,10 @@ describe('type based translation', () => {
           'var x = new Map<string, string>(); x.forEach(function (v, k) { return null; });')
           .to.equal(' var x = new Map < String , String > ( ) ; ' +
                     'x . forEach ( ( k , v ) { return null ; } ) ;');
+      expectWithTypes('var x = new Map<string, string>(); x.forEach((v, k) => { return null; });')
+          .to.equal(' var x = new Map < String , String > ( ) ; ' +
+                    'x . forEach ( ( k , v ) { return null ; } ) ;');
+
       expectWithTypes('var x = new Map<string, string>(); x.forEach(fn);')
           .to.equal(' var x = new Map < String , String > ( ) ; ' +
                     'x . forEach ( ( k , v ) => ( fn ) ( v , k ) ) ;');

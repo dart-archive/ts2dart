@@ -95,6 +95,7 @@ export class FacadeConverter extends base.TranspilerBase {
   emitExtraImports(sourceFile: ts.SourceFile) {
     var libraries = <ts.Map<string>>{
       "XMLHttpRequest": "dart:html",
+      "KeyboardEvent": "dart:html",
       "Uint8Array": "dart:typed_arrays",
       "ArrayBuffer": "dart:typed_arrays"
     };

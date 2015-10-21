@@ -1,7 +1,15 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "noEmitOnError": true,
     "noImplicitAny": true,
-    "noEmit": true
-  }
+    "noImplicitAny": true
+  },
+  "exclude": [
+    "node_modules",
+    "build",
+    "test/e2e"
+  ]
 }

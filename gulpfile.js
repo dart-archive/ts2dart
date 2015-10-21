@@ -14,19 +14,6 @@ var ts = require('gulp-typescript');
 var typescript = require('typescript');
 var which = require('which');
 
-var TSC_OPTIONS = {
-  module: "commonjs",
-  // allow pulling in files from node_modules until TS 1.5 is in tsd / DefinitelyTyped (the
-  // alternative is to include node_modules paths in the src arrays below for compilation)
-  noExternalResolve: false,
-  noImplicitAny: true,
-  declarationFiles: true,
-  noEmitOnError: true,
-  // Specify the TypeScript version we're using.
-  typescript: typescript,
-};
-var tsProject = ts.createProject(TSC_OPTIONS);
-
 gulp.task('test.check-format', function() {
   return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
       .pipe(formatter.checkFormat('file', clangFormat))
@@ -43,6 +30,9 @@ var onError = function(err) {
     process.exit(1);
   }
 };
+
+var tsProject =
+    ts.createProject('tsconfig.json', {noEmit: false, declaration: true, typescript: typescript});
 
 gulp.task('compile', function() {
   hasError = false;

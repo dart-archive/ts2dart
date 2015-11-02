@@ -248,9 +248,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
     'angular2/src/core/facade/async':
         {'Observable': 'Stream', 'ObservableController': 'StreamController'},
-    'angular2/src/core/facade/collection': {'StringMap': 'Map'},
     'angular2/src/core/facade/lang': {'Date': 'DateTime'},
-    'angular2/manual_typings/globals': {'StringMap': 'Map'},
   };
 
   private stdlibHandlers: ts.Map<CallHandler> = {

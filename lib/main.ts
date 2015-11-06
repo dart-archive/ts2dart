@@ -85,8 +85,8 @@ export class Transpiler {
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
     var host = this.createCompilerHost();
     if (this.options.basePath && destination === undefined) {
-      throw new Error('Must have a destination path when a basePath is specified ' +
-                      this.options.basePath);
+      throw new Error(
+          'Must have a destination path when a basePath is specified ' + this.options.basePath);
     }
     var destinationRoot = destination || this.options.basePath || '';
     var program = ts.createProgram(fileNames, this.getCompilerOptions(), host);
@@ -119,8 +119,9 @@ export class Transpiler {
     var paths: {[path: string]: string} = {};
     this.errors = [];
     program.getSourceFiles()
-        .filter((sourceFile: ts.SourceFile) => (!sourceFile.fileName.match(/\.d\.ts$/) &&
-                                                !!sourceFile.fileName.match(/\.[jt]s$/)))
+        .filter(
+            (sourceFile: ts.SourceFile) =>
+                (!sourceFile.fileName.match(/\.d\.ts$/) && !!sourceFile.fileName.match(/\.[jt]s$/)))
         .forEach((f) => paths[f.fileName] = this.translate(f));
     this.checkForErrors(program);
     return paths;
@@ -287,8 +288,9 @@ export class Transpiler {
       if (this.transpilers[i].visitNode(node)) return;
     }
 
-    this.reportError(node, 'Unsupported node type ' + (<any>ts).SyntaxKind[node.kind] + ': ' +
-                               node.getFullText());
+    this.reportError(
+        node,
+        'Unsupported node type ' + (<any>ts).SyntaxKind[node.kind] + ': ' + node.getFullText());
   }
 
   private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
@@ -307,8 +309,9 @@ class Output {
   private generateSourceMap: boolean;
   private sourceMap: SourceMap.SourceMapGenerator;
 
-  constructor(private currentFile: ts.SourceFile, private relativeFileName: string,
-              generateSourceMap: boolean) {
+  constructor(
+      private currentFile: ts.SourceFile, private relativeFileName: string,
+      generateSourceMap: boolean) {
     if (generateSourceMap) {
       this.sourceMap = new SourceMap.SourceMapGenerator({file: relativeFileName + '.dart'});
       this.sourceMap.setSourceContent(relativeFileName, this.currentFile.text);

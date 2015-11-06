@@ -65,8 +65,8 @@ describe('library name', () => {
     modTranspiler = new ModuleTranspiler(transpiler, new FacadeConverter(transpiler), true);
   });
   it('adds a library name', () => {
-    var results = translateSources({'/a/b/c.ts': 'var x;'},
-                                   {failFast: true, generateLibraryName: true, basePath: '/a'});
+    var results = translateSources(
+        {'/a/b/c.ts': 'var x;'}, {failFast: true, generateLibraryName: true, basePath: '/a'});
     chai.expect(results['/a/b/c.ts']).to.equal(' library b.c ; var x ;');
   });
   it('leaves relative paths alone',

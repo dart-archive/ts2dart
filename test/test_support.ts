@@ -7,7 +7,9 @@ import main = require('../lib/main');
 import path = require('path');
 import ts = require('typescript');
 
-export type StringMap = { [k: string]: string };
+export type StringMap = {
+  [k: string]: string
+};
 export type Input = string | StringMap;
 
 export function expectTranslate(tsCode: Input, options: main.TranspilerOptions = {}) {
@@ -30,8 +32,8 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
   var compilerHost: ts.CompilerHost = {
     getSourceFile: function(sourceName, languageVersion) {
       if (nameToContent.hasOwnProperty(sourceName)) {
-        return ts.createSourceFile(sourceName, nameToContent[sourceName], compilerOptions.target,
-                                   true);
+        return ts.createSourceFile(
+            sourceName, nameToContent[sourceName], compilerOptions.target, true);
       }
       if (sourceName === defaultLibName) {
         if (!libSourceFile) {

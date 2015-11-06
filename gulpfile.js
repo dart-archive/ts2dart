@@ -67,10 +67,9 @@ gulp.task('test.unit', ['test.compile'], function(done) {
     done();
     return;
   }
-  return gulp.src('build/test/**/*.js')
-      .pipe(mocha({
-        timeout: 4000,  // Needed by the type-based tests :-(
-      }));
+  return gulp.src('build/test/**/*.js').pipe(mocha({
+    timeout: 4000,  // Needed by the type-based tests :-(
+  }));
 });
 
 // This test transpiles some unittests to dart and runs them in the Dart VM.
@@ -85,28 +84,26 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
 
   // run node with a shell so we can wildcard all the .ts files
   var cmd = 'node ../lib/main.js --translateBuiltins --basePath=. --destination=. ' +
-            '*.ts angular2/src/core/facade/lang.d.ts';
+            '*.ts angular2/src/facade/lang.d.ts';
   // Paths must be relative to our source root, so run with cwd == dir.
-  spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir})
-      .on('close', function(code, signal) {
-        if (code > 0) {
-          onError(new Error("Failed to transpile " + testfile + '.ts'));
-        } else {
-          try {
-            var opts = {stdio: 'inherit', cwd: dir};
-            // Install the unittest packages on every run, using the content of pubspec.yaml
-            // TODO: maybe this could be memoized or served locally?
-            spawn(which.sync('pub'), ['install'], opts)
-                .on('close', function() {
-                  // Run the tests using built-in test runner.
-                  spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
-                });
-          } catch (e) {
-            console.log('Dart SDK is not found on the PATH:', e.message);
-            throw e;
-          }
-        }
-      });
+  spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir}).on('close', function(code, signal) {
+    if (code > 0) {
+      onError(new Error("Failed to transpile " + testfile + '.ts'));
+    } else {
+      try {
+        var opts = {stdio: 'inherit', cwd: dir};
+        // Install the unittest packages on every run, using the content of pubspec.yaml
+        // TODO: maybe this could be memoized or served locally?
+        spawn(which.sync('pub'), ['install'], opts).on('close', function() {
+          // Run the tests using built-in test runner.
+          spawn(which.sync('dart'), [testfile + '.dart'], opts).on('close', done);
+        });
+      } catch (e) {
+        console.log('Dart SDK is not found on the PATH:', e.message);
+        throw e;
+      }
+    }
+  });
 });
 
 gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);

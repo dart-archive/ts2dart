@@ -103,8 +103,8 @@ export class FacadeConverter extends base.TranspilerBase {
     this.emitImports(sourceFile, libraries, emitted, sourceFile);
   }
 
-  private emitImports(n: ts.Node, libraries: ts.Map<string>, emitted: Set,
-                      sourceFile: ts.SourceFile): void {
+  private emitImports(
+      n: ts.Node, libraries: ts.Map<string>, emitted: Set, sourceFile: ts.SourceFile): void {
     if (n.kind === ts.SyntaxKind.TypeReference) {
       var type = base.ident((<ts.TypeReferenceNode>n).typeName);
       if (libraries.hasOwnProperty(type)) {
@@ -193,9 +193,9 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private reportMissingType(n: ts.Node, ident: string) {
-    this.reportError(n, `Untyped property access to "${ident}" which could be ` +
-                            `a special ts2dart builtin. ` +
-                            `Please add type declarations to disambiguate.`);
+    this.reportError(
+        n, `Untyped property access to "${ident}" which could be ` + `a special ts2dart builtin. ` +
+               `Please add type declarations to disambiguate.`);
   }
 
   isInsideConstExpr(node: ts.Node): boolean {
@@ -246,9 +246,9 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibTypeReplacements,
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
-    'angular2/src/core/facade/async':
+    'angular2/src/facade/async':
         {'Observable': 'Stream', 'ObservableController': 'StreamController'},
-    'angular2/src/core/facade/lang': {'Date': 'DateTime'},
+    'angular2/src/facade/lang': {'Date': 'DateTime'},
   };
 
   private stdlibHandlers: ts.Map<CallHandler> = {
@@ -351,7 +351,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private callHandlers: ts.Map<ts.Map<CallHandler>> = {
     'lib': this.stdlibHandlers,
     'lib.es6': this.stdlibHandlers,
-    'angular2/src/core/facade/collection': {
+    'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
         // The actual Map constructor is special cased for const calls.
         if (!this.isInsideConstExpr(c)) return true;
@@ -468,7 +468,7 @@ export class FacadeConverter extends base.TranspilerBase {
         this.visit(callback.body);
       },
     },
-    'angular2/src/core/facade/lang': {
+    'angular2/src/facade/lang': {
       'CONST_EXPR': (c: ts.CallExpression, context: ts.Expression) => {
         // `const` keyword is emitted in the array literal handling, as it needs to be transitive.
         this.visitList(c.arguments);

@@ -4,8 +4,8 @@ import ts2dart = require('./main');
 import {FacadeConverter} from './facade_converter';
 
 export default class ModuleTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter,
-              private generateLibraryName: boolean) {
+  constructor(
+      tr: ts2dart.Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean) {
     super(tr);
   }
 

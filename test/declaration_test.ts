@@ -110,18 +110,20 @@ describe('classes', () => {
       expectTranslate('class X { constructor() { } }').to.equal(' class X { X ( ) { } }');
     });
     it('supports parameter properties', () => {
-      expectTranslate('class X { c: number; \n' +
-                      '  constructor(private _bar: B, ' +
-                      'public foo: string = "hello", ' +
-                      'private _goggles: boolean = true) {} }')
+      expectTranslate(
+          'class X { c: number; \n' +
+          '  constructor(private _bar: B, ' +
+          'public foo: string = "hello", ' +
+          'private _goggles: boolean = true) {} }')
           .to.equal(
               ' class X { B _bar ; String foo ; bool _goggles ; num c ;' +
               ' X ( this . _bar , [ this . foo = \"hello\" , this . _goggles = true ] ) { } }');
       expectTranslate(
           '@CONST class X { ' +
           'constructor(public foo: string, b: number, private _marbles: boolean = true) {} }')
-          .to.equal(' class X { final String foo ; final bool _marbles ;' +
-                    ' const X ( this . foo , num b , [ this . _marbles = true ] ) ; }');
+          .to.equal(
+              ' class X { final String foo ; final bool _marbles ;' +
+              ' const X ( this . foo , num b , [ this . _marbles = true ] ) ; }');
     });
   });
 });

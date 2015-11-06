@@ -31,12 +31,12 @@ function getSources(str: string): {[k: string]: string} {
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
         export declare class Promise<R> {}`,
-    'angular2/src/core/facade/async.ts': `
+    'angular2/src/facade/async.ts': `
         export {Promise} from "angular2/typings/es6-promise/es6-promise";
         export declare class Observable {};`,
-    'angular2/src/core/facade/collection.ts': `
+    'angular2/src/facade/collection.ts': `
         export declare var Map;`,
-    'angular2/src/core/facade/lang.d.ts': `
+    'angular2/src/facade/lang.d.ts': `
         interface List<T> extends Array<T> {}
         export declare function CONST_EXPR<T>(x: T): T;
         export declare var normalizeBlank: (x: Object) => any;`,
@@ -69,13 +69,11 @@ describe('type based translation', () => {
   describe('Dart type substitution', () => {
     it('finds registered substitutions', () => {
       expectWithTypes(
-          'import {Promise, Observable} from "angular2/src/core/facade/async"; var p: Promise<Date>;')
+          'import {Promise, Observable} from "angular2/src/facade/async"; var p: Promise<Date>;')
           .to.equal(
-              ' import "package:angular2/src/core/facade/async.dart" show Future , Stream ; Future < DateTime > p ;');
-      expectWithTypes(
-          'import {Promise} from "angular2/src/core/facade/async"; x instanceof Promise;')
-          .to.equal(
-              ' import "package:angular2/src/core/facade/async.dart" show Future ; x is Future ;');
+              ' import "package:angular2/src/facade/async.dart" show Future , Stream ; Future < DateTime > p ;');
+      expectWithTypes('import {Promise} from "angular2/src/facade/async"; x instanceof Promise;')
+          .to.equal(' import "package:angular2/src/facade/async.dart" show Future ; x is Future ;');
       expectWithTypes('var n: Node;').to.equal(' dynamic n ;');
       expectWithTypes('var xhr: XMLHttpRequest;')
           .to.equal(' import "dart:html"; HttpRequest xhr ;');
@@ -103,8 +101,9 @@ describe('type based translation', () => {
       expectWithTypes('var x: Array<number> = []; x.filter((e) => true);')
           .to.equal(' List < num > x = [ ] ; x . where ( ( e ) => true ) . toList ( ) ;');
       expectWithTypes('var x: Array<number> = []; x.unshift(1, 2, 3); x.shift();')
-          .to.equal(' List < num > x = [ ] ; ( x .. insertAll ' +
-                    '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
+          .to.equal(
+              ' List < num > x = [ ] ; ( x .. insertAll ' +
+              '( 0, [ 1 , 2 , 3 ]) ) . length ; x . removeAt ( 0 ) ;');
       expectWithTypes('var x: Array<number> = []; x.unshift(1);')
           .to.equal(' List < num > x = [ ] ; ( x .. insert ( 0, 1 ) ) . length ;');
       expectWithTypes('var x: Array<number> = []; x.concat([1], x).length;')
@@ -137,22 +136,27 @@ describe('type based translation', () => {
       expectWithTypes('var x = new Map<string, string>(); x.has("k");')
           .to.equal(' var x = new Map < String , String > ( ) ; x . containsKey ( "k" ) ;');
       expectWithTypes('var x = new Map<string, string>(); x.delete("k");')
-          .to.equal(' var x = new Map < String , String > ( ) ; ' +
-                    '( x . containsKey ( "k" ) && ( x . remove ( "k" ) != null || true ) ) ;');
+          .to.equal(
+              ' var x = new Map < String , String > ( ) ; ' +
+              '( x . containsKey ( "k" ) && ( x . remove ( "k" ) != null || true ) ) ;');
       expectWithTypes('var x = new Map<string, string>(); x.forEach((v, k) => null);')
-          .to.equal(' var x = new Map < String , String > ( ) ; ' +
-                    'x . forEach ( ( k , v ) => null ) ;');
+          .to.equal(
+              ' var x = new Map < String , String > ( ) ; ' +
+              'x . forEach ( ( k , v ) => null ) ;');
       expectWithTypes(
           'var x = new Map<string, string>(); x.forEach(function (v, k) { return null; });')
-          .to.equal(' var x = new Map < String , String > ( ) ; ' +
-                    'x . forEach ( ( k , v ) { return null ; } ) ;');
+          .to.equal(
+              ' var x = new Map < String , String > ( ) ; ' +
+              'x . forEach ( ( k , v ) { return null ; } ) ;');
       expectWithTypes('var x = new Map<string, string>(); x.forEach((v, k) => { return null; });')
-          .to.equal(' var x = new Map < String , String > ( ) ; ' +
-                    'x . forEach ( ( k , v ) { return null ; } ) ;');
+          .to.equal(
+              ' var x = new Map < String , String > ( ) ; ' +
+              'x . forEach ( ( k , v ) { return null ; } ) ;');
 
       expectWithTypes('var x = new Map<string, string>(); x.forEach(fn);')
-          .to.equal(' var x = new Map < String , String > ( ) ; ' +
-                    'x . forEach ( ( k , v ) => ( fn ) ( v , k ) ) ;');
+          .to.equal(
+              ' var x = new Map < String , String > ( ) ; ' +
+              'x . forEach ( ( k , v ) => ( fn ) ( v , k ) ) ;');
     });
 
     it('translates map properties to dartisms', () => {
@@ -168,41 +172,51 @@ describe('type based translation', () => {
 
   describe('builtin functions', () => {
     it('translates CONST_EXPR(...) to const (...)', () => {
-      expectWithTypes('import {CONST_EXPR} from "angular2/src/core/facade/lang";\n' +
-                      'const x = CONST_EXPR([]);')
+      expectWithTypes(
+          'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+          'const x = CONST_EXPR([]);')
           .to.equal(' const x = const [ ] ;');
-      expectWithTypes('import {CONST_EXPR} from "angular2/src/core/facade/lang";\n' +
-                      'class Person {}' +
-                      'const x = CONST_EXPR(new Person());')
+      expectWithTypes(
+          'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+          'class Person {}' +
+          'const x = CONST_EXPR(new Person());')
           .to.equal(' class Person { } const x = const Person ( ) ;');
-      expectWithTypes('import {CONST_EXPR} from "angular2/src/core/facade/lang";\n' +
-                      'const x = CONST_EXPR({"one":1});')
+      expectWithTypes(
+          'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+          'const x = CONST_EXPR({"one":1});')
           .to.equal(' const x = const { "one" : 1 } ;');
-      expectWithTypes('import {CONST_EXPR} from "angular2/src/core/facade/lang";\n' +
-                      'import {Map} from "angular2/src/core/facade/collection";\n' +
-                      'const x = CONST_EXPR(new Map());')
-          .to.equal(' import "package:angular2/src/core/facade/collection.dart" show Map ;' +
-                    ' const x = const { } ;');
-      expectWithTypes('import {CONST_EXPR} from "angular2/src/core/facade/lang";\n' +
-                      'import {Map} from "angular2/src/core/facade/collection";\n' +
-                      'const x = CONST_EXPR(new Map<number, string>());')
-          .to.equal(' import "package:angular2/src/core/facade/collection.dart" show Map ;' +
-                    ' const x = const < num , String > { } ;');
+      expectWithTypes(
+          'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+          'import {Map} from "angular2/src/facade/collection";\n' +
+          'const x = CONST_EXPR(new Map());')
+          .to.equal(
+              ' import "package:angular2/src/facade/collection.dart" show Map ;' +
+              ' const x = const { } ;');
+      expectWithTypes(
+          'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+          'import {Map} from "angular2/src/facade/collection";\n' +
+          'const x = CONST_EXPR(new Map<number, string>());')
+          .to.equal(
+              ' import "package:angular2/src/facade/collection.dart" show Map ;' +
+              ' const x = const < num , String > { } ;');
     });
 
     it('translates forwardRef(() => T) to T', () => {
-      expectWithTypes('import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
-                      'var SomeType = 1;\n' +
-                      'var x = forwardRef(() => SomeType);')
+      expectWithTypes(
+          'import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
+          'var SomeType = 1;\n' +
+          'var x = forwardRef(() => SomeType);')
           .to.equal(' var SomeType = 1 ; var x = SomeType ;');
-      expectErroneousWithType('import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
-                              'forwardRef(1)')
+      expectErroneousWithType(
+          'import {forwardRef} from "angular2/src/core/di/forward_ref";\n' +
+          'forwardRef(1)')
           .to.throw(/only arrow functions/);
     });
 
     it('erases calls to normalizeBlank', () => {
-      expectWithTypes('import {normalizeBlank} from "angular2/src/core/facade/lang";\n' +
-                      'var x = normalizeBlank([]);')
+      expectWithTypes(
+          'import {normalizeBlank} from "angular2/src/facade/lang";\n' +
+          'var x = normalizeBlank([]);')
           .to.equal(' var x = [ ] ;');
     });
   });
@@ -235,11 +249,13 @@ describe('type based translation', () => {
     });
 
     it('allows unrelated methods', () => {
-      expectWithTypes('import {X} from "other/file";\n' +
-                      'new X().map(1)')
+      expectWithTypes(
+          'import {X} from "other/file";\n' +
+          'new X().map(1)')
           .to.equal(' import "package:other/file.dart" show X ; new X ( ) . map ( 1 ) ;');
-      expectWithTypes('import {X} from "other/file";\n' +
-                      'X.get({"a": 1}, "a");')
+      expectWithTypes(
+          'import {X} from "other/file";\n' +
+          'X.get({"a": 1}, "a");')
           .to.equal(' import "package:other/file.dart" show X ; X . get ( { "a" : 1 } , "a" ) ;');
       expectWithTypes('["a", "b"].map((x) => x);')
           .to.equal(' [ "a" , "b" ] . map ( ( x ) => x ) . toList ( ) ;');

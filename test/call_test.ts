@@ -10,8 +10,9 @@ describe('calls', () => {
     expectErroneousCode('function x({a=false}=true)')
         .to.throw('initializers for named parameters must be empty object literals');
     expectTranslate('class X { constructor() { super({p: 1}); } }')
-        .to.equal(' class X { X ( ) : super ( p : 1 ) {' +
-                  ' /* super call moved to initializer */ ; } }');
+        .to.equal(
+            ' class X { X ( ) : super ( p : 1 ) {' +
+            ' /* super call moved to initializer */ ; } }');
   });
   it('hacks last object literal parameters into named parameter', () => {
     expectTranslate('f(x, {a: 12, b: 4});').to.equal(' f ( x , a : 12 , b : 4 ) ;');
@@ -38,9 +39,10 @@ describe('calls', () => {
     expectErroneousCode('class X { constructor() { if (y) super(1, 2); } }')
         .to.throw('super calls must be immediate children of their constructors');
     expectTranslate('class X { constructor() { a(); super(1); b(); } }')
-        .to.equal(' class X { X ( ) : super ( 1 ) {' +
-                  ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
-                  ' } }');
+        .to.equal(
+            ' class X { X ( ) : super ( 1 ) {' +
+            ' a ( ) ; /* super call moved to initializer */ ; b ( ) ;' +
+            ' } }');
   });
   it('translates "super.x()" super method calls', () => {
     expectTranslate('class X { y() { super.z(1); } }')

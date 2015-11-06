@@ -4,8 +4,9 @@ import ts2dart = require('./main');
 import {FacadeConverter} from './facade_converter';
 
 class DeclarationTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter,
-              private enforceUnderscoreConventions: boolean) {
+  constructor(
+      tr: ts2dart.Transpiler, private fc: FacadeConverter,
+      private enforceUnderscoreConventions: boolean) {
     super(tr);
   }
 
@@ -311,8 +312,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
    * In the special case of property parameters in a constructor, we also allow a parameter to be
    * emitted as a property.
    */
-  private visitProperty(decl: ts.PropertyDeclaration | ts.ParameterDeclaration,
-                        isParameter: boolean = false) {
+  private visitProperty(
+      decl: ts.PropertyDeclaration | ts.ParameterDeclaration, isParameter: boolean = false) {
     if (!isParameter) this.visitDeclarationMetadata(decl);
     var containingClass = <base.ClassLike>(isParameter ? decl.parent.parent : decl.parent);
     var isConstField = this.hasAnnotation(decl.decorators, 'CONST');
@@ -360,8 +361,9 @@ class DeclarationTranspiler extends base.TranspilerBase {
       }
     };
     decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)
-        .forEach((ctor) =>
-                     (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
+        .forEach(
+            (ctor) =>
+                (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed
@@ -427,8 +429,8 @@ class DeclarationTranspiler extends base.TranspilerBase {
     if (paramDecl.initializer) {
       if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression ||
           (<ts.ObjectLiteralExpression>paramDecl.initializer).properties.length > 0) {
-        this.reportError(paramDecl,
-                         'initializers for named parameters must be empty object literals');
+        this.reportError(
+            paramDecl, 'initializers for named parameters must be empty object literals');
       }
     }
   }
@@ -437,8 +439,9 @@ class DeclarationTranspiler extends base.TranspilerBase {
    * Handles a function typedef-like interface, i.e. an interface that only declares a single
    * call signature, by translating to a Dart `typedef`.
    */
-  private visitFunctionTypedefInterface(name: string, signature: ts.SignatureDeclaration,
-                                        typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>) {
+  private visitFunctionTypedefInterface(
+      name: string, signature: ts.SignatureDeclaration,
+      typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>) {
     this.emit('typedef');
     if (signature.type) {
       this.visit(signature.type);

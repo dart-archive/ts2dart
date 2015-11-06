@@ -27,8 +27,9 @@ describe('main transpiler functionality', () => {
   describe('errors', () => {
     it('reports multiple errors', () => {
       // Reports both the private field not having an underbar and protected being unsupported.
-      var errorLines = new RegExp('delete operator is unsupported\n' +
-                                  '.*void operator is unsupported');
+      var errorLines = new RegExp(
+          'delete operator is unsupported\n' +
+          '.*void operator is unsupported');
       expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
     });
     it('reports relative paths in errors', () => {
@@ -64,8 +65,8 @@ describe('main transpiler functionality', () => {
 
   describe('source maps', () => {
     function translateWithSourceMap(source: string): string {
-      var results = translateSources({'/absolute/path/test.ts': source},
-                                     {generateSourceMap: true, basePath: '/absolute/'});
+      var results = translateSources(
+          {'/absolute/path/test.ts': source}, {generateSourceMap: true, basePath: '/absolute/'});
       return results['/absolute/path/test.ts'];
     }
     it('generates a source map', () => {

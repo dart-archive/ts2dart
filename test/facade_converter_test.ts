@@ -125,7 +125,8 @@ describe('type based translation', () => {
           .to.equal(' List < num > x = [ ] ; bool y = x . any ( ( e ) => e == 0 ) ;');
       expectWithTypes('var x: Array<number> = []; var y: number = x.reduce((a, b) => a + b, 0);')
           .to.equal(' List < num > x = [ ] ; num y = x . fold ( 0 , ( a , b ) => a + b ) ;');
-
+      expectWithTypes('var x: Array<number> = []; var y: number = x.reduce((a, b) => a + b);')
+          .to.equal(' List < num > x = [ ] ; num y = x . fold ( null , ( a , b ) => a + b ) ;');
     });
 
     it('translates map operations to dartisms', () => {

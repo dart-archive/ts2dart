@@ -321,7 +321,14 @@ export class FacadeConverter extends base.TranspilerBase {
     },
     'Array.reduce': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
-      this.emitMethodCall('fold', [c.arguments[1], c.arguments[0]]);
+
+      if (c.arguments.length >= 2) {
+        this.emitMethodCall('fold', [c.arguments[1], c.arguments[0]]);
+      } else {
+        this.emit('. fold ( null ,');
+        this.visit(c.arguments[0]);
+        this.emit(')');
+      }
     },
     'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('( (');

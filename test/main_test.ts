@@ -44,10 +44,11 @@ describe('main transpiler functionality', () => {
 
   describe('output paths', () => {
     it('writes within the path', () => {
-      var transpiler = new main.Transpiler({basePath: '/a'});
-      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
-      chai.expect(transpiler.getOutputPath('b/c.js', '/x')).to.equal('/x/b/c.dart');
-      chai.expect(transpiler.getOutputPath('b/c.js', 'x')).to.equal('x/b/c.dart');
+      var cwd = process.cwd();
+      var transpiler = new main.Transpiler({basePath: cwd + '/a'});
+      chai.expect(transpiler.getOutputPath(cwd + '/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
+      chai.expect(transpiler.getOutputPath('a/b/c.js', '/x')).to.equal('/x/b/c.dart');
+      chai.expect(transpiler.getOutputPath('a/b/c.js', 'x')).to.equal('x/b/c.dart');
       chai.expect(() => transpiler.getOutputPath('/outside/b/c.js', '/x'))
           .to.throw(/must be located under base/);
     });

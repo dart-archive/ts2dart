@@ -81,7 +81,7 @@ export class Transpiler {
    */
   transpile(fileNames: string[], destination?: string): void {
     if (this.options.basePath) {
-      this.options.basePath = this.normalizeSlashes(this.options.basePath);
+      this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
     }
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
     var host = this.createCompilerHost();
@@ -213,9 +213,8 @@ export class Transpiler {
    */
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
-    // TODO(martinprobst): Use path.isAbsolute on node v0.12.
-    if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
-      return filePath;  // already relative.
+    if (!path.isAbsolute(filePath)) {
+      filePath = path.resolve(filePath);
     }
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {

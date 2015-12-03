@@ -45,6 +45,9 @@
     "Martin Probst <martinprobst@google.com> (https://angularjs.org/)"
   ],
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 4.2.1 < 5"
+  },
   "bugs": {
     "url": "https://github.com/angular/ts2dart/issues"
   },

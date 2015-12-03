@@ -5,6 +5,7 @@ import path = require('path');
 import ts = require('typescript');
 
 import base = require('./base');
+import mkdirP from './mkdirp';
 import CallTranspiler = require('./call');
 import DeclarationTranspiler = require('./declaration');
 import ExpressionTranspiler = require('./expression');
@@ -61,6 +62,9 @@ export class Transpiler {
   private fc: FacadeConverter;
 
   constructor(private options: TranspilerOptions = {}) {
+    if (this.options.basePath) {
+      this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
+    }
     this.fc = new FacadeConverter(this);
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
@@ -79,9 +83,6 @@ export class Transpiler {
    * @param destination Location to write files to. Creates files next to their sources if absent.
    */
   transpile(fileNames: string[], destination?: string): void {
-    if (this.options.basePath) {
-      this.options.basePath = this.normalizeSlashes(this.options.basePath);
-    }
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
     var host = this.createCompilerHost();
     if (this.options.basePath && destination === undefined) {
@@ -106,7 +107,7 @@ export class Transpiler {
         .forEach((f: ts.SourceFile) => {
           var dartCode = this.translate(f);
           var outputFile = this.getOutputPath(f.fileName, destinationRoot);
-          Transpiler.recursiveMkdirSync(path.dirname(outputFile));
+          mkdirP(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
     this.checkForErrors(program);
@@ -174,39 +175,6 @@ export class Transpiler {
     return this.output.getResult();
   }
 
-  private static recursiveMkdirSync(p: string) {
-    // Simplified version of mkdirSync from https://github.com/jprichardson/node-fs-extra
-    // to avoid bringing in whole lot of module dependencies.
-    var o777 = parseInt('0777', 8);
-    var mode = o777 & (~process.umask());
-
-    p = path.resolve(p);
-
-    try {
-      fs.mkdirSync(p, mode);
-    } catch (error) {
-      switch (error.code) {
-        case 'ENOENT':
-          Transpiler.recursiveMkdirSync(path.dirname(p));
-          Transpiler.recursiveMkdirSync(p);
-          break;
-
-        // In the case of any other error, just see if there's a dir
-        // there already.  If so, then hooray!  If not, then something
-        // is borked.
-        default:
-          var stat: fs.Stats;
-          try {
-            stat = fs.statSync(p);
-          } catch (statError) {
-            throw(error);
-          }
-          if (!stat.isDirectory()) throw error;
-          break;
-      }
-    }
-  }
-
   private checkForErrors(program: ts.Program) {
     var errors = this.errors;
 
@@ -245,10 +213,7 @@ export class Transpiler {
    */
   getRelativeFileName(filePath?: string) {
     if (filePath === undefined) filePath = this.currentFile.fileName;
-    // TODO(martinprobst): Use path.isAbsolute on node v0.12.
-    if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
-      return filePath;  // already relative.
-    }
+    filePath = path.resolve(filePath);
     var base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);

@@ -23,6 +23,11 @@ export interface TranspilerOptions {
   failFast?: boolean;
   /** Whether to generate 'library a.b.c;' names from relative file paths. */
   generateLibraryName?: boolean;
+
+  /** A prefix to be prepended to all library names. This is useful when specifying the base path
+   * generates the correct destination file name but the generated library name is not sufficient.
+   */
+  libraryNamePrefix?: string;
   /** Whether to generate source maps. */
   generateSourceMap?: boolean;
   /**
@@ -71,7 +76,7 @@ export class Transpiler {
       new DeclarationTranspiler(this, this.fc, options.enforceUnderscoreConventions),
       new ExpressionTranspiler(this, this.fc),
       new LiteralTranspiler(this, this.fc),
-      new ModuleTranspiler(this, this.fc, options.generateLibraryName),
+      new ModuleTranspiler(this, this.fc, options.generateLibraryName, options.libraryNamePrefix),
       new StatementTranspiler(this),
       new TypeTranspiler(this, this.fc),
     ];

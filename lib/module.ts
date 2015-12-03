@@ -5,7 +5,8 @@ import {FacadeConverter} from './facade_converter';
 
 export default class ModuleTranspiler extends base.TranspilerBase {
   constructor(
-      tr: ts2dart.Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean) {
+      tr: ts2dart.Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean,
+      private libraryNamePrefix?: string) {
     super(tr);
   }
 
@@ -159,6 +160,9 @@ export default class ModuleTranspiler extends base.TranspilerBase {
   getLibraryName(nameForTest?: string) {
     var fileName = this.getRelativeFileName(nameForTest);
     var parts = fileName.split('/');
+    if (this.libraryNamePrefix) {
+      parts = this.libraryNamePrefix.split('.').concat(parts);
+    }
     return parts.filter((p) => p.length > 0)
         .map((p) => p.replace(/[^\w.]/g, '_'))
         .map((p) => p.replace(/\.[jt]s$/g, ''))

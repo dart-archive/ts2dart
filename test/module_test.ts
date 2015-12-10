@@ -62,33 +62,23 @@ describe('library name', () => {
   var transpiler: main.Transpiler;
   var modTranspiler: ModuleTranspiler;
   beforeEach(() => {
-    transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: 'a'});
+    cwd = process.cwd();
+    transpiler =
+        new main.Transpiler({failFast: true, generateLibraryName: true, basePath: cwd + '/a'});
     modTranspiler = new ModuleTranspiler(transpiler, new FacadeConverter(transpiler), true);
   });
   it('adds a library name', () => {
     var results = translateSources(
-        {'a/b/c.ts': 'var x;'}, {failFast: true, generateLibraryName: true, basePath: 'a'});
+        {'a/b/c.ts': 'var x;'}, {failFast: true, generateLibraryName: true, basePath: cwd + '/a'});
     chai.expect(results['a/b/c.ts']).to.equal(' library b.c ; var x ;');
-  });
-  it('adds a library name with simple prefix', () => {
-    var results = translateSources(
-        {'a/b/c.ts': 'var x;'},
-        {failFast: true, generateLibraryName: true, libraryNamePrefix: 'i', basePath: 'a'});
-    chai.expect(results['a/b/c.ts']).to.equal(' library i.b.c ; var x ;');
-  });
-  it('adds a library name with multi-part prefix', () => {
-    var results = translateSources(
-        {'a/b/c.ts': 'var x;'},
-        {failFast: true, generateLibraryName: true, libraryNamePrefix: 'i.j', basePath: 'a'});
-    chai.expect(results['a/b/c.ts']).to.equal(' library i.j.b.c ; var x ;');
   });
   it('handles relative paths',
      () => { chai.expect(modTranspiler.getLibraryName('a/b')).to.equal('b'); });
   it('handles reserved words', () => {
-    chai.expect(modTranspiler.getLibraryName('a/for/in/do/x')).to.equal('_for._in._do.x');
+    chai.expect(modTranspiler.getLibraryName(cwd + '/a/for/in/do/x')).to.equal('_for._in._do.x');
   });
   it('handles built-in and limited keywords', () => {
-    chai.expect(modTranspiler.getLibraryName('a/as/if/sync/x')).to.equal('as._if.sync.x');
+    chai.expect(modTranspiler.getLibraryName(cwd + '/a/as/if/sync/x')).to.equal('as._if.sync.x');
   });
   it('handles file extensions', () => {
     chai.expect(modTranspiler.getLibraryName('a/x.ts')).to.equal('x');

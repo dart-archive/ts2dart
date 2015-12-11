@@ -45,14 +45,15 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
       return undefined;
     },
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
-    fileExists: (filename) => !!nameToContent[filename],
-    readFile: (filename) => nameToContent[filename],
+    fileExists: (sourceName) => { return !!nameToContent[sourceName]; },
+    readFile: (filename): string => { throw new Error('unexpected call to readFile'); },
     getDefaultLibFileName: () => defaultLibName,
     useCaseSensitiveFileNames: () => false,
-    getCanonicalFileName: (filename) => filename,
+    getCanonicalFileName: (filename) => '../' + filename,
     getCurrentDirectory: () => '',
-    getNewLine: () => '\n'
+    getNewLine: () => '\n',
   };
+  compilerHost.resolveModuleNames = main.getModuleResolver(compilerHost);
   // Create a program from inputs
   var entryPoints = Object.keys(nameToContent);
   var program: ts.Program = ts.createProgram(entryPoints, compilerOptions, compilerHost);
@@ -64,13 +65,15 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
   return program;
 }
 
+export const FAKE_MAIN = 'angular2/some/main.ts';
+
 export function translateSources(contents: Input, options: main.TranspilerOptions = {}): StringMap {
   // Default to quick stack traces.
   if (!options.hasOwnProperty('failFast')) options.failFast = true;
   var namesToContent: StringMap;
   if (typeof contents === 'string') {
     namesToContent = {};
-    namesToContent['main.ts'] = contents;
+    namesToContent[FAKE_MAIN] = contents;
   } else {
     namesToContent = contents;
   }
@@ -84,5 +87,5 @@ export function translateSources(contents: Input, options: main.TranspilerOption
 export function translateSource(contents: Input, options: main.TranspilerOptions = {}): string {
   var results = translateSources(contents, options);
   // Return the main outcome, from 'main.ts'.
-  return results['main.ts'];
+  return results[FAKE_MAIN];
 }

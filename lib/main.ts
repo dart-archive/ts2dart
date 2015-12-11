@@ -45,7 +45,6 @@ export const COMPILER_OPTIONS: ts.CompilerOptions = {
   experimentalDecorators: true,
   module: ts.ModuleKind.CommonJS,
   target: ts.ScriptTarget.ES5,
-  moduleResolution: ts.ModuleResolutionKind.Classic,
 };
 
 export class Transpiler {
@@ -137,14 +136,14 @@ export class Transpiler {
   private createCompilerHost(): ts.CompilerHost {
     var defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
     defaultLibFileName = this.normalizeSlashes(defaultLibFileName);
-    return {
+    var compilerHost: ts.CompilerHost = {
       getSourceFile: (sourceName, languageVersion) => {
-        var path = sourceName;
+        var sourcePath = sourceName;
         if (sourceName === defaultLibFileName) {
-          path = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
+          sourcePath = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
         }
-        if (!fs.existsSync(path)) return undefined;
-        var contents = fs.readFileSync(path, 'UTF-8');
+        if (!fs.existsSync(sourcePath)) return undefined;
+        let contents = fs.readFileSync(sourcePath, 'UTF-8');
         return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
@@ -154,8 +153,10 @@ export class Transpiler {
       useCaseSensitiveFileNames: () => true,
       getCanonicalFileName: (filename) => filename,
       getCurrentDirectory: () => '',
-      getNewLine: () => '\n'
+      getNewLine: () => '\n',
     };
+    compilerHost.resolveModuleNames = getModuleResolver(compilerHost);
+    return compilerHost;
   }
 
   // Visible for testing.
@@ -298,6 +299,26 @@ export class Transpiler {
   private translateComment(comment: string): string {
     return comment.replace(/\{@link ([^\}]+)\}/g, '[$1]');
   }
+}
+
+export function getModuleResolver(compilerHost: ts.CompilerHost) {
+  return (moduleNames: string[], containingFile: string): ts.ResolvedModule[] => {
+    let res: ts.ResolvedModule[] = [];
+    for (let mod of moduleNames) {
+      let lookupRes = ts.nodeModuleNameResolver(mod, containingFile, compilerHost);
+      if (lookupRes.resolvedModule) {
+        res.push(lookupRes.resolvedModule);
+        continue;
+      }
+      lookupRes = ts.classicNameResolver(mod, containingFile, COMPILER_OPTIONS, compilerHost);
+      if (lookupRes.resolvedModule) {
+        res.push(lookupRes.resolvedModule);
+        continue;
+      }
+      res.push(undefined);
+    }
+    return res;
+  };
 }
 
 class Output {

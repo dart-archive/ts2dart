@@ -1,5 +1,11 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import {parseFiles, expectTranslate, expectErroneousCode, translateSource} from './test_support';
+import {
+  parseFiles,
+  expectTranslate,
+  FAKE_MAIN,
+  expectErroneousCode,
+  translateSource
+} from './test_support';
 import chai = require('chai');
 
 var es6RuntimeDeclarations = `
@@ -31,9 +37,11 @@ function getSources(str: string): {[k: string]: string} {
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
         export declare class Promise<R> {}`,
+    'node_modules/rxjs/Observable.d.ts': `
+        export declare class Observable {}`,
     'angular2/src/facade/async.ts': `
-        export {Promise} from "angular2/typings/es6-promise/es6-promise";
-        export declare class Observable {};`,
+        export {Promise} from 'angular2/typings/es6-promise/es6-promise';
+        export {Observable} from 'rxjs/Observable';`,
     'angular2/src/facade/collection.ts': `
         export declare var Map;`,
     'angular2/src/facade/lang.d.ts': `
@@ -48,7 +56,7 @@ function getSources(str: string): {[k: string]: string} {
         var global: any;
         export var Promise = global.Promise;`,
   };
-  srcs['main.ts'] = str;
+  srcs[FAKE_MAIN] = str;
   return srcs;
 }
 

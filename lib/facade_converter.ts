@@ -145,21 +145,24 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private getHandler<T>(n: ts.Node, symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
-    var {fileName, qname} = this.getFileAndName(n, symbol);
+    var loc = this.getFileAndName(n, symbol);
+    if (!loc) return null;
+    var {fileName, qname} = loc;
     var fileSubs = m[fileName];
     if (!fileSubs) return null;
     return fileSubs[qname];
   }
 
-  private getFileAndName(n: ts.Node, symbol: ts.Symbol): {fileName: string, qname: string} {
+  private getFileAndName(n: ts.Node, originalSymbol: ts.Symbol): {fileName: string, qname: string} {
+    let symbol = originalSymbol;
     while (symbol.flags & ts.SymbolFlags.Alias) symbol = this.tc.getAliasedSymbol(symbol);
     let decl = symbol.valueDeclaration;
     if (!decl) {
       // In the case of a pure declaration with no assignment, there is no value declared.
       // Just grab the first declaration, hoping it is declared once.
       if (!symbol.declarations || symbol.declarations.length === 0) {
-        this.reportError(n, 'no declarations for symbol ' + symbol.name);
-        return;
+        this.reportError(n, 'no declarations for symbol ' + originalSymbol.name);
+        return null;
       }
       decl = symbol.declarations[0];
     }
@@ -168,7 +171,6 @@ export class FacadeConverter extends base.TranspilerBase {
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
 
-    if (FACADE_DEBUG) console.log('fn:', fileName);
     var qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
     // for the time being just special case.
@@ -176,7 +178,7 @@ export class FacadeConverter extends base.TranspilerBase {
         symbol.flags & ts.SymbolFlags.Class) {
       qname = symbol.getName();
     }
-    if (FACADE_DEBUG) console.log('qn:', qname);
+    if (FACADE_DEBUG) console.log('fn:', fileName, 'qn:', qname);
     return {fileName, qname};
   }
 
@@ -246,8 +248,11 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibTypeReplacements,
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
-    'angular2/src/facade/async':
-        {'Observable': 'Stream', 'ObservableController': 'StreamController'},
+    '../../node_modules/rxjs/Observable': {'Observable': 'Stream'},
+    // TODO(martinprobst): It turns out the angular2 build is too eccentric to reproduce in our test
+    // suite. The ../../ path above is what happens in Angular2, the path below is what our test
+    // suite spits out.
+    'node_modules/rxjs/Observable': {'Observable': 'Stream'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
   };
 

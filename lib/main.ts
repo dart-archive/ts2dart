@@ -139,16 +139,29 @@ export class Transpiler {
     defaultLibFileName = this.normalizeSlashes(defaultLibFileName);
     return {
       getSourceFile: (sourceName, languageVersion) => {
-        var path = sourceName;
+        var sourcePath = sourceName;
         if (sourceName === defaultLibFileName) {
-          path = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
+          sourcePath = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
         }
-        if (!fs.existsSync(path)) return undefined;
-        var contents = fs.readFileSync(path, 'UTF-8');
-        return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
+        var contents: string = null;
+        if (fs.existsSync(sourcePath)) {
+          contents = fs.readFileSync(sourcePath, 'utf-8');
+        } else {
+          var nodePath = path.resolve('node_modules', sourceName.substring(1));
+          if (fs.existsSync(nodePath)) {
+            contents = fs.readFileSync(nodePath, 'utf-8');
+          }
+        }
+        if (contents) {
+          return ts.createSourceFile(sourceName, contents, COMPILER_OPTIONS.target, true);
+        } else {
+          return undefined;
+        }
       },
       writeFile(name, text, writeByteOrderMark) { fs.writeFile(name, text); },
-      fileExists: (filename) => fs.existsSync(filename),
+      fileExists: (filename) => {
+        return !!filename.match(/^\/rxjs\/.*\.d\.ts$/) || fs.existsSync(filename);
+      },
       readFile: (filename) => fs.readFileSync(filename, 'utf-8'),
       getDefaultLibFileName: () => defaultLibFileName,
       useCaseSensitiveFileNames: () => true,

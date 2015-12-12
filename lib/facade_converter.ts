@@ -246,8 +246,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibTypeReplacements,
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
-    'angular2/src/facade/async':
-        {'Observable': 'Stream', 'ObservableController': 'StreamController'},
+    '../../../../../../rxjs/Observable': {'Observable': 'Stream'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
   };
 

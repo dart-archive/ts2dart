@@ -35,6 +35,11 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
         return ts.createSourceFile(
             sourceName, nameToContent[sourceName], compilerOptions.target, true);
       }
+      let nodePath = path.resolve('node_modules', sourceName);
+      if (fs.existsSync(nodePath)) {
+        let contents = fs.readFileSync(nodePath, 'utf-8');
+        return ts.createSourceFile(sourceName, contents, compilerOptions.target, true);
+      }
       if (sourceName === defaultLibName) {
         if (!libSourceFile) {
           // Cache to avoid excessive test times.
@@ -45,8 +50,12 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
       return undefined;
     },
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
-    fileExists: (filename) => !!nameToContent[filename],
-    readFile: (filename) => nameToContent[filename],
+    fileExists: (filename) => {
+      // TODO(martinprobst): This is a hack, this test code should match (or use) the production
+      // code in main.ts
+      return !!(filename.match(/^\/rxjs\/.*\.d\.ts$/) || nameToContent[filename]);
+    },
+    readFile: (filename): string => { throw new Error('unexpected call to readFile'); },
     getDefaultLibFileName: () => defaultLibName,
     useCaseSensitiveFileNames: () => false,
     getCanonicalFileName: (filename) => filename,

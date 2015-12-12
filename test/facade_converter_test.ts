@@ -31,9 +31,13 @@ function getSources(str: string): {[k: string]: string} {
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
         export declare class Promise<R> {}`,
+    'rxjs/Observable.d.ts': `
+      declare module 'rxjs/Observable' {
+        class Observable {}
+      }`,
     'angular2/src/facade/async.ts': `
-        export {Promise} from "angular2/typings/es6-promise/es6-promise";
-        export declare class Observable {};`,
+        export {Promise} from 'angular2/typings/es6-promise/es6-promise';
+        export {Observable} from 'rxjs/Observable';`,
     'angular2/src/facade/collection.ts': `
         export declare var Map;`,
     'angular2/src/facade/lang.d.ts': `

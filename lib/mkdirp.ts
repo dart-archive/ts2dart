@@ -1,14 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-
 export default function mkdirP(p: string) {
-  let absPath = process.cwd();
+  // Convert input path to absolute and then relative so that we always have relative path in the
+  // end. This can be made simpler when path.isAbsolute is available in node v0.12.
+  p = path.resolve(p);
+  p = path.relative('', p);
 
+  var pathToCreate = '';
   p.split(path.sep).forEach(dirName => {
-    absPath = path.join(absPath, dirName);
-    if (!fs.existsSync(absPath)) {
-      fs.mkdir(absPath);
+    pathToCreate = path.join(pathToCreate, dirName);
+    if (!fs.existsSync(pathToCreate)) {
+      fs.mkdirSync(pathToCreate);
     }
   })
 }

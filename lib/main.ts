@@ -5,6 +5,7 @@ import path = require('path');
 import ts = require('typescript');
 
 import base = require('./base');
+import mkdirP from './mkdirp';
 import CallTranspiler = require('./call');
 import DeclarationTranspiler = require('./declaration');
 import ExpressionTranspiler = require('./expression');
@@ -105,7 +106,7 @@ export class Transpiler {
         .forEach((f: ts.SourceFile) => {
           var dartCode = this.translate(f);
           var outputFile = this.getOutputPath(f.fileName, destinationRoot);
-          Transpiler.recursiveMkdirSync(path.dirname(outputFile));
+          mkdirP(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
     this.checkForErrors(program);
@@ -173,39 +174,6 @@ export class Transpiler {
     this.lastCommentIdx = -1;
     this.visit(sourceFile);
     return this.output.getResult();
-  }
-
-  private static recursiveMkdirSync(p: string) {
-    // Simplified version of mkdirSync from https://github.com/jprichardson/node-fs-extra
-    // to avoid bringing in whole lot of module dependencies.
-    var o777 = parseInt('0777', 8);
-    var mode = o777 & (~process.umask());
-
-    p = path.resolve(p);
-
-    try {
-      fs.mkdirSync(p, mode);
-    } catch (error) {
-      switch (error.code) {
-        case 'ENOENT':
-          Transpiler.recursiveMkdirSync(path.dirname(p));
-          Transpiler.recursiveMkdirSync(p);
-          break;
-
-        // In the case of any other error, just see if there's a dir
-        // there already.  If so, then hooray!  If not, then something
-        // is borked.
-        default:
-          var stat: fs.Stats;
-          try {
-            stat = fs.statSync(p);
-          } catch (statError) {
-            throw(error);
-          }
-          if (!stat.isDirectory()) throw error;
-          break;
-      }
-    }
   }
 
   private checkForErrors(program: ts.Program) {

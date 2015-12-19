@@ -80,7 +80,7 @@ export class Transpiler {
    */
   transpile(fileNames: string[], destination?: string): void {
     if (this.options.basePath) {
-      this.options.basePath = this.normalizeSlashes(this.options.basePath);
+      this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
     }
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
     var host = this.createCompilerHost();
@@ -105,7 +105,7 @@ export class Transpiler {
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
         .forEach((f: ts.SourceFile) => {
           var dartCode = this.translate(f);
-          var outputFile = this.getOutputPath(f.fileName, destinationRoot);
+          var outputFile = this.getOutputPath(path.resolve(f.fileName), destinationRoot);
           mkdirP(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
@@ -213,7 +213,7 @@ export class Transpiler {
    * @param filePath Optional path to relativize, defaults to the current file's path.
    */
   getRelativeFileName(filePath?: string) {
-    if (filePath === undefined) filePath = this.currentFile.fileName;
+    if (filePath === undefined) filePath = path.resolve(this.currentFile.fileName);
     // TODO(martinprobst): Use path.isAbsolute on node v0.12.
     if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
       return filePath;  // already relative.

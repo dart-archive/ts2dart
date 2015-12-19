@@ -1,11 +1,10 @@
-import ts = require('typescript');
-import base = require('./base');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import * as base from './base';
+import {Transpiler} from './main';
 import {FacadeConverter} from './facade_converter';
 
 export default class ModuleTranspiler extends base.TranspilerBase {
-  constructor(
-      tr: ts2dart.Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean) {
+  constructor(tr: Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean) {
     super(tr);
   }
 

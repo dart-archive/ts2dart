@@ -1,18 +1,18 @@
 require('source-map-support').install();
-import SourceMap = require('source-map');
-import fs = require('fs');
-import path = require('path');
-import ts = require('typescript');
+import {SourceMapGenerator} from 'source-map';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as ts from 'typescript';
 
-import base = require('./base');
+import {TranspilerBase} from './base';
 import mkdirP from './mkdirp';
-import CallTranspiler = require('./call');
-import DeclarationTranspiler = require('./declaration');
-import ExpressionTranspiler = require('./expression');
+import CallTranspiler from './call';
+import DeclarationTranspiler from './declaration';
+import ExpressionTranspiler from './expression';
 import ModuleTranspiler from './module';
-import StatementTranspiler = require('./statement');
-import TypeTranspiler = require('./type');
-import LiteralTranspiler = require('./literal');
+import StatementTranspiler from './statement';
+import TypeTranspiler from './type';
+import LiteralTranspiler from './literal';
 import {FacadeConverter} from './facade_converter';
 
 export interface TranspilerOptions {
@@ -57,7 +57,7 @@ export class Transpiler {
   private lastCommentIdx: number = -1;
   private errors: string[] = [];
 
-  private transpilers: base.TranspilerBase[];
+  private transpilers: TranspilerBase[];
   private fc: FacadeConverter;
 
   constructor(private options: TranspilerOptions = {}) {
@@ -296,13 +296,13 @@ class Output {
 
   // Position information.
   private generateSourceMap: boolean;
-  private sourceMap: SourceMap.SourceMapGenerator;
+  private sourceMap: SourceMapGenerator;
 
   constructor(
       private currentFile: ts.SourceFile, private relativeFileName: string,
       generateSourceMap: boolean) {
     if (generateSourceMap) {
-      this.sourceMap = new SourceMap.SourceMapGenerator({file: relativeFileName + '.dart'});
+      this.sourceMap = new SourceMapGenerator({file: relativeFileName + '.dart'});
       this.sourceMap.setSourceContent(relativeFileName, this.currentFile.text);
     }
   }

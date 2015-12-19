@@ -3,7 +3,7 @@ import base = require('./base');
 import ts2dart = require('./main');
 import {FacadeConverter} from "./facade_converter";
 
-class CallTranspiler extends base.TranspilerBase {
+export default class CallTranspiler extends base.TranspilerBase {
   constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
@@ -212,5 +212,3 @@ class CallTranspiler extends base.TranspilerBase {
     return true;
   }
 }
-
-export = CallTranspiler;

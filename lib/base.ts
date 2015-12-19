@@ -1,5 +1,5 @@
-import ts = require('typescript');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import {Transpiler} from './main';
 
 export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
@@ -14,7 +14,7 @@ export function ident(n: ts.Node): string {
 }
 
 export class TranspilerBase {
-  constructor(private transpiler: ts2dart.Transpiler) {}
+  constructor(private transpiler: Transpiler) {}
 
   visit(n: ts.Node) { this.transpiler.visit(n); }
   emit(s: string) { this.transpiler.emit(s); }

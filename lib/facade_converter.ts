@@ -1,6 +1,6 @@
-import base = require('./base');
-import ts = require('typescript');
-import ts2dart = require('./main');
+import * as base from './base';
+import * as ts from 'typescript';
+import {Transpiler} from './main';
 
 type CallHandler = (c: ts.CallExpression, context: ts.Expression) => void;
 type PropertyHandler = (c: ts.PropertyAccessExpression) => void;
@@ -15,7 +15,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
 
-  constructor(transpiler: ts2dart.Transpiler) {
+  constructor(transpiler: Transpiler) {
     super(transpiler);
     this.extractPropertyNames(this.callHandlers, this.candidateProperties);
     this.extractPropertyNames(this.propertyHandlers, this.candidateProperties);

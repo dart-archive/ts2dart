@@ -1,12 +1,11 @@
-import ts = require('typescript');
-import base = require('./base');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import * as base from './base';
+import {Transpiler} from './main';
 import {FacadeConverter} from './facade_converter';
 
-class DeclarationTranspiler extends base.TranspilerBase {
+export default class DeclarationTranspiler extends base.TranspilerBase {
   constructor(
-      tr: ts2dart.Transpiler, private fc: FacadeConverter,
-      private enforceUnderscoreConventions: boolean) {
+      tr: Transpiler, private fc: FacadeConverter, private enforceUnderscoreConventions: boolean) {
     super(tr);
   }
 
@@ -456,5 +455,3 @@ class DeclarationTranspiler extends base.TranspilerBase {
     this.emit(';');
   }
 }
-
-export = DeclarationTranspiler;

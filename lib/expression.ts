@@ -1,10 +1,10 @@
-import ts = require('typescript');
-import base = require('./base');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import * as base from './base';
+import {Transpiler} from './main';
 import {FacadeConverter} from './facade_converter';
 
-class ExpressionTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
+export default class ExpressionTranspiler extends base.TranspilerBase {
+  constructor(tr: Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -94,5 +94,3 @@ class ExpressionTranspiler extends base.TranspilerBase {
     return true;
   }
 }
-
-export = ExpressionTranspiler;

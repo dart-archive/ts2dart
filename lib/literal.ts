@@ -1,10 +1,10 @@
-import ts = require('typescript');
-import base = require('./base');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import * as base from './base';
+import {Transpiler} from './main';
 import {FacadeConverter} from "./facade_converter";
 
-class LiteralTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler, private fc: FacadeConverter) { super(tr); }
+export default class LiteralTranspiler extends base.TranspilerBase {
+  constructor(tr: Transpiler, private fc: FacadeConverter) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -131,5 +131,3 @@ class LiteralTranspiler extends base.TranspilerBase {
     return (<ts.StringLiteral>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
   }
 }
-
-export = LiteralTranspiler;

@@ -1,11 +1,11 @@
-import ts = require('typescript');
-import base = require('./base');
-import ts2dart = require('./main');
+import * as ts from 'typescript';
+import * as base from './base';
+import {Transpiler} from './main';
 
 type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 
-class StatementTranspiler extends base.TranspilerBase {
-  constructor(tr: ts2dart.Transpiler) { super(tr); }
+export default class StatementTranspiler extends base.TranspilerBase {
+  constructor(tr: Transpiler) { super(tr); }
 
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
@@ -162,5 +162,3 @@ class StatementTranspiler extends base.TranspilerBase {
     return true;
   }
 }
-
-export = StatementTranspiler;

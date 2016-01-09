@@ -24,10 +24,10 @@ export default class ModuleTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.ImportDeclaration:
         var importDecl = <ts.ImportDeclaration>node;
-        if (this.isEmptyImport(importDecl)) return true;
-        this.emit('import');
-        this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
         if (importDecl.importClause) {
+          if (this.isEmptyImport(importDecl)) return true;
+          this.emit('import');
+          this.visitExternalModuleReferenceExpr(importDecl.moduleSpecifier);
           this.visit(importDecl.importClause);
         } else {
           this.reportError(importDecl, 'bare import is unsupported');

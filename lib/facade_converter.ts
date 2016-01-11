@@ -353,9 +353,102 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
 
+  private es6Collections: ts.Map<CallHandler> = {
+    'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('[');
+      this.visit(c.arguments[0]);
+      this.emit(']');
+      this.emit('=');
+      this.visit(c.arguments[1]);
+    },
+    'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('[');
+      this.visit(c.arguments[0]);
+      this.emit(']');
+    },
+    'Map.has': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('containsKey', c.arguments);
+    },
+    'Map.delete': (c: ts.CallExpression, context: ts.Expression) => {
+      // JS Map.delete(k) returns whether k was present in the map,
+      // convert to:
+      // (Map.containsKey(k) && (Map.remove(k) != null || true))
+      // (Map.remove(k) != null || true) is required to always returns true
+      // when Map.containsKey(k)
+      this.emit('(');
+      this.visit(context);
+      this.emitMethodCall('containsKey', c.arguments);
+      this.emit('&& (');
+      this.visit(context);
+      this.emitMethodCall('remove', c.arguments);
+      this.emit('!= null || true ) )');
+    },
+    'Map.forEach': (c: ts.CallExpression, context: ts.Expression) => {
+      let cb: any;
+      let params: any;
+
+      switch (c.arguments[0].kind) {
+        case ts.SyntaxKind.FunctionExpression:
+          cb = <ts.FunctionExpression>(c.arguments[0]);
+          params = cb.parameters;
+          if (params.length != 2) {
+            this.reportError(c, 'Map.forEach callback requires exactly two arguments');
+            return;
+          }
+          this.visit(context);
+          this.emit('. forEach ( (');
+          this.visit(params[1]);
+          this.emit(',');
+          this.visit(params[0]);
+          this.emit(')');
+          this.visit(cb.body);
+          this.emit(')');
+          break;
+
+        case ts.SyntaxKind.ArrowFunction:
+          cb = <ts.ArrowFunction>(c.arguments[0]);
+          params = cb.parameters;
+          if (params.length != 2) {
+            this.reportError(c, 'Map.forEach callback requires exactly two arguments');
+            return;
+          }
+          this.visit(context);
+          this.emit('. forEach ( (');
+          this.visit(params[1]);
+          this.emit(',');
+          this.visit(params[0]);
+          this.emit(')');
+          if (cb.body.kind != ts.SyntaxKind.Block) {
+            this.emit('=>');
+          }
+          this.visit(cb.body);
+          this.emit(')');
+          break;
+
+        default:
+          this.visit(context);
+          this.emit('. forEach ( ( k , v ) => (');
+          this.visit(c.arguments[0]);
+          this.emit(') ( v , k ) )');
+          break;
+      }
+    },
+    'Array.find': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('. firstWhere (');
+      this.visit(c.arguments[0]);
+      this.emit(', orElse : ( ) => null )');
+    }
+  };
+
   private callHandlers: ts.Map<ts.Map<CallHandler>> = {
     'lib': this.stdlibHandlers,
     'lib.es6': this.stdlibHandlers,
+    'angular2/typings/es6-shim/es6-shim': this.es6Collections,
+    'angular2/typings/es6-collections/es6-collections': this.es6Collections,
     'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
         // The actual Map constructor is special cased for const calls.
@@ -371,96 +464,6 @@ export class FacadeConverter extends base.TranspilerBase {
         this.emit('{ }');
         return false;
       },
-    },
-    'angular2/typings/es6-shim/es6-shim': {
-      'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('[');
-        this.visit(c.arguments[0]);
-        this.emit(']');
-        this.emit('=');
-        this.visit(c.arguments[1]);
-      },
-      'Map.get': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('[');
-        this.visit(c.arguments[0]);
-        this.emit(']');
-      },
-      'Map.has': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emitMethodCall('containsKey', c.arguments);
-      },
-      'Map.delete': (c: ts.CallExpression, context: ts.Expression) => {
-        // JS Map.delete(k) returns whether k was present in the map,
-        // convert to:
-        // (Map.containsKey(k) && (Map.remove(k) != null || true))
-        // (Map.remove(k) != null || true) is required to always returns true
-        // when Map.containsKey(k)
-        this.emit('(');
-        this.visit(context);
-        this.emitMethodCall('containsKey', c.arguments);
-        this.emit('&& (');
-        this.visit(context);
-        this.emitMethodCall('remove', c.arguments);
-        this.emit('!= null || true ) )');
-      },
-      'Map.forEach': (c: ts.CallExpression, context: ts.Expression) => {
-        let cb: any;
-        let params: any;
-
-        switch (c.arguments[0].kind) {
-          case ts.SyntaxKind.FunctionExpression:
-            cb = <ts.FunctionExpression>(c.arguments[0]);
-            params = cb.parameters;
-            if (params.length != 2) {
-              this.reportError(c, 'Map.forEach callback requires exactly two arguments');
-              return;
-            }
-            this.visit(context);
-            this.emit('. forEach ( (');
-            this.visit(params[1]);
-            this.emit(',');
-            this.visit(params[0]);
-            this.emit(')');
-            this.visit(cb.body);
-            this.emit(')');
-            break;
-
-          case ts.SyntaxKind.ArrowFunction:
-            cb = <ts.ArrowFunction>(c.arguments[0]);
-            params = cb.parameters;
-            if (params.length != 2) {
-              this.reportError(c, 'Map.forEach callback requires exactly two arguments');
-              return;
-            }
-            this.visit(context);
-            this.emit('. forEach ( (');
-            this.visit(params[1]);
-            this.emit(',');
-            this.visit(params[0]);
-            this.emit(')');
-            if (cb.body.kind != ts.SyntaxKind.Block) {
-              this.emit('=>');
-            }
-            this.visit(cb.body);
-            this.emit(')');
-            break;
-
-          default:
-            this.visit(context);
-            this.emit('. forEach ( ( k , v ) => (');
-            this.visit(c.arguments[0]);
-            this.emit(') ( v , k ) )');
-            break;
-        }
-      },
-      'Array.find': (c: ts.CallExpression, context: ts.Expression) => {
-        this.visit(context);
-        this.emit('. firstWhere (');
-        this.visit(c.arguments[0]);
-        this.emit(', orElse : ( ) => null )');
-      }
     },
     'angular2/src/core/di/forward_ref': {
       'forwardRef': (c: ts.CallExpression, context: ts.Expression) => {
@@ -485,13 +488,16 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
 
-  private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
-    'angular2/typings/es6-shim/es6-shim': {
-      'Map.size': (p: ts.PropertyAccessExpression) => {
-        this.visit(p.expression);
-        this.emit('.');
-        this.emit('length');
-      },
+  private es6CollectionsProp: ts.Map<PropertyHandler> = {
+    'Map.size': (p: ts.PropertyAccessExpression) => {
+      this.visit(p.expression);
+      this.emit('.');
+      this.emit('length');
     },
+  };
+
+  private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
+    'angular2/typings/es6-shim/es6-shim': this.es6CollectionsProp,
+    'angular2/typings/es6-collections/es6-collections': this.es6CollectionsProp,
   };
 }

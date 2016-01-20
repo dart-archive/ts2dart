@@ -38,8 +38,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         // Function type interface in an interface with a single declaration
         // of a call signature (http://goo.gl/ROC5jN).
         if (ifDecl.members.length === 1 && ifDecl.members[0].kind === ts.SyntaxKind.CallSignature) {
+          let member = <ts.CallSignatureDeclaration>ifDecl.members[0];
           this.visitFunctionTypedefInterface(
-              ifDecl.name.text, <ts.SignatureDeclaration>ifDecl.members[0], ifDecl.typeParameters);
+              ifDecl.name.text, member, ifDecl.typeParameters);
         } else {
           this.visitClassLike('abstract class', ifDecl);
         }
@@ -439,7 +440,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
    * call signature, by translating to a Dart `typedef`.
    */
   private visitFunctionTypedefInterface(
-      name: string, signature: ts.SignatureDeclaration,
+      name: string, signature: ts.CallSignatureDeclaration,
       typeParameters: ts.NodeArray<ts.TypeParameterDeclaration>) {
     this.emit('typedef');
     if (signature.type) {

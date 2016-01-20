@@ -39,8 +39,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         // of a call signature (http://goo.gl/ROC5jN).
         if (ifDecl.members.length === 1 && ifDecl.members[0].kind === ts.SyntaxKind.CallSignature) {
           let member = <ts.CallSignatureDeclaration>ifDecl.members[0];
-          this.visitFunctionTypedefInterface(
-              ifDecl.name.text, member, ifDecl.typeParameters);
+          this.visitFunctionTypedefInterface(ifDecl.name.text, member, ifDecl.typeParameters);
         } else {
           this.visitClassLike('abstract class', ifDecl);
         }
@@ -360,14 +359,17 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.visitProperty(param, true);
       }
     };
-    decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)
+    (<ts.NodeArray<ts.Declaration>>decl.members)
+        .filter((m) => m.kind == ts.SyntaxKind.Constructor)
         .forEach(
             (ctor) =>
                 (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed
-    if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
+    if (this.isConst(decl) &&
+        !(<ts.NodeArray<ts.Declaration>>decl.members)
+             .some((m) => m.kind == ts.SyntaxKind.Constructor)) {
       this.emit("const");
       this.fc.visitTypeName(decl.name);
       this.emit("();")

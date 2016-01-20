@@ -62,10 +62,11 @@ export class TranspilerBase {
   }
 
   isConst(decl: ClassLike) {
-    return this.hasAnnotation(decl.decorators, 'CONST') || decl.members.some((m) => {
-      if (m.kind !== ts.SyntaxKind.Constructor) return false;
-      return this.hasAnnotation(m.decorators, 'CONST');
-    });
+    return this.hasAnnotation(decl.decorators, 'CONST') ||
+           (<ts.NodeArray<ts.Declaration>>decl.members).some((m) => {
+             if (m.kind !== ts.SyntaxKind.Constructor) return false;
+             return this.hasAnnotation(m.decorators, 'CONST');
+           });
   }
 
   getRelativeFileName(fileName: string): string {

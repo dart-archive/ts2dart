@@ -360,14 +360,14 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.visitProperty(param, true);
       }
     };
-    decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)
+    (<ts.NodeArray<ts.Declaration>>decl.members).filter((m) => m.kind == ts.SyntaxKind.Constructor)
         .forEach(
             (ctor) =>
                 (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed
-    if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
+    if (this.isConst(decl) && !(<ts.NodeArray<ts.Declaration>>decl.members).some((m) => m.kind == ts.SyntaxKind.Constructor)) {
       this.emit("const");
       this.fc.visitTypeName(decl.name);
       this.emit("();")

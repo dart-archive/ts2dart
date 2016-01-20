@@ -273,7 +273,8 @@ export function getModuleResolver(compilerHost: ts.CompilerHost) {
   return (moduleNames: string[], containingFile: string): ts.ResolvedModule[] => {
     let res: ts.ResolvedModule[] = [];
     for (let mod of moduleNames) {
-      let lookupRes = ts.nodeModuleNameResolver(mod, containingFile, compilerHost);
+      let lookupRes =
+          ts.nodeModuleNameResolver(mod, containingFile, COMPILER_OPTIONS, compilerHost);
       if (lookupRes.resolvedModule) {
         res.push(lookupRes.resolvedModule);
         continue;

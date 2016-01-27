@@ -12,6 +12,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var spawn = require('child_process').spawn;
 var ts = require('gulp-typescript');
 var typescript = require('typescript');
+var style = require('dart-style');
 var which = require('which');
 
 gulp.task('test.check-format', function() {
@@ -54,7 +55,10 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts', 'typings/**/*.d.ts'], {base: '.'})
+  return gulp
+      .src(
+          ['test/*.ts', 'typings/**/*.d.ts', 'node_modules/dart-style/dart-style.d.ts'],
+          {base: '.'})
       .pipe(sourcemaps.init())
       .pipe(ts(tsProject))
       .on('error', onError)
@@ -84,7 +88,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
 
   // run node with a shell so we can wildcard all the .ts files
   var cmd = 'node ../lib/main.js --translateBuiltins --basePath=. --destination=. ' +
-            '*.ts angular2/src/facade/lang.d.ts';
+      '*.ts angular2/src/facade/lang.d.ts';
   // Paths must be relative to our source root, so run with cwd == dir.
   spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir}).on('close', function(code, signal) {
     if (code > 0) {

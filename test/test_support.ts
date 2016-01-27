@@ -14,6 +14,11 @@ export type Input = string | StringMap;
 
 export function expectTranslate(tsCode: Input, options: main.TranspilerOptions = {}) {
   var result = translateSource(tsCode, options);
+  // The Dart formatter is aggressive at terminating statements with \n
+  // which clutters the expectation output without providing value.
+  if (result[result.length - 1] == '\n') {
+    result = result.slice(0, -1);
+  }
   return chai.expect(result);
 }
 

@@ -14,6 +14,7 @@ import StatementTranspiler from './statement';
 import TypeTranspiler from './type';
 import LiteralTranspiler from './literal';
 import {FacadeConverter} from './facade_converter';
+import * as dartStyle from 'dart-style';
 
 export interface TranspilerOptions {
   /**
@@ -173,7 +174,16 @@ export class Transpiler {
         new Output(sourceFile, this.getRelativeFileName(), this.options.generateSourceMap);
     this.lastCommentIdx = -1;
     this.visit(sourceFile);
-    return this.output.getResult();
+    var result = this.output.getResult();
+    return this.formatCode(result, sourceFile);
+  }
+
+  private formatCode(code: string, context: ts.Node) {
+    var result = dartStyle.formatCode(code);
+    if (result.error) {
+      this.reportError(context, result.error);
+    }
+    return result.code;
   }
 
   private checkForErrors(program: ts.Program) {
@@ -325,7 +335,7 @@ class Output {
     }
   }
 
-  getResult(): string { return this.result + this.generateSourceMapComment(); }
+  getResult(): string { return this.result; }
 
   addSourceMapping(n: ts.Node) {
     if (!this.sourceMap) return;  // source maps disabled.

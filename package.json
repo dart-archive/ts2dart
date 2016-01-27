@@ -8,6 +8,7 @@
     "test": "test"
   },
   "dependencies": {
+    "dart-style": "^0.2.6",
     "minimist": "^1.1.1",
     "source-map": "^0.4.2",
     "source-map-support": "^0.3.1",
@@ -15,7 +16,7 @@
   },
   "devDependencies": {
     "chai": "^2.1.1",
-    "clang-format": "^1.0.25",
+    "clang-format": "^1.0.34",
     "fs-extra": "^0.18.0",
     "gulp": "^3.8.11",
     "gulp-clang-format": "^1.0.21",

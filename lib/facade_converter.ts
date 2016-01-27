@@ -197,7 +197,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private reportMissingType(n: ts.Node, ident: string) {
     this.reportError(
         n, `Untyped property access to "${ident}" which could be ` + `a special ts2dart builtin. ` +
-               `Please add type declarations to disambiguate.`);
+            `Please add type declarations to disambiguate.`);
   }
 
   isInsideConstExpr(node: ts.Node): boolean {

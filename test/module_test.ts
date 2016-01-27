@@ -8,22 +8,22 @@ import {expectTranslate, expectErroneousCode, translateSources} from './test_sup
 
 describe('imports', () => {
   it('translates import equals statements', () => {
-    expectTranslate('import x = require("y");').to.equal(' import "package:y.dart" as x ;');
+    expectTranslate('import x = require("y");').to.equal('import "package:y.dart" as x;');
   });
   it('translates import from statements', () => {
-    expectTranslate('import {x,y} from "z";').to.equal(' import "package:z.dart" show x , y ;');
+    expectTranslate('import {x,y} from "z";').to.equal('import "package:z.dart" show x, y;');
   });
   it('translates import star', () => {
-    expectTranslate('import * as foo from "z";').to.equal(' import "package:z.dart" as foo ;');
+    expectTranslate('import * as foo from "z";').to.equal('import "package:z.dart" as foo;');
   });
   it('allows import dart file from relative path', () => {
-    expectTranslate('import x = require("./y")').to.equal(' import "y.dart" as x ;');
-    expectTranslate('import {x} from "./y"').to.equal(' import "y.dart" show x ;');
-    expectTranslate('import {x} from "../y"').to.equal(' import "../y.dart" show x ;');
+    expectTranslate('import x = require("./y")').to.equal('import "y.dart" as x;');
+    expectTranslate('import {x} from "./y"').to.equal('import "y.dart" show x;');
+    expectTranslate('import {x} from "../y"').to.equal('import "../y.dart" show x;');
   });
   it('handles ignored annotations in imports', () => {
     expectTranslate('import {CONST, CONST_EXPR, IMPLEMENTS, ABSTRACT} from "x"').to.equal('');
-    expectTranslate('import {x, IMPLEMENTS} from "./x"').to.equal(' import "x.dart" show x ;');
+    expectTranslate('import {x, IMPLEMENTS} from "./x"').to.equal('import "x.dart" show x;');
   });
   it('fails for renamed imports', () => {
     expectErroneousCode('import {Foo as Bar} from "baz";')
@@ -36,15 +36,15 @@ describe('imports', () => {
 describe('exports', () => {
   // Dart exports are implicit, everything non-private is exported by the library.
   it('allows variable exports',
-     () => { expectTranslate('export var x = 12;').to.equal(' var x = 12 ;'); });
+     () => { expectTranslate('export var x = 12;').to.equal('var x = 12;'); });
   it('allows class exports',
-     () => { expectTranslate('export class X {}').to.equal(' class X { }'); });
+     () => { expectTranslate('export class X {}').to.equal('class X {}'); });
   it('allows export declarations',
-     () => { expectTranslate('export * from "X";').to.equal(' export "package:X.dart" ;'); });
+     () => { expectTranslate('export * from "X";').to.equal('export "package:X.dart";'); });
   it('allows export declarations',
-     () => { expectTranslate('export * from "./X";').to.equal(' export "X.dart" ;'); });
+     () => { expectTranslate('export * from "./X";').to.equal('export "X.dart";'); });
   it('allows named export declarations', () => {
-    expectTranslate('export {a, b} from "X";').to.equal(' export "package:X.dart" show a , b ;');
+    expectTranslate('export {a, b} from "X";').to.equal('export "package:X.dart" show a, b;');
   });
   it('fails for renamed exports', () => {
     expectErroneousCode('export {Foo as Bar} from "baz";')
@@ -67,7 +67,10 @@ describe('library name', () => {
   it('adds a library name', () => {
     var results = translateSources(
         {'/a/b/c.ts': 'var x;'}, {failFast: true, generateLibraryName: true, basePath: '/a'});
-    chai.expect(results['/a/b/c.ts']).to.equal(' library b.c ; var x ;');
+    chai.expect(results['/a/b/c.ts']).to.equal(`library b.c;
+
+var x;
+`);
   });
   it('leaves relative paths alone',
      () => { chai.expect(modTranspiler.getLibraryName('a/b')).to.equal('a.b'); });

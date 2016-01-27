@@ -24,6 +24,8 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
           if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
             this.emit('is');
             this.fc.visitTypeName(<ts.Identifier>binExpr.right);
+          } else if (operatorKind == ts.SyntaxKind.InKeyword) {
+            this.reportError(node, 'in operator is unsupported');
           } else {
             this.emit(ts.tokenToString(binExpr.operatorToken.kind));
             this.visit(binExpr.right);

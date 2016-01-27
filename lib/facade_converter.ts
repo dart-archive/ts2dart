@@ -449,6 +449,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibHandlers,
     'angular2/typings/es6-shim/es6-shim': this.es6Collections,
     'angular2/typings/es6-collections/es6-collections': this.es6Collections,
+    'angular2/manual_typings/globals': this.es6Collections,
     'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
         // The actual Map constructor is special cased for const calls.

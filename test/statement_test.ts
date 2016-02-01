@@ -35,6 +35,14 @@ describe('statements', () => {
   2;
 }`);
   });
+  it('translates for-of loops', () => {
+    expectTranslate('for (var x of 1) { 2 }').to.equal(`for (var x in 1) {
+  2;
+}`);
+    expectTranslate('for (x of 1) { 2 }').to.equal(`for (x in 1) {
+  2;
+}`);
+  });
   it('translates while loops', () => {
     expectTranslate('while (1) { 2 }').to.equal(`while (1) {
   2;

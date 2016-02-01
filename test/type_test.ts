@@ -45,4 +45,9 @@ describe('type arguments', () => {
   it('should support use', () => {
     expectTranslate('class X extends Y<A, B> { }').to.equal('class X extends Y<A, B> {}');
   });
+  it('should remove single <void> generic argument', () => {
+    expectTranslate('var x: X<number>;').to.equal('X<num> x;');
+    expectTranslate('class X extends Y<void> { }').to.equal('class X extends Y {}');
+    expectTranslate('var x = new Promise<void>();').to.equal('var x = new Promise();');
+  });
 });

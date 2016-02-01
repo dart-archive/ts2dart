@@ -1,5 +1,5 @@
-/// <reference path="./unittest.d.ts"/>
-import t = require("unittest/unittest");
+/// <reference path="./test.d.ts"/>
+import t = require("test/test");
 import {MyClass, MySubclass, SomeArray} from './lib';
 
 

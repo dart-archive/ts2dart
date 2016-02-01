@@ -91,6 +91,15 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.emit(')');
         this.visit(forInStmt.statement);
         break;
+      case ts.SyntaxKind.ForOfStatement:
+        var forOfStmt = <ts.ForOfStatement>node;
+        this.emit('for (');
+        if (forOfStmt.initializer) this.visit(forOfStmt.initializer);
+        this.emit('in');
+        this.visit(forOfStmt.expression);
+        this.emit(')');
+        this.visit(forOfStmt.statement);
+        break;
       case ts.SyntaxKind.WhileStatement:
         var whileStmt = <ts.WhileStatement>node;
         this.emit('while (');

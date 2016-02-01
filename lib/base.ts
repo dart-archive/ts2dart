@@ -75,6 +75,12 @@ export class TranspilerBase {
 
   maybeVisitTypeArguments(n: {typeArguments?: ts.NodeArray<ts.TypeNode>}) {
     if (n.typeArguments) {
+      // If it's a single type argument `<void>`, ignore it and emit nothing.
+      // This is particularly useful for `Promise<void>`, see
+      // https://github.com/dart-lang/sdk/issues/2231#issuecomment-108313639
+      if (n.typeArguments.length == 1 && n.typeArguments[0].kind == ts.SyntaxKind.VoidKeyword) {
+        return;
+      }
       this.emit('<');
       this.visitList(n.typeArguments);
       this.emit('>');

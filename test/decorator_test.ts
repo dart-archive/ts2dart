@@ -6,6 +6,10 @@ describe('decorators', () => {
     expectTranslate('@A class X {}').to.equal(`@A
 class X {}`);
   });
+  it('translates plain decorators when applied to abstract classes', () => {
+    expectTranslate('@A abstract class X {}').to.equal(`@A
+abstract class X {}`);
+  });
   it('translates arguments', () => {
     expectTranslate('@A(a, b) class X {}').to.equal(`@A(a, b)
 class X {}`);

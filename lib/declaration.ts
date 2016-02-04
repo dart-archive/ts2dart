@@ -29,9 +29,10 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.ClassDeclaration:
         var classDecl = <ts.ClassDeclaration>node;
         if (classDecl.modifiers && (classDecl.modifiers.flags & ts.NodeFlags.Abstract)) {
-          this.emit('abstract');
+          this.visitClassLike('abstract class', classDecl);
+        } else {
+          this.visitClassLike('class', classDecl);
         }
-        this.visitClassLike('class', classDecl);
         break;
       case ts.SyntaxKind.InterfaceDeclaration:
         var ifDecl = <ts.InterfaceDeclaration>node;

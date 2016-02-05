@@ -10,6 +10,8 @@ type Set = {
 
 const FACADE_DEBUG = false;
 
+const FACADE_NODE_MODULES_PREFIX = /^(\.\.\/)*node_modules\//;
+
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private candidateProperties: {[propertyName: string]: boolean} = {};
@@ -149,6 +151,9 @@ export class FacadeConverter extends base.TranspilerBase {
     var loc = this.getFileAndName(n, symbol);
     if (!loc) return null;
     var {fileName, qname} = loc;
+    if (FACADE_NODE_MODULES_PREFIX.test(fileName)) {
+      fileName = fileName.replace(FACADE_NODE_MODULES_PREFIX, '');
+    }
     var fileSubs = m[fileName];
     if (!fileSubs) return null;
     return fileSubs[qname];

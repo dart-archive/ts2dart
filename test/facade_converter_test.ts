@@ -36,11 +36,11 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
     'angular2/typings/es6-promise/es6-promise.d.ts': `
-        export declare class Promise<R> {}`,
+        declare class Promise<R> {}
+        declare module Promise {}`,
     'node_modules/rxjs/Observable.d.ts': `
         export declare class Observable {}`,
     'angular2/src/facade/async.ts': `
-        export {Promise} from 'angular2/typings/es6-promise/es6-promise';
         export {Observable} from 'rxjs/Observable';`,
     'angular2/src/facade/collection.ts': `
         export declare var Map;`,
@@ -76,16 +76,14 @@ function expectErroneousWithType(str: string) {
 describe('type based translation', () => {
   describe('Dart type substitution', () => {
     it('finds registered substitutions', () => {
-      expectWithTypes(
-          'import {Promise, Observable} from "angular2/src/facade/async"; var p: Promise<Date>;')
-          .to.equal(`import "package:angular2/src/facade/async.dart" show Future, Stream;
+      expectWithTypes('import {Observable} from "angular2/src/facade/async"; var p: Promise<Date>;')
+          .to.equal(`import "dart:async";
+import "package:angular2/src/facade/async.dart" show Stream;
 
 Future<DateTime> p;`);
-      expectWithTypes(
-          'import {Promise} from "angular2/src/facade/async"; var y = x instanceof Promise;')
-          .to.equal(`import "package:angular2/src/facade/async.dart" show Future;
+      expectWithTypes('var y: Promise;').to.equal(`import "dart:async";
 
-var y = x is Future;`);
+Future y;`);
       expectWithTypes('var n: Node;').to.equal('dynamic n;');
       expectWithTypes('var xhr: XMLHttpRequest;').to.equal(`import "dart:html";
 

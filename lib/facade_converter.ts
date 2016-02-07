@@ -97,7 +97,8 @@ export class FacadeConverter extends base.TranspilerBase {
       "XMLHttpRequest": "dart:html",
       "KeyboardEvent": "dart:html",
       "Uint8Array": "dart:typed_arrays",
-      "ArrayBuffer": "dart:typed_arrays"
+      "ArrayBuffer": "dart:typed_arrays",
+      "Promise": "dart:async"
     };
     var emitted: Set = {};
     this.emitImports(sourceFile, libraries, emitted, sourceFile);
@@ -227,6 +228,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'XMLHttpRequest': 'HttpRequest',
     'Uint8Array': 'Uint8List',
     'ArrayBuffer': 'ByteBuffer',
+    'Promise': 'Future',
 
     // Dart has two different incompatible DOM APIs
     // https://github.com/angular/angular/issues/2770

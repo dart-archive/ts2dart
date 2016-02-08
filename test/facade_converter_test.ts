@@ -76,11 +76,18 @@ function expectErroneousWithType(str: string) {
 describe('type based translation', () => {
   describe('Dart type substitution', () => {
     it('finds registered substitutions', () => {
-      expectWithTypes('import {Observable} from "angular2/src/facade/async"; var p: Promise<Date>;')
-          .to.equal(`import "dart:async";
-import "package:angular2/src/facade/async.dart" show Stream;
+      expectWithTypes(
+          'import {Observable} from "angular2/src/facade/async"; var o: Observable<Date>;')
+          .to.equal(`import "package:angular2/src/facade/async.dart" show Stream;
 
-Future<DateTime> p;`);
+Stream<DateTime> o;`);
+      expectWithTypes('var p: Promise<Date> = new Promise<DateTime>();')
+          .to.equal(`import "dart:async";
+
+Future<DateTime> p = new Future<DateTime>();`);
+      expectWithTypes('var p: Promise<void> = new Promise<void>();').to.equal(`import "dart:async";
+
+Future p = new Future();`);
       expectWithTypes('var y: Promise;').to.equal(`import "dart:async";
 
 Future y;`);

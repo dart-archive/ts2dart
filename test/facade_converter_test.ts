@@ -1,4 +1,5 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
+import * as fs from 'fs';
 import {
   parseFiles,
   expectTranslate,
@@ -35,9 +36,8 @@ function getSources(str: string): {[k: string]: string} {
     'angular2/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
-    'angular2/typings/es6-promise/es6-promise.d.ts': `
-        declare class Promise<R> {}
-        declare module Promise {}`,
+    'typings/es6-promise/es6-promise.d.ts':
+        fs.readFileSync('typings/es6-promise/es6-promise.d.ts', 'utf-8'),
     'node_modules/rxjs/Observable.d.ts': `
         export declare class Observable {}`,
     'angular2/src/facade/async.ts': `
@@ -53,8 +53,8 @@ function getSources(str: string): {[k: string]: string} {
           map(x: number): string { return String(x); }
           static get(m: any, k: string): number { return m[k]; }
         }
-        var global: any;
-        export var Promise = global.Promise;`,
+        export class Promise {}
+    `,
   };
   srcs[FAKE_MAIN] = str;
   return srcs;
@@ -81,13 +81,9 @@ describe('type based translation', () => {
           .to.equal(`import "package:angular2/src/facade/async.dart" show Stream;
 
 Stream<DateTime> o;`);
-      expectWithTypes('var p: Promise<Date> = new Promise<DateTime>();')
-          .to.equal(`import "dart:async";
+      expectWithTypes('var p: Promise<void> = x;').to.equal(`import "dart:async";
 
-Future<DateTime> p = new Future<DateTime>();`);
-      expectWithTypes('var p: Promise<void> = new Promise<void>();').to.equal(`import "dart:async";
-
-Future p = new Future();`);
+Future p = x;`);
       expectWithTypes('var y: Promise;').to.equal(`import "dart:async";
 
 Future y;`);
@@ -235,6 +231,99 @@ var y = x.length;`);
   var x = new RegExp(r'a');
   x.hasMatch("a");
 }`);
+  });
+
+  describe('promises', () => {
+    it('translates into Futures', () => {
+      expectWithTypes('let x: Promise = Promise.resolve(1);').to.equal(`import "dart:async";
+
+Future x = Future.value(1);`);
+      expectWithTypes('let x: Promise = Promise.reject(1);').to.equal(`import "dart:async";
+
+Future x = Future.error(1);`);
+      expectWithTypes('let x: Promise = new Promise((resolve) => {resolve(1);});')
+          .to.equal(`import "dart:async";
+
+Future x = (() {
+  Completer _completer$$ts2dart$0 = new Completer();
+  var resolve = _completer$$ts2dart$0.complete;
+  (() {
+    resolve(1);
+  })();
+  return _completer$$ts2dart$0.future;
+})();`);
+      expectWithTypes('let x: Promise = new Promise((resolve, reject) => {resolve(1);});')
+          .to.equal(`import "dart:async";
+
+Future x = (() {
+  Completer _completer$$ts2dart$0 = new Completer();
+  var resolve = _completer$$ts2dart$0.complete;
+  var reject = _completer$$ts2dart$0.completeError;
+  (() {
+    resolve(1);
+  })();
+  return _completer$$ts2dart$0.future;
+})();`);
+      expectWithTypes('let x: Promise = new Promise((myParam1, myParam2) => {myParam1(1);});')
+          .to.equal(`import "dart:async";
+
+Future x = (() {
+  Completer _completer$$ts2dart$0 = new Completer();
+  var myParam1 = _completer$$ts2dart$0.complete;
+  var myParam2 = _completer$$ts2dart$0.completeError;
+  (() {
+    myParam1(1);
+  })();
+  return _completer$$ts2dart$0.future;
+})();`);
+      expectWithTypes(
+          'let x: Promise<any> = new Promise((resolve, reject) => {resolve(1);});' +
+          'function fn(): void { x.then((v) => { console.log(v) }).catch((err) => { console.log(err); }); }')
+          .to.equal(`import "dart:async";
+
+Future<dynamic> x = (() {
+  Completer _completer$$ts2dart$0 = new Completer();
+  var resolve = _completer$$ts2dart$0.complete;
+  var reject = _completer$$ts2dart$0.completeError;
+  (() {
+    resolve(1);
+  })();
+  return _completer$$ts2dart$0.future;
+})();
+void fn() {
+  x.then((v) {
+    console.log(v);
+  }).catchError((err) {
+    console.log(err);
+  });
+}`);
+      expectWithTypes(
+          'var fn: () => Promise<number>;' +
+          'function main() { fn().then((v) => { console.log(v) }).catch((err) => { console.log(err); }); }')
+          .to.equal(`import "dart:async";
+
+dynamic /* () => Promise<number> */ fn;
+main() {
+  fn().then((v) {
+    console.log(v);
+  }).catchError((err) {
+    console.log(err);
+  });
+}`);
+      expectWithTypes(
+          'var fn: () => Promise<number>;' +
+          'function main() { fn().then((v) => { console.log(v) }, (err) => { console.log(err); }); }')
+          .to.equal(`import "dart:async";
+
+dynamic /* () => Promise<number> */ fn;
+main() {
+  fn().then((v) {
+    console.log(v);
+  }).catchError((err) {
+    console.log(err);
+  });
+}`);
+    });
   });
 
   describe(

@@ -12,6 +12,17 @@ const FACADE_DEBUG = false;
 
 const FACADE_NODE_MODULES_PREFIX = /^(\.\.\/)*node_modules\//;
 
+function merge(...args: {[key: string]: any}[]): {[key: string]: any} {
+  let returnObject: {[key: string]: any} = {};
+  for (let arg of args) {
+    for (let key of Object.getOwnPropertyNames(arg)) {
+      returnObject[key] = arg[key];
+    }
+  }
+  return returnObject;
+}
+
+
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private candidateProperties: {[propertyName: string]: boolean} = {};
@@ -37,42 +48,11 @@ export class FacadeConverter extends base.TranspilerBase {
 
   maybeHandleCall(c: ts.CallExpression): boolean {
     if (!this.tc) return false;
-
-    var symbol: ts.Symbol;
-    var context: ts.Expression;
-    var ident: string;
-
-    if (c.expression.kind === ts.SyntaxKind.Identifier) {
-      // Function call.
-      ident = base.ident(c.expression);
-      if (!this.candidateProperties.hasOwnProperty(ident)) return false;
-      symbol = this.tc.getSymbolAtLocation(c.expression);
-      if (FACADE_DEBUG) console.log('s:', symbol);
-
-      if (!symbol) {
-        this.reportMissingType(c, ident);
-        return false;
-      }
-
-      context = null;
-    } else if (c.expression.kind === ts.SyntaxKind.PropertyAccessExpression) {
-      // Method call.
-      var pa = <ts.PropertyAccessExpression>c.expression;
-      ident = base.ident(pa.name);
-      if (!this.candidateProperties.hasOwnProperty(ident)) return false;
-
-      symbol = this.tc.getSymbolAtLocation(pa);
-      if (FACADE_DEBUG) console.log('s:', symbol);
-
-      // Error will be reported by PropertyAccess handling below.
-      if (!symbol) return false;
-
-      context = pa.expression;
-    } else {
-      // Not a call we recognize.
+    let {context, symbol} = this.getCallInformation(c);
+    if (!symbol) {
+      // getCallInformation returns a symbol if we understand this call.
       return false;
     }
-
     var handler = this.getHandler(c, symbol, this.callHandlers);
     return handler && !handler(c, context);
   }
@@ -128,6 +108,7 @@ export class FacadeConverter extends base.TranspilerBase {
       this.visit(typeName);
       return;
     }
+    var identifier = <ts.Identifier>typeName;
     var ident = base.ident(typeName);
     if (this.candidateTypes.hasOwnProperty(ident) && this.tc) {
       var symbol = this.tc.getSymbolAtLocation(typeName);
@@ -145,6 +126,59 @@ export class FacadeConverter extends base.TranspilerBase {
       }
     }
     this.emit(ident);
+  }
+
+  shouldEmitNew(c: ts.CallExpression): boolean {
+    if (!this.tc) return true;
+
+    let {context, symbol} = this.getCallInformation(c);
+    if (!symbol) {
+      // getCallInformation returns a symbol if we understand this call.
+      return true;
+    }
+
+    var loc = this.getFileAndName(c, symbol);
+    if (!loc) return true;
+    var {fileName, qname} = loc;
+    var fileSubs = this.callHandlerReplaceNew[fileName];
+    if (!fileSubs) return true;
+    return !fileSubs[qname];
+  }
+
+  private getCallInformation(c: ts.CallExpression): {context?: ts.Expression, symbol?: ts.Symbol} {
+    var symbol: ts.Symbol;
+    var context: ts.Expression;
+    var ident: string;
+    var expr = c.expression;
+
+    if (expr.kind === ts.SyntaxKind.Identifier) {
+      // Function call.
+      ident = base.ident(expr);
+      if (!this.candidateProperties.hasOwnProperty(ident)) return {};
+      symbol = this.tc.getSymbolAtLocation(expr);
+      if (FACADE_DEBUG) console.log('s:', symbol);
+
+      if (!symbol) {
+        this.reportMissingType(c, ident);
+        return {};
+      }
+
+      context = null;
+    } else if (expr.kind === ts.SyntaxKind.PropertyAccessExpression) {
+      // Method call.
+      var pa = <ts.PropertyAccessExpression>expr;
+      ident = base.ident(pa.name);
+      if (!this.candidateProperties.hasOwnProperty(ident)) return {};
+
+      symbol = this.tc.getSymbolAtLocation(pa);
+      if (FACADE_DEBUG) console.log('s:', symbol);
+
+      // Error will be reported by PropertyAccess handling below.
+      if (!symbol) return {};
+
+      context = pa.expression;
+    }
+    return {context, symbol};
   }
 
   private getHandler<T>(n: ts.Node, symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
@@ -251,13 +285,79 @@ export class FacadeConverter extends base.TranspilerBase {
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,
     'lib.es6': this.stdlibTypeReplacements,
+    'typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
     'rxjs/Observable': {'Observable': 'Stream'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
   };
 
-  private stdlibHandlers: ts.Map<CallHandler> = {
+  private es6Promises: ts.Map<CallHandler> = {
+    'Promise.catch': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('.catchError(');
+      this.visitList(c.arguments);
+      this.emit(')');
+    },
+    'Promise.then': (c: ts.CallExpression, context: ts.Expression) => {
+      // then() in Dart doesn't support 2 arguments.
+      this.visit(context);
+      this.emit('.then(');
+      this.visit(c.arguments[0]);
+      this.emit(')');
+      if (c.arguments.length > 1) {
+        this.emit('.catchError(');
+        this.visit(c.arguments[1]);
+        this.emit(')');
+      }
+    },
+    'Promise': (c: ts.CallExpression, context: ts.Expression) => {
+      if (c.kind != ts.SyntaxKind.NewExpression) return true;
+      this.assert(c, c.arguments.length == 1, 'Promise construction must take 2 arguments.');
+      this.assert(
+          c, c.arguments[0].kind == ts.SyntaxKind.ArrowFunction ||
+              c.arguments[0].kind == ts.SyntaxKind.FunctionExpression,
+          'Promise argument must be a function expression (or arrow function).');
+      let callback: ts.FunctionLikeDeclaration;
+      if (c.arguments[0].kind == ts.SyntaxKind.ArrowFunction) {
+        callback = <ts.FunctionLikeDeclaration>(<ts.ArrowFunction>c.arguments[0]);
+      } else if (c.arguments[0].kind == ts.SyntaxKind.FunctionExpression) {
+        callback = <ts.FunctionLikeDeclaration>(<ts.FunctionExpression>c.arguments[0]);
+      }
+      this.assert(
+          c, callback.parameters.length > 0 && callback.parameters.length < 3,
+          'Promise executor must take 1 or 2 arguments (resolve and reject).');
+
+      const completerVarName = this.uniqueId('completer');
+      this.assert(
+          c, callback.parameters[0].name.kind == ts.SyntaxKind.Identifier,
+          'First argument of the Promise executor is not a straight parameter.');
+      let resolveParameterIdent = <ts.Identifier>(callback.parameters[0].name);
+
+      this.emit('(() {');  // Create a new scope.
+      this.emit(`Completer ${completerVarName} = new Completer();`);
+      this.emit('var');
+      this.emit(resolveParameterIdent.text);
+      this.emit(`= ${completerVarName}.complete;`);
+
+      if (callback.parameters.length == 2) {
+        this.assert(
+            c, callback.parameters[1].name.kind == ts.SyntaxKind.Identifier,
+            'First argument of the Promise executor is not a straight parameter.');
+        let rejectParameterIdent = <ts.Identifier>(callback.parameters[1].name);
+        this.emit('var');
+        this.emit(rejectParameterIdent.text);
+        this.emit(`= ${completerVarName}.completeError;`)
+      }
+      this.emit('(()');
+      this.visit(callback.body);
+      this.emit(')();');
+      this.emit(`return ${completerVarName}.future;`);
+      this.emit('})()');
+    },
+  };
+
+  private stdlibHandlers: ts.Map<CallHandler> = merge(this.es6Promises, {
     'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
       this.emitMethodCall('add', c.arguments);
@@ -352,7 +452,7 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emitMethodCall('allMatches', c.arguments);
       this.emitMethodCall('toList');
     },
-  };
+  });
 
   private es6Collections: ts.Map<CallHandler> = {
     'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
@@ -442,13 +542,22 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emit('. firstWhere (');
       this.visit(c.arguments[0]);
       this.emit(', orElse : ( ) => null )');
-    }
+    },
+  };
+
+  private callHandlerReplaceNew: ts.Map<ts.Map<boolean>> = {
+    'typings/es6-promise/es6-promise': {'Promise': true},
+    'angular2/typings/es6-promise/es6-promise': {'Promise': true},
   };
 
   private callHandlers: ts.Map<ts.Map<CallHandler>> = {
     'lib': this.stdlibHandlers,
     'lib.es6': this.stdlibHandlers,
-    'angular2/typings/es6-shim/es6-shim': this.es6Collections,
+    'typings/es6-promise/es6-promise': this.es6Promises,
+    'typings/es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
+    'typings/es6-collections/es6-collections': this.es6Collections,
+    'angular2/typings/es6-promise/es6-promise': this.es6Promises,
+    'angular2/typings/es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
     'angular2/typings/es6-collections/es6-collections': this.es6Collections,
     'angular2/manual_typings/globals': this.es6Collections,
     'angular2/src/facade/collection': {
@@ -497,9 +606,23 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emit('length');
     },
   };
+  private es6PromisesProp: ts.Map<PropertyHandler> = {
+    'resolve': (p: ts.PropertyAccessExpression) => {
+      this.visit(p.expression);
+      this.emit('.value');
+    },
+    'reject': (p: ts.PropertyAccessExpression) => {
+      this.visit(p.expression);
+      this.emit('.error');
+    },
+  };
 
   private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
+    'typings/es6-shim/es6-shim': this.es6CollectionsProp,
     'angular2/typings/es6-shim/es6-shim': this.es6CollectionsProp,
+    'typings/es6-collections/es6-collections': this.es6CollectionsProp,
     'angular2/typings/es6-collections/es6-collections': this.es6CollectionsProp,
+    'typings/es6-promise/es6-promise': this.es6PromisesProp,
+    'angular2/typings/es6-promise/es6-promise': this.es6PromisesProp,
   };
 }

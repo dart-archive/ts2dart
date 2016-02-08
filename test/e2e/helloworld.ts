@@ -1,4 +1,5 @@
 /// <reference path="./test.d.ts"/>
+/// <reference path="./typings/es6-promise/es6-promise.d.ts"/>
 import t = require("test/test");
 import {MyClass, MySubclass, SomeArray} from './lib';
 
@@ -26,4 +27,9 @@ function main(): void {
     t.expect(/o/g.exec("fo.o").length, t.equals(2));
   });
   t.test("const expr", function() { t.expect(SomeArray[0], t.equals(1)); });
+
+  t.test("promises", function() {
+    let p: Promise<number> = new Promise<number>((resolve) => { resolve(1); });
+    p.then((n) => { t.expect(n, t.equals(1)); });
+  });
 }

@@ -85,10 +85,11 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   if (fs.existsSync(dir)) fsx.removeSync(dir);
   fs.mkdirSync(dir);
   fsx.copySync(__dirname + '/test/e2e', dir);
+  fsx.copySync(__dirname + '/typings', dir + '/typings');
 
   // run node with a shell so we can wildcard all the .ts files
   var cmd = 'node ../lib/main.js --translateBuiltins --basePath=. --destination=. ' +
-      '*.ts angular2/src/facade/lang.d.ts';
+      '*.ts angular2/src/facade/lang.d.ts typings/es6-promise/es6-promise.d.ts';
   // Paths must be relative to our source root, so run with cwd == dir.
   spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir}).on('close', function(code, signal) {
     if (code > 0) {

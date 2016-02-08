@@ -14,6 +14,7 @@ export function ident(n: ts.Node): string {
 }
 
 export class TranspilerBase {
+  private id_: number = 0;
   constructor(private transpiler: Transpiler) {}
 
   visit(n: ts.Node) { this.transpiler.visit(n); }
@@ -33,6 +34,18 @@ export class TranspilerBase {
     for (var i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
       if (i < nodes.length - 1) this.emit(separator);
+    }
+  }
+
+  uniqueId(name: string): string {
+    const id = this.id_++;
+    return `_${name}\$\$ts2dart\$${id}`;
+  }
+
+  assert(c: ts.Node, condition: boolean, reason: string): void {
+    if (!condition) {
+      this.reportError(c, reason);
+      throw new Error(reason);
     }
   }
 

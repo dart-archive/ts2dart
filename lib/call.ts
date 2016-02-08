@@ -16,15 +16,18 @@ export default class CallTranspiler extends base.TranspilerBase {
         }
         return false;
       case ts.SyntaxKind.NewExpression:
+        var newExpr = <ts.NewExpression>node;
         if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) {
           // Constructor calls in annotations must be const constructor calls.
           this.emit('const');
         } else if (this.isInsideConstExpr(node)) {
           this.emit('const');
         } else {
-          this.emit('new');
+          // Some implementations can replace the `new` keyword.
+          if (this.fc.shouldEmitNew(newExpr)) {
+            this.emit('new');
+          }
         }
-        var newExpr = <ts.NewExpression>node;
         if (this.fc.maybeHandleCall(newExpr)) break;
         this.visitCall(newExpr);
         break;

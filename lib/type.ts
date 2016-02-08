@@ -70,7 +70,7 @@ export default class TypeTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.Identifier:
         var ident = <ts.Identifier>node;
-        this.emit(ident.text);
+        this.fc.visitTypeName(ident);
         break;
       case ts.SyntaxKind.NumberKeyword:
         this.emit('num');

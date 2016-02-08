@@ -25,13 +25,15 @@
     "gulp-typescript": "^2.7.6",
     "gulp-util": "^3.0.4",
     "merge2": "^0.3.1",
+    "npm-release": "^1.0.0",
     "temp": "^0.8.1",
     "tsd": "^0.6.0",
     "which": "^1.0.9"
   },
   "scripts": {
     "prepublish": "npm install tsd@^0.6.0 && tsd reinstall --overwrite && gulp compile",
-    "test": "gulp test"
+    "test": "gulp test",
+    "release": "npm-release"
   },
   "repository": {
     "type": "git",

@@ -151,9 +151,6 @@ export class FacadeConverter extends base.TranspilerBase {
     var loc = this.getFileAndName(n, symbol);
     if (!loc) return null;
     var {fileName, qname} = loc;
-    if (FACADE_NODE_MODULES_PREFIX.test(fileName)) {
-      fileName = fileName.replace(FACADE_NODE_MODULES_PREFIX, '');
-    }
     var fileSubs = m[fileName];
     if (!fileSubs) return null;
     return fileSubs[qname];
@@ -176,6 +173,7 @@ export class FacadeConverter extends base.TranspilerBase {
     var fileName = decl.getSourceFile().fileName;
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
+    fileName = fileName.replace(FACADE_NODE_MODULES_PREFIX, '');
 
     var qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
@@ -255,11 +253,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'lib.es6': this.stdlibTypeReplacements,
     'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
     'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
-    '../../node_modules/rxjs/Observable': {'Observable': 'Stream'},
-    // TODO(martinprobst): It turns out the angular2 build is too eccentric to reproduce in our test
-    // suite. The ../../ path above is what happens in Angular2, the path below is what our test
-    // suite spits out.
-    'node_modules/rxjs/Observable': {'Observable': 'Stream'},
+    'rxjs/Observable': {'Observable': 'Stream'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
   };
 

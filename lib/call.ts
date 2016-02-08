@@ -44,7 +44,11 @@ export default class CallTranspiler extends base.TranspilerBase {
   }
 
   private visitCall(c: ts.CallExpression) {
-    this.visit(c.expression);
+    if (c.expression.kind == ts.SyntaxKind.Identifier) {
+      this.fc.visitTypeName(<ts.Identifier>c.expression);
+    } else {
+      this.visit(c.expression);
+    }
     // Type arguments on methods are ignored. Dart doesn't support
     // generic methods, and while we don't allow them to be declared
     // in ts2dart, it's possible the method being called is not

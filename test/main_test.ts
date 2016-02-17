@@ -41,6 +41,56 @@ class A {
       expectTranslate('/** {@link this/place} */ a').to.equal('/** [this/place] */ a;');
       expectTranslate('/* {@link 1} {@link 2} */ a').to.equal('/* [1] [2] */ a;');
     });
+    it('removes @module doc tags', () => {
+      expectTranslate(`/** @module
+  * This is a module for doing X.
+  */`).to.equal(`/** 
+  * This is a module for doing X.
+  */`);
+    });
+    it('removes @description doc tags', () => {
+      expectTranslate(`/** @description
+  * This is a module for doing X.
+  */`).to.equal(`/** 
+  * This is a module for doing X.
+  */`);
+    });
+    it('removes @depracted doc tags', () => {
+      expectTranslate(`/**
+  * Use SomethingElse instead.
+  * @deprecated
+  */`).to.equal(`/**
+  * Use SomethingElse instead.
+  * 
+  */`);
+    });
+    it('removes @param doc tags', () => {
+      expectTranslate(`/**
+  * Method to do blah.
+  * @param doc Document.
+  */`).to.equal(`/**
+  * Method to do blah.
+  * 
+  */`);
+    });
+    it('removes @return doc tags', () => {
+      expectTranslate(`/**
+  * Method to do blah.
+  * @return {String}
+  */`).to.equal(`/**
+  * Method to do blah.
+  * 
+  */`);
+    });
+    it('removes @throws doc tags', () => {
+      expectTranslate(`/**
+  * Method to do blah.
+  * @throws ArgumentException If arguments are wrong
+  */`).to.equal(`/**
+  * Method to do blah.
+  * 
+  */`);
+    });
   });
 
   describe('errors', () => {

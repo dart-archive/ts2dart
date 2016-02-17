@@ -275,7 +275,19 @@ export class Transpiler {
   private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }
 
   private translateComment(comment: string): string {
-    return comment.replace(/\{@link ([^\}]+)\}/g, '[$1]');
+    comment = comment.replace(/\{@link ([^\}]+)\}/g, '[$1]');
+
+    // Remove the following tags and following comments till end of line.
+    comment = comment.replace(/@param.*$/gm, '');
+    comment = comment.replace(/@throws.*$/gm, '');
+    comment = comment.replace(/@return.*$/gm, '');
+
+    // Remove the following tags.
+    comment = comment.replace(/@module/g, '');
+    comment = comment.replace(/@description/g, '');
+    comment = comment.replace(/@deprecated/g, '');
+
+    return comment;
   }
 }
 

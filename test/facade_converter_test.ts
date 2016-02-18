@@ -60,13 +60,28 @@ function getSources(str: string): {[k: string]: string} {
   return srcs;
 }
 
-const COMPILE_OPTS = {
+const COMPILE_OPTS: {[name: string]: any} = {
   translateBuiltins: true,
   failFast: true
 };
 
 function expectWithTypes(str: string) {
   return expectTranslate(getSources(str), COMPILE_OPTS);
+}
+
+function expectLenientWithTypes(str: string) {
+  const sources = getSources(str);
+  sources['a/b/c/d/e/f/typings/es6-promise/es6-promise.d.ts'] = sources['typings/es6-promise/es6-promise.d.ts'];
+  delete sources['typings/es6-promise/es6-promise.d.ts'];
+
+  const options: {[name: string]: any} = {};
+  var key: string;
+  for (key of Object.keys(COMPILE_OPTS)) {
+    options[key] = COMPILE_OPTS[key];
+  }
+  options['lenientTypingFileCheck'] = true;
+
+  return expectTranslate(sources, options);
 }
 
 function expectErroneousWithType(str: string) {
@@ -106,6 +121,12 @@ ByteBuffer buff;`);
           .to.equal(`import "package:other/file.dart" show Promise;
 
 var y = x is Promise;`);
+    });
+
+    it('supports a lenient path checking', () => {
+      expectLenientWithTypes('var p: Promise<void> = x;').to.equal(`import "dart:async";
+
+Future p = x;`);
     });
   });
 

@@ -27,12 +27,15 @@ export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
+  private typingsRootRegex: RegExp;
 
-  constructor(transpiler: Transpiler) {
+  constructor(transpiler: Transpiler, typingsRoot: string = '') {
     super(transpiler);
     this.extractPropertyNames(this.callHandlers, this.candidateProperties);
     this.extractPropertyNames(this.propertyHandlers, this.candidateProperties);
     this.extractPropertyNames(this.TS_TO_DART_TYPENAMES, this.candidateTypes);
+
+    this.typingsRootRegex = new RegExp('^' + typingsRoot.replace('.', '\\.'));
   }
 
   private extractPropertyNames(m: ts.Map<ts.Map<any>>, candidates: {[k: string]: boolean}) {
@@ -204,10 +207,11 @@ export class FacadeConverter extends base.TranspilerBase {
       decl = symbol.declarations[0];
     }
 
-    var fileName = decl.getSourceFile().fileName;
-    fileName = this.getRelativeFileName(fileName);
-    fileName = fileName.replace(/(\.d)?\.ts$/, '');
-    fileName = fileName.replace(FACADE_NODE_MODULES_PREFIX, '');
+    const fileName = decl.getSourceFile().fileName;
+    const canonicalFileName = this.getRelativeFileName(fileName)
+                                  .replace(/(\.d)?\.ts$/, '')
+                                  .replace(FACADE_NODE_MODULES_PREFIX, '')
+                                  .replace(this.typingsRootRegex, '');
 
     var qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
@@ -216,8 +220,8 @@ export class FacadeConverter extends base.TranspilerBase {
         symbol.flags & ts.SymbolFlags.Class) {
       qname = symbol.getName();
     }
-    if (FACADE_DEBUG) console.log('fn:', fileName, 'qn:', qname);
-    return {fileName, qname};
+    if (FACADE_DEBUG) console.log('fn:', fileName, 'cfn:', canonicalFileName, 'qn:', qname);
+    return {fileName: canonicalFileName, qname};
   }
 
   private isNamedType(node: ts.Node, fileName: string, qname: string): boolean {
@@ -285,11 +289,11 @@ export class FacadeConverter extends base.TranspilerBase {
   private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
     'lib': this.stdlibTypeReplacements,
     'lib.es6': this.stdlibTypeReplacements,
-    'typings/es6-promise/es6-promise': {'Promise': 'Future'},
-    'angular2/typings/es6-promise/es6-promise': {'Promise': 'Future'},
-    'angular2/typings/es6-shim/es6-shim': {'Promise': 'Future'},
-    'rxjs/Observable': {'Observable': 'Stream'},
     'angular2/src/facade/lang': {'Date': 'DateTime'},
+
+    'rxjs/Observable': {'Observable': 'Stream'},
+    'es6-promise/es6-promise': {'Promise': 'Future'},
+    'es6-shim/es6-shim': {'Promise': 'Future'},
   };
 
   private es6Promises: ts.Map<CallHandler> = {
@@ -546,19 +550,16 @@ export class FacadeConverter extends base.TranspilerBase {
   };
 
   private callHandlerReplaceNew: ts.Map<ts.Map<boolean>> = {
-    'typings/es6-promise/es6-promise': {'Promise': true},
-    'angular2/typings/es6-promise/es6-promise': {'Promise': true},
+    'es6-promise/es6-promise': {'Promise': true},
+    'es6-shim/es6-shim': {'Promise': true},
   };
 
   private callHandlers: ts.Map<ts.Map<CallHandler>> = {
     'lib': this.stdlibHandlers,
     'lib.es6': this.stdlibHandlers,
-    'typings/es6-promise/es6-promise': this.es6Promises,
-    'typings/es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
-    'typings/es6-collections/es6-collections': this.es6Collections,
-    'angular2/typings/es6-promise/es6-promise': this.es6Promises,
-    'angular2/typings/es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
-    'angular2/typings/es6-collections/es6-collections': this.es6Collections,
+    'es6-promise/es6-promise': this.es6Promises,
+    'es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
+    'es6-collections/es6-collections': this.es6Collections,
     'angular2/manual_typings/globals': this.es6Collections,
     'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
@@ -618,11 +619,8 @@ export class FacadeConverter extends base.TranspilerBase {
   };
 
   private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
-    'typings/es6-shim/es6-shim': this.es6CollectionsProp,
-    'angular2/typings/es6-shim/es6-shim': this.es6CollectionsProp,
-    'typings/es6-collections/es6-collections': this.es6CollectionsProp,
-    'angular2/typings/es6-collections/es6-collections': this.es6CollectionsProp,
-    'typings/es6-promise/es6-promise': this.es6PromisesProp,
-    'angular2/typings/es6-promise/es6-promise': this.es6PromisesProp,
+    'es6-shim/es6-shim': this.es6CollectionsProp,
+    'es6-collections/es6-collections': this.es6CollectionsProp,
+    'es6-promise/es6-promise': this.es6PromisesProp,
   };
 }

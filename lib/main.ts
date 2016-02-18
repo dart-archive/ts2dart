@@ -40,6 +40,10 @@ export interface TranspilerOptions {
    * Enforce conventions of public/private keyword and underscore prefix
    */
   enforceUnderscoreConventions?: boolean;
+  /**
+   * Sets a root path to look for typings used by the facade converter.
+   */
+  typingsRoot?: string;
 }
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
@@ -62,7 +66,8 @@ export class Transpiler {
   private fc: FacadeConverter;
 
   constructor(private options: TranspilerOptions = {}) {
-    this.fc = new FacadeConverter(this);
+    // TODO: Remove the angular2 default when angular uses typingsRoot.
+    this.fc = new FacadeConverter(this, options.typingsRoot || 'angular2/typings/');
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
       new DeclarationTranspiler(this, this.fc, options.enforceUnderscoreConventions),

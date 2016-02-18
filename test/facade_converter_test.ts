@@ -33,10 +33,10 @@ var es6RuntimeDeclarations = `
 
 function getSources(str: string): {[k: string]: string} {
   var srcs: {[k: string]: string} = {
-    'angular2/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
+    'some/path/to/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
-    'typings/es6-promise/es6-promise.d.ts':
+    'some/path/to/typings/es6-promise/es6-promise.d.ts':
         fs.readFileSync('typings/es6-promise/es6-promise.d.ts', 'utf-8'),
     'node_modules/rxjs/Observable.d.ts': `
         export declare class Observable {}`,
@@ -62,7 +62,8 @@ function getSources(str: string): {[k: string]: string} {
 
 const COMPILE_OPTS = {
   translateBuiltins: true,
-  failFast: true
+  failFast: true,
+  typingsRoot: 'some/path/to/typings/'
 };
 
 function expectWithTypes(str: string) {

@@ -40,6 +40,11 @@ export interface TranspilerOptions {
    * Enforce conventions of public/private keyword and underscore prefix
    */
   enforceUnderscoreConventions?: boolean;
+  /**
+   * Lenient typing paths. Normally typing file paths are looked at using strict comparison,
+   * but with this enabled we only check the end of the path.
+   */
+  lenientTypingFileCheck?: boolean;
 }
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
@@ -63,6 +68,11 @@ export class Transpiler {
 
   constructor(private options: TranspilerOptions = {}) {
     this.fc = new FacadeConverter(this);
+
+    if (options.lenientTypingFileCheck) {
+      this.fc.setLenientTypingFileCheck();
+    }
+
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
       new DeclarationTranspiler(this, this.fc, options.enforceUnderscoreConventions),

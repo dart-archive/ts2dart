@@ -27,6 +27,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
+  private lenientTypingFileCheck: boolean = false;
 
   constructor(transpiler: Transpiler) {
     super(transpiler);
@@ -45,6 +46,7 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   setTypeChecker(tc: ts.TypeChecker) { this.tc = tc; }
+  setLenientTypingFileCheck() { this.lenientTypingFileCheck = true; }
 
   maybeHandleCall(c: ts.CallExpression): boolean {
     if (!this.tc) return false;
@@ -208,6 +210,14 @@ export class FacadeConverter extends base.TranspilerBase {
     fileName = this.getRelativeFileName(fileName);
     fileName = fileName.replace(/(\.d)?\.ts$/, '');
     fileName = fileName.replace(FACADE_NODE_MODULES_PREFIX, '');
+
+    if (this.lenientTypingFileCheck) {
+      let potentialFileName = this.allFileNames.filter(
+          (name: string) => { return fileName.substr(-name.length) == name; });
+      if (potentialFileName.length > 0) {
+        fileName = potentialFileName[0];
+      }
+    }
 
     var qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
@@ -625,4 +635,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'typings/es6-promise/es6-promise': this.es6PromisesProp,
     'angular2/typings/es6-promise/es6-promise': this.es6PromisesProp,
   };
+
+  private allFileNames: string[] =
+      Object.keys(merge(this.TS_TO_DART_TYPENAMES, this.propertyHandlers, this.callHandlers));
 }

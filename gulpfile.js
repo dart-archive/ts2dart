@@ -89,6 +89,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
 
   // run node with a shell so we can wildcard all the .ts files
   var cmd = 'node ../lib/main.js --translateBuiltins --basePath=. --destination=. ' +
+      '--typingsRoot=typings/ ' +
       '*.ts angular2/src/facade/lang.d.ts typings/es6-promise/es6-promise.d.ts';
   // Paths must be relative to our source root, so run with cwd == dir.
   spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir}).on('close', function(code, signal) {

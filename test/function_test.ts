@@ -41,10 +41,6 @@ describe('functions', () => {
     expectErroneousCode('function x(...a: number) { return 42; }')
         .to.throw('rest parameters are unsupported');
   });
-  it('does not support generic functions', () => {
-    expectErroneousCode('function x<T>() { return 42; }')
-        .to.throw('generic functions are unsupported');
-  });
   it('translates function expressions',
      () => { expectTranslate('var a = function() {}').to.equal('var a = () {};'); });
   it('translates fat arrow operator', () => {
@@ -53,5 +49,29 @@ describe('functions', () => {
     expectTranslate('var a = (p) => isBlank(p)').to.equal('var a = (p) => isBlank(p);');
     expectTranslate('var a = (p = null) => isBlank(p)')
         .to.equal('var a = ([p = null]) => isBlank(p);');
+  });
+});
+
+describe('generic functions', () => {
+  it('supports generic types', () => {
+    expectTranslate('function sort<T, U>(xs: T[]): T[] { return xs; }', {
+      translateBuiltins: true
+    }).to.equal(`List<dynamic/*= T */ > sort/*< T, U >*/(List<dynamic/*= T */ > xs) {
+  return xs;
+}`);
+  });
+  it('replaces type usage sites, but not idents', () => {
+    expectTranslate(
+        `function wobble<T, U>(u: U): T {
+      let t: T = <T>u;
+      for (let T of [1, 2]) {}
+      return t;
+    }`,
+        {translateBuiltins: true})
+        .to.equal(`dynamic/*= T */ wobble/*< T, U >*/(dynamic/*= U */ u) {
+  dynamic/*= T */ t = (u as dynamic/*= T */);
+  for (var T in [1, 2]) {}
+  return t;
+}`);
   });
 });

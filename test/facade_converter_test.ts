@@ -108,6 +108,9 @@ ByteBuffer buff;`);
 
 var y = x is Promise;`);
     });
+
+    it('does not substitute all identifiers',
+       () => { expectWithTypes('let Promise = 1;').to.equal(`var Promise = 1;`); });
   });
 
   describe('collection façade', () => {

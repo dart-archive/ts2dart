@@ -126,7 +126,6 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.FunctionDeclaration:
         var funcDecl = <ts.FunctionDeclaration>node;
         this.visitDecorators(funcDecl.decorators);
-        if (funcDecl.typeParameters) this.reportError(node, 'generic functions are unsupported');
         this.visitFunctionLike(funcDecl);
         break;
       case ts.SyntaxKind.ArrowFunction:
@@ -252,30 +251,42 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
   }
 
   private visitFunctionLike(fn: ts.FunctionLikeDeclaration, accessor?: string) {
-    if (fn.type) {
-      if (fn.kind === ts.SyntaxKind.ArrowFunction) {
-        // Type is silently dropped for arrow functions, not supported in Dart.
-        this.emit('/*');
-        this.visit(fn.type);
-        this.emit('*/');
+    this.fc.pushTypeParameterNames(fn);
+    try {
+      if (fn.type) {
+        if (fn.kind === ts.SyntaxKind.ArrowFunction) {
+          // Type is silently dropped for arrow functions, not supported in Dart.
+          this.emit('/*');
+          this.visit(fn.type);
+          this.emit('*/');
+        } else {
+          this.visit(fn.type);
+        }
+      }
+      if (accessor) this.emit(accessor);
+      if (fn.name) this.visit(fn.name);
+      if (fn.typeParameters) {
+        this.emit('/*<');
+        // Emit the names literally instead of visiting, otherwise they will be replaced with the
+        // comment hack themselves.
+        this.emit(fn.typeParameters.map(p => base.ident(p.name)).join(', '));
+        this.emit('>*/');
+      }
+      // Dart does not even allow the parens of an empty param list on getter
+      if (accessor !== 'get') {
+        this.visitParameters(fn.parameters);
       } else {
-        this.visit(fn.type);
+        if (fn.parameters && fn.parameters.length > 0) {
+          this.reportError(fn, 'getter should not accept parameters');
+        }
       }
-    }
-    if (accessor) this.emit(accessor);
-    if (fn.name) this.visit(fn.name);
-    // Dart does not even allow the parens of an empty param list on getter
-    if (accessor !== 'get') {
-      this.visitParameters(fn.parameters);
-    } else {
-      if (fn.parameters && fn.parameters.length > 0) {
-        this.reportError(fn, 'getter should not accept parameters');
+      if (fn.body) {
+        this.visit(fn.body);
+      } else {
+        this.emit(';');
       }
-    }
-    if (fn.body) {
-      this.visit(fn.body);
-    } else {
-      this.emit(';');
+    } finally {
+      this.fc.popTypeParameterNames(fn);
     }
   }
 

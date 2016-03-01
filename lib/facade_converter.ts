@@ -28,6 +28,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
   private typingsRootRegex: RegExp;
+  private genericMethodDeclDepth = 0;
 
   constructor(transpiler: Transpiler, typingsRoot: string = '') {
     super(transpiler);
@@ -106,6 +107,39 @@ export class FacadeConverter extends base.TranspilerBase {
         .forEach((n: ts.Node) => this.emitImports(n, libraries, emitted, sourceFile));
   }
 
+  pushTypeParameterNames(n: ts.FunctionLikeDeclaration) {
+    if (!n.typeParameters) return;
+    this.genericMethodDeclDepth++;
+  }
+
+  popTypeParameterNames(n: ts.FunctionLikeDeclaration) {
+    if (!n.typeParameters) return;
+    this.genericMethodDeclDepth--;
+  }
+
+
+  /**
+   * The Dart Development Compiler (DDC) has a syntax extension that uses comments to emulate
+   * generic methods in Dart. ts2dart has to hack around this and keep track of which type names
+   * in the current scope are actually DDC type parameters and need to be emitted in comments.
+   *
+   * TODO(martinprobst): Remove this once the DDC hack has made it into Dart proper.
+   */
+  private isGenericMethodTypeParameterName(name: ts.EntityName): boolean {
+    // Avoid checking this unless needed.
+    if (this.genericMethodDeclDepth === 0 || !this.tc) return false;
+    // Check if the type of the name is a TypeParameter.
+    let t = this.tc.getTypeAtLocation(name);
+    if (!t || (t.flags & ts.TypeFlags.TypeParameter) === 0) return false;
+
+    // Check if the symbol we're looking at is the type parameter.
+    let symbol = this.tc.getSymbolAtLocation(name);
+    if (symbol != t.symbol) return false;
+
+    // Check that the Type Parameter has been declared by a function declaration.
+    return symbol.declarations.some(d => d.parent.kind === ts.SyntaxKind.FunctionDeclaration);
+  }
+
   visitTypeName(typeName: ts.EntityName) {
     if (typeName.kind !== ts.SyntaxKind.Identifier) {
       this.visit(typeName);
@@ -113,6 +147,15 @@ export class FacadeConverter extends base.TranspilerBase {
     }
     var identifier = <ts.Identifier>typeName;
     var ident = base.ident(typeName);
+    if (this.isGenericMethodTypeParameterName(typeName)) {
+      // DDC generic methods hack - all names that are type parameters to generic methods have to be
+      // emitted in comments.
+      this.emit('dynamic/*=');
+      this.emit(ident);
+      this.emit('*/');
+      return;
+    }
+
     if (this.candidateTypes.hasOwnProperty(ident) && this.tc) {
       var symbol = this.tc.getSymbolAtLocation(typeName);
       if (!symbol) {

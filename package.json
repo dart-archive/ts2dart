@@ -8,7 +8,7 @@
     "test": "test"
   },
   "dependencies": {
-    "dart-style": "^0.2.6",
+    "dart-style": "^0.2.7",
     "minimist": "^1.1.1",
     "source-map": "^0.4.2",
     "source-map-support": "^0.3.1",

@@ -74,4 +74,15 @@ describe('generic functions', () => {
   return t;
 }`);
   });
+  it('translates generic calls', () => {
+    expectTranslate(
+        `function wobble<T>(foo: T): T { return foo; }
+        let f = foo<string>('hello');`,
+        {translateBuiltins: true})
+        .to.equal(`dynamic/*= T */ wobble/*< T >*/(dynamic/*= T */ foo) {
+  return foo;
+}
+
+var f = foo /* < String > */ ("hello");`);
+  });
 });

@@ -52,12 +52,12 @@ export default class CallTranspiler extends base.TranspilerBase {
     } else {
       this.visit(c.expression);
     }
-    // Type arguments on methods are ignored. Dart doesn't support
-    // generic methods, and while we don't allow them to be declared
-    // in ts2dart, it's possible the method being called is not
-    // transpiled by ts2dart.
-    if (c.typeArguments && c.kind === ts.SyntaxKind.NewExpression) {
+    if (c.typeArguments) {
+      // For DDC, emit generic method arguments in /* block comments */
+      // TODO(martinprobst): Remove once Dart natively supports generic methods.
+      if (c.kind !== ts.SyntaxKind.NewExpression) this.emit('/*');
       this.maybeVisitTypeArguments(c);
+      if (c.kind !== ts.SyntaxKind.NewExpression) this.emit('*/');
     }
     this.emit('(');
     if (c.arguments && !this.handleNamedParamsCall(c)) {

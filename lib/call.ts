@@ -54,10 +54,11 @@ export default class CallTranspiler extends base.TranspilerBase {
     }
     if (c.typeArguments) {
       // For DDC, emit generic method arguments in /* block comments */
+      // NB: Surprisingly, whitespace within the comment is significant here :-(
       // TODO(martinprobst): Remove once Dart natively supports generic methods.
       if (c.kind !== ts.SyntaxKind.NewExpression) this.emit('/*');
       this.maybeVisitTypeArguments(c);
-      if (c.kind !== ts.SyntaxKind.NewExpression) this.emit('*/');
+      if (c.kind !== ts.SyntaxKind.NewExpression) this.emitNoSpace('*/');
     }
     this.emit('(');
     if (c.arguments && !this.handleNamedParamsCall(c)) {

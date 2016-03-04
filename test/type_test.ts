@@ -19,10 +19,10 @@ describe('types', () => {
   });
   it('should support union types', () => {
     expectTranslate('var x: number|List<string> = 11;')
-        .to.equal('dynamic /* num | List < String > */ x = 11;');
+        .to.equal('dynamic /* num | List< String > */ x = 11;');
     expectTranslate('function x(): number|List<{[k: string]: any}> { return 11; }')
         .to.equal(
-            'dynamic /* num | List < Map < String , dynamic > > */ x() {\n' +
+            'dynamic /* num | List< Map < String , dynamic > > */ x() {\n' +
             '  return 11;\n' +
             '}');
   });

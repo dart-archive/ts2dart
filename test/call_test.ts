@@ -32,7 +32,7 @@ describe('calls', () => {
     expectTranslate('new Foo<number, string>(1, 2);').to.equal('new Foo<num, String>(1, 2);');
   });
   it('supports generic type parameters', () => {
-    expectTranslate('var s = foo<string>();').to.equal('var s = foo /* < String > */ ();');
+    expectTranslate('var s = foo<string>();').to.equal('var s = foo/*< String >*/();');
   });
   it('translates "super()" constructor calls', () => {
     expectTranslate('class X { constructor() { super(1); } }').to.equal(`class X {

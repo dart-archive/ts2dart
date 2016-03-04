@@ -94,7 +94,7 @@ export class TranspilerBase {
       if (n.typeArguments.length == 1 && n.typeArguments[0].kind == ts.SyntaxKind.VoidKeyword) {
         return;
       }
-      this.emit('<');
+      this.emitNoSpace('<');
       this.visitList(n.typeArguments);
       this.emit('>');
     }

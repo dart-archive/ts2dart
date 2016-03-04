@@ -83,6 +83,6 @@ describe('generic functions', () => {
   return foo;
 }
 
-var f = foo /* < String > */ ("hello");`);
+var f = foo/*< String >*/("hello");`);
   });
 });

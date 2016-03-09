@@ -11,31 +11,67 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.BinaryExpression:
         var binExpr = <ts.BinaryExpression>node;
         var operatorKind = binExpr.operatorToken.kind;
-        if (operatorKind === ts.SyntaxKind.EqualsEqualsEqualsToken ||
-            operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) {
-          if (operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) this.emit('!');
-          this.emit('identical (');
-          this.visit(binExpr.left);
-          this.emit(',');
-          this.visit(binExpr.right);
-          this.emit(')');
-        } else {
-          this.visit(binExpr.left);
-          if (operatorKind === ts.SyntaxKind.InstanceOfKeyword) {
+        var tokenStr = ts.tokenToString(operatorKind);
+        switch (operatorKind) {
+          case ts.SyntaxKind.EqualsEqualsEqualsToken:
+          case ts.SyntaxKind.ExclamationEqualsEqualsToken:
+            if (operatorKind === ts.SyntaxKind.ExclamationEqualsEqualsToken) this.emit('!');
+            this.emit('identical (');
+            this.visit(binExpr.left);
+            this.emit(',');
+            this.visit(binExpr.right);
+            this.emit(')');
+            break;
+          case ts.SyntaxKind.CaretToken:
+          case ts.SyntaxKind.BarToken:
+          case ts.SyntaxKind.AmpersandToken:
+          case ts.SyntaxKind.GreaterThanGreaterThanToken:
+          case ts.SyntaxKind.LessThanLessThanToken:
+          case ts.SyntaxKind.CaretEqualsToken:
+          case ts.SyntaxKind.BarEqualsToken:
+          case ts.SyntaxKind.AmpersandEqualsToken:
+          case ts.SyntaxKind.GreaterThanGreaterThanEqualsToken:
+          case ts.SyntaxKind.LessThanLessThanEqualsToken:
+            // In Dart, the bitwise operators are only available on int, so the number types ts2dart
+            // deals with have to be converted to int explicitly to match JS's semantics in Dart.
+            if (tokenStr[tokenStr.length - 1] == "=") {
+              // For assignments, strip the trailing `=` sign to emit just the operator itself.
+              this.visit(binExpr.left);
+              this.emit('=');
+              visitAndWrapAsInt(this, binExpr.left);
+              this.emit(tokenStr.slice(0, -1));
+            } else {
+              // normal case (LHS [op])
+              visitAndWrapAsInt(this, binExpr.left);
+              this.emit(tokenStr);
+            }
+            visitAndWrapAsInt(this, binExpr.right);
+            break;
+          case ts.SyntaxKind.InKeyword:
+            this.reportError(node, 'in operator is unsupported');
+            break;
+          case ts.SyntaxKind.InstanceOfKeyword:
+            this.visit(binExpr.left);
             this.emit('is');
             this.fc.visitTypeName(<ts.Identifier>binExpr.right);
-          } else if (operatorKind == ts.SyntaxKind.InKeyword) {
-            this.reportError(node, 'in operator is unsupported');
-          } else {
-            this.emit(ts.tokenToString(binExpr.operatorToken.kind));
+            break;
+          default:
+            this.visit(binExpr.left);
+            this.emit(tokenStr);
             this.visit(binExpr.right);
-          }
+            break;
         }
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:
         var prefixUnary = <ts.PrefixUnaryExpression>node;
-        this.emit(ts.tokenToString(prefixUnary.operator));
-        this.visit(prefixUnary.operand);
+        var operator = ts.tokenToString(prefixUnary.operator);
+        this.emit(operator);
+
+        if (prefixUnary.operator === ts.SyntaxKind.TildeToken) {
+          visitAndWrapAsInt(this, prefixUnary.operand);
+        } else {
+          this.visit(prefixUnary.operand);
+        }
         break;
       case ts.SyntaxKind.PostfixUnaryExpression:
         var postfixUnary = <ts.PostfixUnaryExpression>node;
@@ -95,4 +131,10 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
     }
     return true;
   }
+}
+
+function visitAndWrapAsInt(visitor: ExpressionTranspiler, ident: ts.Node) {
+  visitor.emit('(');
+  visitor.visit(ident);
+  visitor.emit('as int)');
 }

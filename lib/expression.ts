@@ -34,18 +34,33 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
           case ts.SyntaxKind.LessThanLessThanEqualsToken:
             // In Dart, the bitwise operators are only available on int, so the number types ts2dart
             // deals with have to be converted to int explicitly to match JS's semantics in Dart.
+
+            var applyCastLHS = isTokenCastableForBitwise(binExpr.left.kind);
+            var applyCastRHS = isTokenCastableForBitwise(binExpr.right.kind);
             if (tokenStr[tokenStr.length - 1] == "=") {
               // For assignments, strip the trailing `=` sign to emit just the operator itself.
               this.visit(binExpr.left);
               this.emit('=');
-              visitAndWrapAsInt(this, binExpr.left);
+              if (applyCastLHS) {
+                visitAndWrapAsInt(this, binExpr.left);
+              } else {
+                this.visit(binExpr.left);
+              }
               this.emit(tokenStr.slice(0, -1));
             } else {
               // normal case (LHS [op])
-              visitAndWrapAsInt(this, binExpr.left);
+              if (applyCastLHS) {
+                visitAndWrapAsInt(this, binExpr.left);
+              } else {
+                this.visit(binExpr.left);
+              }
               this.emit(tokenStr);
             }
-            visitAndWrapAsInt(this, binExpr.right);
+            if (applyCastRHS) {
+              visitAndWrapAsInt(this, binExpr.right);
+            } else {
+              this.visit(binExpr.right);
+            }
             break;
           case ts.SyntaxKind.InKeyword:
             this.reportError(node, 'in operator is unsupported');
@@ -67,7 +82,8 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         var operator = ts.tokenToString(prefixUnary.operator);
         this.emit(operator);
 
-        if (prefixUnary.operator === ts.SyntaxKind.TildeToken) {
+        if (prefixUnary.operator === ts.SyntaxKind.TildeToken &&
+            isTokenCastableForBitwise(prefixUnary.operand.kind)) {
           visitAndWrapAsInt(this, prefixUnary.operand);
         } else {
           this.visit(prefixUnary.operand);
@@ -131,6 +147,10 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
     }
     return true;
   }
+}
+
+function isTokenCastableForBitwise(kind: ts.SyntaxKind): boolean {
+  return kind == ts.SyntaxKind.CallExpression || kind == ts.SyntaxKind.Identifier;
 }
 
 function visitAndWrapAsInt(visitor: ExpressionTranspiler, ident: ts.Node) {

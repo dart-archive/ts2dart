@@ -202,7 +202,7 @@ export class FacadeConverter extends base.TranspilerBase {
       ident = base.ident(expr);
       if (!this.candidateProperties.hasOwnProperty(ident)) return {};
       symbol = this.tc.getSymbolAtLocation(expr);
-      if (FACADE_DEBUG) console.log('s:', symbol);
+      if (FACADE_DEBUG) console.error('s:', symbol);
 
       if (!symbol) {
         this.reportMissingType(c, ident);
@@ -217,7 +217,7 @@ export class FacadeConverter extends base.TranspilerBase {
       if (!this.candidateProperties.hasOwnProperty(ident)) return {};
 
       symbol = this.tc.getSymbolAtLocation(pa);
-      if (FACADE_DEBUG) console.log('s:', symbol);
+      if (FACADE_DEBUG) console.error('s:', symbol);
 
       // Error will be reported by PropertyAccess handling below.
       if (!symbol) return {};
@@ -262,7 +262,7 @@ export class FacadeConverter extends base.TranspilerBase {
     if (symbol.flags & (ts.SymbolFlags.Class | ts.SymbolFlags.Function | ts.SymbolFlags.Variable)) {
       qname = symbol.getName();
     }
-    if (FACADE_DEBUG) console.log('fn:', fileName, 'cfn:', canonicalFileName, 'qn:', qname);
+    if (FACADE_DEBUG) console.error('fn:', fileName, 'cfn:', canonicalFileName, 'qn:', qname);
     return {fileName: canonicalFileName, qname};
   }
 

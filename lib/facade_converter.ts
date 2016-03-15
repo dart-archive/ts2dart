@@ -259,8 +259,7 @@ export class FacadeConverter extends base.TranspilerBase {
     var qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
     // for the time being just special case.
-    if (symbol.flags & ts.SymbolFlags.Function || symbol.flags & ts.SymbolFlags.Variable ||
-        symbol.flags & ts.SymbolFlags.Class) {
+    if (symbol.flags & (ts.SymbolFlags.Class | ts.SymbolFlags.Function | ts.SymbolFlags.Variable)) {
       qname = symbol.getName();
     }
     if (FACADE_DEBUG) console.log('fn:', fileName, 'cfn:', canonicalFileName, 'qn:', qname);

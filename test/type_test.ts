@@ -13,6 +13,10 @@ describe('types', () => {
   it('drops type literals with index signatures and other properties',
      () => { expectTranslate('var x: {a: number, [k: string]: number};').to.equal('dynamic x;'); });
   it('allows typecasts', () => { expectTranslate('<MyType>ref').to.equal('(ref as MyType);'); });
+  it('translates typecasts to reified types on literals', () => {
+    expectTranslate('let x = <string[]>[];').to.equal('var x = <String>[];');
+    expectTranslate('let x = <{[k:string]: number}>{};').to.equal('var x = <String, num>{};');
+  });
   it('does not mangle prototype names', () => {
     expectTranslate('import toString = require("./somewhere");')
         .to.equal('import "somewhere.dart" as toString;');

@@ -9,34 +9,34 @@ export default class TypeTranspiler extends base.TranspilerBase {
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
       case ts.SyntaxKind.TypeLiteral:
-        let members = (<ts.TypeLiteralNode>node).members;
-        if (members.length == 1 && members[0].kind == ts.SyntaxKind.IndexSignature) {
-          let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
-          if (indexSig.parameters.length > 1) {
-            this.reportError(indexSig, "Expected an index signature to have a single parameter");
-          }
+        let indexType = this.maybeDestructureIndexType(<ts.TypeLiteralNode>node);
+        if (indexType) {
+          // This is effectively a Map.
           this.emit('Map <');
-          this.visit(indexSig.parameters[0].type);
+          this.visit(indexType[0]);
           this.emit(',');
-          this.visit(indexSig.type);
+          this.visit(indexType[1]);
           this.emit('>');
-          break;
+        } else {
+          // Dart doesn't support other type literals.
+          this.emit('dynamic');
         }
-        // Dart doesn't support other type literals.
-        this.emit('dynamic');
         break;
       case ts.SyntaxKind.UnionType:
         this.emit('dynamic /*');
-        this.visitList((<ts.UnionTypeNode>node).types, "|");
+        this.visitList((<ts.UnionTypeNode>node).types, '|');
         this.emit('*/');
         break;
       case ts.SyntaxKind.TypeReference:
-        var typeRef = <ts.TypeReferenceNode>node;
+        let typeRef = <ts.TypeReferenceNode>node;
         this.fc.visitTypeName(typeRef.typeName);
         this.maybeVisitTypeArguments(typeRef);
         break;
       case ts.SyntaxKind.TypeAssertionExpression:
-        var typeAssertExpr = <ts.TypeAssertion>node;
+        let typeAssertExpr = <ts.TypeAssertion>node;
+        if (this.maybeHandleReifiedTypeLiteral(typeAssertExpr)) {
+          break;
+        }
         this.emit('(');
         this.visit(typeAssertExpr.expression);
         this.emit('as');
@@ -44,7 +44,7 @@ export default class TypeTranspiler extends base.TranspilerBase {
         this.emit(')');
         break;
       case ts.SyntaxKind.TypeParameter:
-        var typeParam = <ts.TypeParameterDeclaration>node;
+        let typeParam = <ts.TypeParameterDeclaration>node;
         this.visit(typeParam.name);
         if (typeParam.constraint) {
           this.emit('extends');
@@ -63,13 +63,13 @@ export default class TypeTranspiler extends base.TranspilerBase {
         this.emit('*/');
         break;
       case ts.SyntaxKind.QualifiedName:
-        var first = <ts.QualifiedName>node;
+        let first = <ts.QualifiedName>node;
         this.visit(first.left);
         this.emit('.');
         this.visit(first.right);
         break;
       case ts.SyntaxKind.Identifier:
-        var ident = <ts.Identifier>node;
+        let ident = <ts.Identifier>node;
         this.fc.visitTypeName(ident);
         break;
       case ts.SyntaxKind.NumberKeyword:
@@ -91,5 +91,44 @@ export default class TypeTranspiler extends base.TranspilerBase {
         return false;
     }
     return true;
+  }
+
+  maybeDestructureIndexType(node: ts.TypeLiteralNode): [ts.TypeNode, ts.TypeNode] {
+    let members = node.members;
+    if (members.length != 1 || members[0].kind != ts.SyntaxKind.IndexSignature) {
+      return null;
+    }
+    let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
+    if (indexSig.parameters.length > 1) {
+      this.reportError(indexSig, 'Expected an index signature to have a single parameter');
+    }
+    return [indexSig.parameters[0].type, indexSig.type];
+  }
+
+  maybeHandleReifiedTypeLiteral(node: ts.TypeAssertion): boolean {
+    if (node.expression.kind === ts.SyntaxKind.ArrayLiteralExpression &&
+        node.type.kind === ts.SyntaxKind.ArrayType) {
+      this.emit('<');
+      this.visit((<ts.ArrayTypeNode>node.type).elementType);
+      this.emit('>');
+      this.visit(node.expression);
+      return true;
+    } else if (
+        node.expression.kind === ts.SyntaxKind.ObjectLiteralExpression &&
+        node.type.kind === ts.SyntaxKind.TypeLiteral) {
+      let it = this.maybeDestructureIndexType(<ts.TypeLiteralNode>node.type);
+      if (!it) {
+        this.reportError(node, 'expected {[k]: v} type on object literal');
+        return false;
+      }
+      this.emit('<');
+      this.visit(it[0]);
+      this.emit(',');
+      this.visit(it[1]);
+      this.emit('>');
+      this.visit(node.expression);
+      return true;
+    }
+    return false;
   }
 }

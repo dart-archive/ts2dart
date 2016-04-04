@@ -20,7 +20,7 @@ export default class CallTranspiler extends base.TranspilerBase {
         if (this.hasAncestor(node, ts.SyntaxKind.Decorator)) {
           // Constructor calls in annotations must be const constructor calls.
           this.emit('const');
-        } else if (this.isInsideConstExpr(node)) {
+        } else if (this.fc.isInsideConstExpr(node)) {
           this.emit('const');
         } else {
           // Some implementations can replace the `new` keyword.
@@ -65,16 +65,6 @@ export default class CallTranspiler extends base.TranspilerBase {
       this.visitList(c.arguments);
     }
     this.emit(')');
-  }
-
-  private isInsideConstExpr(node: ts.Node): boolean {
-    return this.isConstCall(
-        <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
-  }
-
-  private isConstCall(node: ts.CallExpression): boolean {
-    // TODO: Align with facade_converter.ts
-    return node && base.ident(node.expression) === 'CONST_EXPR';
   }
 
   private handleNamedParamsCall(c: ts.CallExpression): boolean {

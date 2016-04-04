@@ -82,6 +82,19 @@ export class TranspilerBase {
         });
   }
 
+  maybeDestructureIndexType(node: ts.TypeLiteralNode): [ts.TypeNode, ts.TypeNode] {
+    let members = node.members;
+    if (members.length != 1 || members[0].kind != ts.SyntaxKind.IndexSignature) {
+      return null;
+    }
+    let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
+    if (indexSig.parameters.length > 1) {
+      this.reportError(indexSig, 'Expected an index signature to have a single parameter');
+    }
+    return [indexSig.parameters[0].type, indexSig.type];
+  }
+
+
   getRelativeFileName(fileName: string): string {
     return this.transpiler.getRelativeFileName(fileName);
   }

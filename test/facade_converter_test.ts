@@ -362,6 +362,19 @@ const x = const {};`);
               .to.equal(`import "package:angular2/src/facade/collection.dart" show Map;
 
 const x = const <num, String>{};`);
+
+          expectWithTypes(`
+            import {CONST_EXPR} from "angular2/src/facade/lang";
+            const _EMPTY_LIST = CONST_EXPR([]);`)
+              .to.equal(`const _EMPTY_LIST = const [];`);
+          expectWithTypes(`
+            import {CONST_EXPR} from "angular2/src/facade/lang";
+            const _EMPTY_LIST = CONST_EXPR(<string[]>[]);`)
+              .to.equal(`const _EMPTY_LIST = const <String>[];`);
+          expectWithTypes(`
+            import {CONST_EXPR} from "angular2/src/facade/lang";
+            const MY_MAP = CONST_EXPR(<{[k: string]: number}>{});`)
+              .to.equal(`const MY_MAP = const <String, num>{};`);
         });
 
         it('translates forwardRef(() => T) to T',

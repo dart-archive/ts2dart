@@ -50,14 +50,18 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.ArrayLiteralExpression:
         if (this.shouldBeConst(node)) this.emit('const');
+        let ale = <ts.ArrayLiteralExpression>node;
+        this.handleReifiedArray(ale);
         this.emit('[');
-        this.visitList((<ts.ArrayLiteralExpression>node).elements);
+        this.visitList(ale.elements);
         this.emit(']');
         break;
       case ts.SyntaxKind.ObjectLiteralExpression:
         if (this.shouldBeConst(node)) this.emit('const');
+        let ole = <ts.ObjectLiteralExpression>node;
+        this.handleReifiedMap(ole);
         this.emit('{');
-        this.visitList((<ts.ObjectLiteralExpression>node).properties);
+        this.visitList(ole.properties);
         this.emit('}');
         break;
       case ts.SyntaxKind.PropertyAssignment:
@@ -129,5 +133,32 @@ export default class LiteralTranspiler extends base.TranspilerBase {
 
   private escapeTextForTemplateString(n: ts.Node): string {
     return (<ts.StringLiteral>n).text.replace(/\\/g, '\\\\').replace(/([$'])/g, '\\$1');
+  }
+
+  private handleReifiedArray(node: ts.ArrayLiteralExpression) {
+    if (node.parent.kind !== ts.SyntaxKind.TypeAssertionExpression) return;
+    let ta = <ts.TypeAssertion>node.parent;
+    if (ta.type.kind !== ts.SyntaxKind.ArrayType) return;
+    this.emit('<');
+    this.visit((<ts.ArrayTypeNode>ta.type).elementType);
+    this.emit('>');
+    return true;
+  }
+
+
+  private handleReifiedMap(node: ts.ObjectLiteralExpression) {
+    if (node.parent.kind !== ts.SyntaxKind.TypeAssertionExpression) return;
+    let ta = <ts.TypeAssertion>node.parent;
+    if (ta.type.kind !== ts.SyntaxKind.TypeLiteral) return;
+    let it = this.maybeDestructureIndexType(<ts.TypeLiteralNode>ta.type);
+    if (!it) {
+      this.reportError(node, 'expected {[k]: v} type on object literal');
+      return;
+    }
+    this.emit('<');
+    this.visit(it[0]);
+    this.emit(',');
+    this.visit(it[1]);
+    this.emit('>');
   }
 }

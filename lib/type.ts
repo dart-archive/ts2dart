@@ -34,8 +34,9 @@ export default class TypeTranspiler extends base.TranspilerBase {
         break;
       case ts.SyntaxKind.TypeAssertionExpression:
         let typeAssertExpr = <ts.TypeAssertion>node;
-        if (this.maybeHandleReifiedTypeLiteral(typeAssertExpr)) {
-          break;
+        if (this.isReifiedTypeLiteral(typeAssertExpr)) {
+          this.visit(typeAssertExpr.expression);
+          break;  // type is handled by the container literal itself.
         }
         this.emit('(');
         this.visit(typeAssertExpr.expression);
@@ -93,40 +94,13 @@ export default class TypeTranspiler extends base.TranspilerBase {
     return true;
   }
 
-  maybeDestructureIndexType(node: ts.TypeLiteralNode): [ts.TypeNode, ts.TypeNode] {
-    let members = node.members;
-    if (members.length != 1 || members[0].kind != ts.SyntaxKind.IndexSignature) {
-      return null;
-    }
-    let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
-    if (indexSig.parameters.length > 1) {
-      this.reportError(indexSig, 'Expected an index signature to have a single parameter');
-    }
-    return [indexSig.parameters[0].type, indexSig.type];
-  }
-
-  maybeHandleReifiedTypeLiteral(node: ts.TypeAssertion): boolean {
+  isReifiedTypeLiteral(node: ts.TypeAssertion): boolean {
     if (node.expression.kind === ts.SyntaxKind.ArrayLiteralExpression &&
         node.type.kind === ts.SyntaxKind.ArrayType) {
-      this.emit('<');
-      this.visit((<ts.ArrayTypeNode>node.type).elementType);
-      this.emit('>');
-      this.visit(node.expression);
       return true;
     } else if (
         node.expression.kind === ts.SyntaxKind.ObjectLiteralExpression &&
         node.type.kind === ts.SyntaxKind.TypeLiteral) {
-      let it = this.maybeDestructureIndexType(<ts.TypeLiteralNode>node.type);
-      if (!it) {
-        this.reportError(node, 'expected {[k]: v} type on object literal');
-        return false;
-      }
-      this.emit('<');
-      this.visit(it[0]);
-      this.emit(',');
-      this.visit(it[1]);
-      this.emit('>');
-      this.visit(node.expression);
       return true;
     }
     return false;

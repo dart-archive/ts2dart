@@ -6,9 +6,9 @@ describe('calls', () => {
     expectTranslate('function x({p = null, d = false} = {}) {}')
         .to.equal('x({p: null, d: false}) {}');
     expectErroneousCode('function x({a=false}={a:true})')
-        .to.throw('initializers for named parameters must be empty object literals');
+        .to.throw('cannot have both an inner and outer initializer');
     expectErroneousCode('function x({a=false}=true)')
-        .to.throw('initializers for named parameters must be empty object literals');
+        .to.throw('initializers for named parameters must be object literals');
     expectTranslate('class X { constructor() { super({p: 1}); } }').to.equal(`class X {
   X() : super(p: 1) {
     /* super call moved to initializer */;

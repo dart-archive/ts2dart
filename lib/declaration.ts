@@ -183,20 +183,6 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
           this.visit(paramDecl.initializer);
         }
         break;
-      case ts.SyntaxKind.ObjectBindingPattern:
-        var bindingPattern = <ts.BindingPattern>node;
-        this.emit('{');
-        this.visitList(bindingPattern.elements);
-        this.emit('}');
-        break;
-      case ts.SyntaxKind.BindingElement:
-        var bindingElement = <ts.BindingElement>node;
-        this.visit(bindingElement.name);
-        if (bindingElement.initializer) {
-          this.emit(':');
-          this.visit(bindingElement.initializer);
-        }
-        break;
 
       case ts.SyntaxKind.StaticKeyword:
         this.emit('static');
@@ -379,9 +365,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
 
     // Generate a constructor to host the const modifier, if needed
     if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
-      this.emit("const");
+      this.emit('const');
       this.fc.visitTypeName(decl.name);
-      this.emit("();")
+      this.emit('();')
     }
     this.emit('}');
   }
@@ -432,18 +418,50 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
 
   private visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
     this.visitDecorators(paramDecl.decorators);
-    if (paramDecl.type) {
-      // TODO(martinprobst): These are currently silently ignored.
-      // this.reportError(paramDecl.type, 'types on named parameters are unsupported');
-    }
-    this.visit(paramDecl.name);
-    if (paramDecl.initializer) {
-      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression ||
-          (<ts.ObjectLiteralExpression>paramDecl.initializer).properties.length > 0) {
-        this.reportError(
-            paramDecl, 'initializers for named parameters must be empty object literals');
+    let bp = <ts.BindingPattern>paramDecl.name;
+    let typeMap: ts.Map<ts.TypeNode> = {};
+    if (paramDecl.type && paramDecl.type.kind === ts.SyntaxKind.TypeLiteral) {
+      for (let tn of(<ts.TypeLiteralNode>paramDecl.type).members) {
+        if (tn.kind !== ts.SyntaxKind.PropertySignature) {
+          this.reportError(tn, 'unsupported named parameter kind ' + tn.kind);
+          continue;
+        }
+        let pd = <ts.PropertyDeclaration>tn;
+        typeMap[base.ident(pd.name)] = pd.type;
       }
     }
+    let initMap: ts.Map<ts.Expression> = {};
+    if (paramDecl.initializer) {
+      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+        this.reportError(paramDecl, 'initializers for named parameters must be object literals');
+        return;
+      }
+      for (let i of(<ts.ObjectLiteralExpression>paramDecl.initializer).properties) {
+        if (i.kind !== ts.SyntaxKind.PropertyAssignment) {
+          this.reportError(i, 'named parameter initializers must be properties, got ' + i.kind);
+          continue;
+        }
+        let ole = <ts.PropertyAssignment>i;
+        initMap[base.ident(ole.name)] = ole.initializer;
+      }
+    }
+    this.emit('{');
+    for (let i = 0; i < bp.elements.length; i++) {
+      let elem = bp.elements[i];
+      let type = typeMap[base.ident(elem.name)];
+      if (type) this.visit(type);
+      this.visit(elem.name);
+      if (elem.initializer && initMap[base.ident(elem.name)]) {
+        this.reportError(elem, 'cannot have both an inner and outer initializer');
+      }
+      let init = elem.initializer || initMap[base.ident(elem.name)];
+      if (init) {
+        this.emit(':');
+        this.visit(init);
+      }
+      if (i + 1 < bp.elements.length) this.emit(',');
+    }
+    this.emit('}');
   }
 
   /**

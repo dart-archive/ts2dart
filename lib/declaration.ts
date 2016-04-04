@@ -176,8 +176,17 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
           break;
         }
         this.visitDecorators(paramDecl.decorators);
-        if (paramDecl.type) this.visit(paramDecl.type);
-        this.visit(paramDecl.name);
+
+        if (paramDecl.type && paramDecl.type.kind === ts.SyntaxKind.FunctionType) {
+          // Dart uses "returnType paramName ( parameters )" syntax.
+          let fnType = <ts.FunctionOrConstructorTypeNode>paramDecl.type;
+          this.visit(fnType.type);
+          this.visit(paramDecl.name);
+          this.visitParameters(fnType.parameters);
+        } else {
+          if (paramDecl.type) this.visit(paramDecl.type);
+          this.visit(paramDecl.name);
+        }
         if (paramDecl.initializer) {
           this.emit('=');
           this.visit(paramDecl.initializer);

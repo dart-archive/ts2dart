@@ -3,6 +3,9 @@
 import t = require("test/test");
 import {MyClass, MySubclass, SomeArray} from './lib';
 
+function callOne<T, U>(a: (t: T) => U, t: T): U {
+  return a(t);
+}
 
 function main(): void {
   t.test("handles classes", function() {
@@ -27,6 +30,7 @@ function main(): void {
     t.expect(/o/g.exec("fo.o").length, t.equals(2));
   });
   t.test("const expr", function() { t.expect(SomeArray[0], t.equals(1)); });
+  t.test('generic types fn', function() { t.expect(callOne((a) => a, 1), t.equals(1)); });
 
   t.test("promises", function() {
     let p: Promise<number> = new Promise<number>((resolve) => { resolve(1); });

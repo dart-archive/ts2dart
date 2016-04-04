@@ -51,6 +51,17 @@ describe('functions', () => {
     expectTranslate('var a = (p = null) => isBlank(p)')
         .to.equal('var a = ([p = null]) => isBlank(p);');
   });
+  it('supports function parameters', () => {
+    expectTranslate('function f(fn: (a: A, b: B) => C) {}').to.equal('f(C fn(A a, B b)) {}');
+  });
+  it('supports recursive function parameters', () => {
+    expectTranslate('function f(fn: (a: (b: B) => C) => D) {}').to.equal('f(D fn(C a(B b))) {}');
+  });
+  it('supports generic-typed function parameters', () => {
+    expectTranslate('function f<T, U>(fn: (a: T, b: U) => T) {}', {
+      translateBuiltins: true
+    }).to.equal('f/*< T, U >*/(dynamic/*= T */ fn(dynamic/*= T */ a, dynamic/*= U */ b)) {}');
+  });
 });
 
 describe('generic functions', () => {

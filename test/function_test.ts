@@ -32,10 +32,11 @@ describe('functions', () => {
   return a + b;
 }`);
   });
-  // TODO(martinprobst): Support types on named parameters.
-  it.skip('fails for types on named parameters', () => {
-    expectErroneousCode('function x({a}: number) { return a + b; }')
-        .to.throw('types on named parameters are unsupported');
+  it('supports types on named parameters', () => {
+    expectTranslate('function x({a = 1, b = 2}: {a: number, b: number} = {}) { return a + b; }')
+        .to.equal(`x({num a: 1, num b: 2}) {
+  return a + b;
+}`);
   });
   it('does not support var args', () => {
     expectErroneousCode('function x(...a: number) { return 42; }')

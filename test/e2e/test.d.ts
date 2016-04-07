@@ -1,5 +1,5 @@
 declare module 'test/test' {
-  function test(msg: string, fn: () => void);
-  function expect(a: any, b: any);
-  function equals(a: any): any;
+  export function test(msg: string, fn: () => void);
+  export function expect(a: any, b: any);
+  export function equals(a: any): any;
 }

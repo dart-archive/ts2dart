@@ -13,30 +13,30 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.emit(';');
         break;
       case ts.SyntaxKind.ReturnStatement:
-        var retStmt = <ts.ReturnStatement>node;
+        let retStmt = <ts.ReturnStatement>node;
         this.emit('return');
         if (retStmt.expression) this.visit(retStmt.expression);
         this.emit(';');
         break;
       case ts.SyntaxKind.BreakStatement:
       case ts.SyntaxKind.ContinueStatement:
-        var breakContinue = <ts.BreakOrContinueStatement>node;
-        this.emit(breakContinue.kind == ts.SyntaxKind.BreakStatement ? 'break' : 'continue');
+        let breakContinue = <ts.BreakOrContinueStatement>node;
+        this.emit(breakContinue.kind === ts.SyntaxKind.BreakStatement ? 'break' : 'continue');
         if (breakContinue.label) this.visit(breakContinue.label);
         this.emit(';');
         break;
       case ts.SyntaxKind.VariableStatement:
-        var variableStmt = <ts.VariableStatement>node;
+        let variableStmt = <ts.VariableStatement>node;
         this.visit(variableStmt.declarationList);
         this.emit(';');
         break;
       case ts.SyntaxKind.ExpressionStatement:
-        var expr = <ts.ExpressionStatement>node;
+        let expr = <ts.ExpressionStatement>node;
         this.visit(expr.expression);
         this.emit(';');
         break;
       case ts.SyntaxKind.SwitchStatement:
-        var switchStmt = <ts.SwitchStatement>node;
+        let switchStmt = <ts.SwitchStatement>node;
         this.emit('switch (');
         this.visit(switchStmt.expression);
         this.emit(')');
@@ -48,7 +48,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.emit('}');
         break;
       case ts.SyntaxKind.CaseClause:
-        var caseClause = <ts.CaseClause>node;
+        let caseClause = <ts.CaseClause>node;
         this.emit('case');
         this.visit(caseClause.expression);
         this.emit(':');
@@ -59,7 +59,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.visitEach((<ts.DefaultClause>node).statements);
         break;
       case ts.SyntaxKind.IfStatement:
-        var ifStmt = <ts.IfStatement>node;
+        let ifStmt = <ts.IfStatement>node;
         this.emit('if (');
         this.visit(ifStmt.expression);
         this.emit(')');
@@ -70,7 +70,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.ForStatement:
-        var forStmt = <ts.ForStatement>node;
+        let forStmt = <ts.ForStatement>node;
         this.emit('for (');
         if (forStmt.initializer) this.visit(forStmt.initializer);
         this.emit(';');
@@ -83,7 +83,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.ForInStatement:
         // TODO(martinprobst): Dart's for-in loops actually have different semantics, they are more
         // like for-of loops, iterating over collections.
-        var forInStmt = <ts.ForInStatement>node;
+        let forInStmt = <ts.ForInStatement>node;
         this.emit('for (');
         if (forInStmt.initializer) this.visit(forInStmt.initializer);
         this.emit('in');
@@ -92,7 +92,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.visit(forInStmt.statement);
         break;
       case ts.SyntaxKind.ForOfStatement:
-        var forOfStmt = <ts.ForOfStatement>node;
+        let forOfStmt = <ts.ForOfStatement>node;
         this.emit('for (');
         if (forOfStmt.initializer) this.visit(forOfStmt.initializer);
         this.emit('in');
@@ -101,14 +101,14 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.visit(forOfStmt.statement);
         break;
       case ts.SyntaxKind.WhileStatement:
-        var whileStmt = <ts.WhileStatement>node;
+        let whileStmt = <ts.WhileStatement>node;
         this.emit('while (');
         this.visit(whileStmt.expression);
         this.emit(')');
         this.visit(whileStmt.statement);
         break;
       case ts.SyntaxKind.DoStatement:
-        var doStmt = <ts.DoStatement>node;
+        let doStmt = <ts.DoStatement>node;
         this.emit('do');
         this.visit(doStmt.statement);
         this.emit('while (');
@@ -117,10 +117,10 @@ export default class StatementTranspiler extends base.TranspilerBase {
         break;
 
       case ts.SyntaxKind.ThrowStatement:
-        var throwStmt = <ts.ThrowStatement>node;
-        var surroundingCatchClause = this.getAncestor(throwStmt, ts.SyntaxKind.CatchClause);
+        let throwStmt = <ts.ThrowStatement>node;
+        let surroundingCatchClause = this.getAncestor(throwStmt, ts.SyntaxKind.CatchClause);
         if (surroundingCatchClause) {
-          var ref = (<ts.CatchClause>surroundingCatchClause).variableDeclaration;
+          let ref = (<ts.CatchClause>surroundingCatchClause).variableDeclaration;
           if (ref.getText() === throwStmt.expression.getText()) {
             this.emit('rethrow');
             this.emit(';');
@@ -133,7 +133,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         this.emit(';');
         break;
       case ts.SyntaxKind.TryStatement:
-        var tryStmt = <ts.TryStatement>node;
+        let tryStmt = <ts.TryStatement>node;
         this.emit('try');
         this.visit(tryStmt.tryBlock);
         if (tryStmt.catchClause) {
@@ -145,7 +145,7 @@ export default class StatementTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.CatchClause:
-        var ctch = <ts.CatchClause>node;
+        let ctch = <ts.CatchClause>node;
         if (ctch.variableDeclaration.type) {
           this.emit('on');
           this.visit(ctch.variableDeclaration.type);

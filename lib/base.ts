@@ -6,15 +6,15 @@ export type ClassLike = ts.ClassDeclaration | ts.InterfaceDeclaration;
 export function ident(n: ts.Node): string {
   if (n.kind === ts.SyntaxKind.Identifier) return (<ts.Identifier>n).text;
   if (n.kind === ts.SyntaxKind.QualifiedName) {
-    var qname = (<ts.QualifiedName>n);
-    var leftName = ident(qname.left);
+    let qname = (<ts.QualifiedName>n);
+    let leftName = ident(qname.left);
     if (leftName) return leftName + '.' + ident(qname.right);
   }
   return null;
 }
 
 export class TranspilerBase {
-  private id_: number = 0;
+  private idCounter: number = 0;
   constructor(private transpiler: Transpiler) {}
 
   visit(n: ts.Node) { this.transpiler.visit(n); }
@@ -30,15 +30,15 @@ export class TranspilerBase {
     if (nodes) this.visitEach(nodes);
   }
 
-  visitList(nodes: ts.Node[], separator: string = ',') {
-    for (var i = 0; i < nodes.length; i++) {
+  visitList(nodes: ts.Node[], separator = ',') {
+    for (let i = 0; i < nodes.length; i++) {
       this.visit(nodes[i]);
       if (i < nodes.length - 1) this.emit(separator);
     }
   }
 
   uniqueId(name: string): string {
-    const id = this.id_++;
+    const id = this.idCounter++;
     return `_${name}\$\$ts2dart\$${id}`;
   }
 
@@ -50,7 +50,7 @@ export class TranspilerBase {
   }
 
   getAncestor(n: ts.Node, kind: ts.SyntaxKind): ts.Node {
-    for (var parent = n; parent; parent = parent.parent) {
+    for (let parent = n; parent; parent = parent.parent) {
       if (parent.kind === kind) return parent;
     }
     return null;
@@ -61,10 +61,10 @@ export class TranspilerBase {
   hasAnnotation(decorators: ts.NodeArray<ts.Decorator>, name: string): boolean {
     if (!decorators) return false;
     return decorators.some((d) => {
-      var decName = ident(d.expression);
+      let decName = ident(d.expression);
       if (decName === name) return true;
       if (d.expression.kind !== ts.SyntaxKind.CallExpression) return false;
-      var callExpr = (<ts.CallExpression>d.expression);
+      let callExpr = (<ts.CallExpression>d.expression);
       decName = ident(callExpr.expression);
       return decName === name;
     });
@@ -84,7 +84,7 @@ export class TranspilerBase {
 
   maybeDestructureIndexType(node: ts.TypeLiteralNode): [ts.TypeNode, ts.TypeNode] {
     let members = node.members;
-    if (members.length != 1 || members[0].kind != ts.SyntaxKind.IndexSignature) {
+    if (members.length !== 1 || members[0].kind !== ts.SyntaxKind.IndexSignature) {
       return null;
     }
     let indexSig = <ts.IndexSignatureDeclaration>(members[0]);
@@ -104,7 +104,7 @@ export class TranspilerBase {
       // If it's a single type argument `<void>`, ignore it and emit nothing.
       // This is particularly useful for `Promise<void>`, see
       // https://github.com/dart-lang/sdk/issues/2231#issuecomment-108313639
-      if (n.typeArguments.length == 1 && n.typeArguments[0].kind == ts.SyntaxKind.VoidKeyword) {
+      if (n.typeArguments.length === 1 && n.typeArguments[0].kind === ts.SyntaxKind.VoidKeyword) {
         return;
       }
       this.emitNoSpace('<');

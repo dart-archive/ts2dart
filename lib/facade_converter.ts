@@ -30,7 +30,7 @@ export class FacadeConverter extends base.TranspilerBase {
   private typingsRootRegex: RegExp;
   private genericMethodDeclDepth = 0;
 
-  constructor(transpiler: Transpiler, typingsRoot: string = '') {
+  constructor(transpiler: Transpiler, typingsRoot = '') {
     super(transpiler);
     this.extractPropertyNames(this.callHandlers, this.candidateProperties);
     this.extractPropertyNames(this.propertyHandlers, this.candidateProperties);
@@ -40,9 +40,9 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private extractPropertyNames(m: ts.Map<ts.Map<any>>, candidates: {[k: string]: boolean}) {
-    for (var fileName in m) {
-      Object.keys(m[fileName])
-          .filter((k) => m[fileName].hasOwnProperty(k))
+    for (let fileName of Object.keys(m)) {
+      const file = m[fileName];
+      Object.keys(file)
           .map((propName) => propName.substring(propName.lastIndexOf('.') + 1))
           .forEach((propName) => candidates[propName] = true);
     }
@@ -57,21 +57,21 @@ export class FacadeConverter extends base.TranspilerBase {
       // getCallInformation returns a symbol if we understand this call.
       return false;
     }
-    var handler = this.getHandler(c, symbol, this.callHandlers);
+    let handler = this.getHandler(c, symbol, this.callHandlers);
     return handler && !handler(c, context);
   }
 
   handlePropertyAccess(pa: ts.PropertyAccessExpression): boolean {
     if (!this.tc) return;
-    var ident = pa.name.text;
+    let ident = pa.name.text;
     if (!this.candidateProperties.hasOwnProperty(ident)) return false;
-    var symbol = this.tc.getSymbolAtLocation(pa.name);
+    let symbol = this.tc.getSymbolAtLocation(pa.name);
     if (!symbol) {
       this.reportMissingType(pa, ident);
       return false;
     }
 
-    var handler = this.getHandler(pa, symbol, this.propertyHandlers);
+    let handler = this.getHandler(pa, symbol, this.propertyHandlers);
     return handler && !handler(pa);
   }
 
@@ -79,23 +79,23 @@ export class FacadeConverter extends base.TranspilerBase {
    * Searches for type references that require extra imports and emits the imports as necessary.
    */
   emitExtraImports(sourceFile: ts.SourceFile) {
-    var libraries = <ts.Map<string>>{
-      "XMLHttpRequest": "dart:html",
-      "KeyboardEvent": "dart:html",
-      "Uint8Array": "dart:typed_arrays",
-      "ArrayBuffer": "dart:typed_arrays",
-      "Promise": "dart:async"
+    let libraries = <ts.Map<string>>{
+      'XMLHttpRequest': 'dart:html',
+      'KeyboardEvent': 'dart:html',
+      'Uint8Array': 'dart:typed_arrays',
+      'ArrayBuffer': 'dart:typed_arrays',
+      'Promise': 'dart:async',
     };
-    var emitted: Set = {};
+    let emitted: Set = {};
     this.emitImports(sourceFile, libraries, emitted, sourceFile);
   }
 
   private emitImports(
       n: ts.Node, libraries: ts.Map<string>, emitted: Set, sourceFile: ts.SourceFile): void {
     if (n.kind === ts.SyntaxKind.TypeReference) {
-      var type = base.ident((<ts.TypeReferenceNode>n).typeName);
+      let type = base.ident((<ts.TypeReferenceNode>n).typeName);
       if (libraries.hasOwnProperty(type)) {
-        var toEmit = libraries[type];
+        let toEmit = libraries[type];
         if (!emitted[toEmit]) {
           this.emit(`import "${toEmit}";`);
           emitted[toEmit] = true;
@@ -104,7 +104,7 @@ export class FacadeConverter extends base.TranspilerBase {
     }
 
     n.getChildren(sourceFile)
-        .forEach((n: ts.Node) => this.emitImports(n, libraries, emitted, sourceFile));
+        .forEach((child: ts.Node) => this.emitImports(child, libraries, emitted, sourceFile));
   }
 
   pushTypeParameterNames(n: ts.FunctionLikeDeclaration) {
@@ -134,7 +134,7 @@ export class FacadeConverter extends base.TranspilerBase {
 
     // Check if the symbol we're looking at is the type parameter.
     let symbol = this.tc.getSymbolAtLocation(name);
-    if (symbol != t.symbol) return false;
+    if (symbol !== t.symbol) return false;
 
     // Check that the Type Parameter has been declared by a function declaration.
     return symbol.declarations.some(d => d.parent.kind === ts.SyntaxKind.FunctionDeclaration);
@@ -145,8 +145,7 @@ export class FacadeConverter extends base.TranspilerBase {
       this.visit(typeName);
       return;
     }
-    var identifier = <ts.Identifier>typeName;
-    var ident = base.ident(typeName);
+    let ident = base.ident(typeName);
     if (this.isGenericMethodTypeParameterName(typeName)) {
       // DDC generic methods hack - all names that are type parameters to generic methods have to be
       // emitted in comments.
@@ -157,14 +156,14 @@ export class FacadeConverter extends base.TranspilerBase {
     }
 
     if (this.candidateTypes.hasOwnProperty(ident) && this.tc) {
-      var symbol = this.tc.getSymbolAtLocation(typeName);
+      let symbol = this.tc.getSymbolAtLocation(typeName);
       if (!symbol) {
         this.reportMissingType(typeName, ident);
         return;
       }
       let fileAndName = this.getFileAndName(typeName, symbol);
       if (fileAndName) {
-        var fileSubs = this.TS_TO_DART_TYPENAMES[fileAndName.fileName];
+        let fileSubs = this.TS_TO_DART_TYPENAMES[fileAndName.fileName];
         if (fileSubs && fileSubs.hasOwnProperty(fileAndName.qname)) {
           this.emit(fileSubs[fileAndName.qname]);
           return;
@@ -177,25 +176,24 @@ export class FacadeConverter extends base.TranspilerBase {
   shouldEmitNew(c: ts.CallExpression): boolean {
     if (!this.tc) return true;
 
-    let {context, symbol} = this.getCallInformation(c);
-    if (!symbol) {
-      // getCallInformation returns a symbol if we understand this call.
-      return true;
-    }
+    let ci = this.getCallInformation(c);
+    let symbol = ci.symbol;
+    // getCallInformation returns a symbol if we understand this call.
+    if (!symbol) return true;
 
-    var loc = this.getFileAndName(c, symbol);
+    let loc = this.getFileAndName(c, symbol);
     if (!loc) return true;
-    var {fileName, qname} = loc;
-    var fileSubs = this.callHandlerReplaceNew[fileName];
+    let {fileName, qname} = loc;
+    let fileSubs = this.callHandlerReplaceNew[fileName];
     if (!fileSubs) return true;
     return !fileSubs[qname];
   }
 
   private getCallInformation(c: ts.CallExpression): {context?: ts.Expression, symbol?: ts.Symbol} {
-    var symbol: ts.Symbol;
-    var context: ts.Expression;
-    var ident: string;
-    var expr = c.expression;
+    let symbol: ts.Symbol;
+    let context: ts.Expression;
+    let ident: string;
+    let expr = c.expression;
 
     if (expr.kind === ts.SyntaxKind.Identifier) {
       // Function call.
@@ -212,7 +210,7 @@ export class FacadeConverter extends base.TranspilerBase {
       context = null;
     } else if (expr.kind === ts.SyntaxKind.PropertyAccessExpression) {
       // Method call.
-      var pa = <ts.PropertyAccessExpression>expr;
+      let pa = <ts.PropertyAccessExpression>expr;
       ident = base.ident(pa.name);
       if (!this.candidateProperties.hasOwnProperty(ident)) return {};
 
@@ -228,10 +226,10 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private getHandler<T>(n: ts.Node, symbol: ts.Symbol, m: ts.Map<ts.Map<T>>): T {
-    var loc = this.getFileAndName(n, symbol);
+    let loc = this.getFileAndName(n, symbol);
     if (!loc) return null;
-    var {fileName, qname} = loc;
-    var fileSubs = m[fileName];
+    let {fileName, qname} = loc;
+    let fileSubs = m[fileName];
     if (!fileSubs) return null;
     return fileSubs[qname];
   }
@@ -256,7 +254,7 @@ export class FacadeConverter extends base.TranspilerBase {
                                   .replace(FACADE_NODE_MODULES_PREFIX, '')
                                   .replace(this.typingsRootRegex, '');
 
-    var qname = this.tc.getFullyQualifiedName(symbol);
+    let qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
     // for the time being just special case.
     if (symbol.flags & (ts.SymbolFlags.Class | ts.SymbolFlags.Function | ts.SymbolFlags.Variable)) {
@@ -267,9 +265,9 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   private isNamedType(node: ts.Node, fileName: string, qname: string): boolean {
-    var symbol = this.tc.getTypeAtLocation(node).getSymbol();
+    let symbol = this.tc.getTypeAtLocation(node).getSymbol();
     if (!symbol) return false;
-    var actual = this.getFileAndName(node, symbol);
+    let actual = this.getFileAndName(node, symbol);
     if (fileName === 'lib' && !(actual.fileName === 'lib' || actual.fileName === 'lib.es6')) {
       return false;
     } else {
@@ -358,16 +356,16 @@ export class FacadeConverter extends base.TranspilerBase {
       }
     },
     'Promise': (c: ts.CallExpression, context: ts.Expression) => {
-      if (c.kind != ts.SyntaxKind.NewExpression) return true;
-      this.assert(c, c.arguments.length == 1, 'Promise construction must take 2 arguments.');
+      if (c.kind !== ts.SyntaxKind.NewExpression) return true;
+      this.assert(c, c.arguments.length === 1, 'Promise construction must take 2 arguments.');
       this.assert(
-          c, c.arguments[0].kind == ts.SyntaxKind.ArrowFunction ||
-              c.arguments[0].kind == ts.SyntaxKind.FunctionExpression,
+          c, c.arguments[0].kind === ts.SyntaxKind.ArrowFunction ||
+              c.arguments[0].kind === ts.SyntaxKind.FunctionExpression,
           'Promise argument must be a function expression (or arrow function).');
       let callback: ts.FunctionLikeDeclaration;
-      if (c.arguments[0].kind == ts.SyntaxKind.ArrowFunction) {
+      if (c.arguments[0].kind === ts.SyntaxKind.ArrowFunction) {
         callback = <ts.FunctionLikeDeclaration>(<ts.ArrowFunction>c.arguments[0]);
-      } else if (c.arguments[0].kind == ts.SyntaxKind.FunctionExpression) {
+      } else if (c.arguments[0].kind === ts.SyntaxKind.FunctionExpression) {
         callback = <ts.FunctionLikeDeclaration>(<ts.FunctionExpression>c.arguments[0]);
       }
       this.assert(
@@ -376,7 +374,7 @@ export class FacadeConverter extends base.TranspilerBase {
 
       const completerVarName = this.uniqueId('completer');
       this.assert(
-          c, callback.parameters[0].name.kind == ts.SyntaxKind.Identifier,
+          c, callback.parameters[0].name.kind === ts.SyntaxKind.Identifier,
           'First argument of the Promise executor is not a straight parameter.');
       let resolveParameterIdent = <ts.Identifier>(callback.parameters[0].name);
 
@@ -386,14 +384,14 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emit(resolveParameterIdent.text);
       this.emit(`= ${completerVarName}.complete;`);
 
-      if (callback.parameters.length == 2) {
+      if (callback.parameters.length === 2) {
         this.assert(
-            c, callback.parameters[1].name.kind == ts.SyntaxKind.Identifier,
+            c, callback.parameters[1].name.kind === ts.SyntaxKind.Identifier,
             'First argument of the Promise executor is not a straight parameter.');
         let rejectParameterIdent = <ts.Identifier>(callback.parameters[1].name);
         this.emit('var');
         this.emit(rejectParameterIdent.text);
-        this.emit(`= ${completerVarName}.completeError;`)
+        this.emit(`= ${completerVarName}.completeError;`);
       }
       this.emit('(()');
       this.visit(callback.body);
@@ -419,7 +417,7 @@ export class FacadeConverter extends base.TranspilerBase {
     'Array.unshift': (c: ts.CallExpression, context: ts.Expression) => {
       this.emit('(');
       this.visit(context);
-      if (c.arguments.length == 1) {
+      if (c.arguments.length === 1) {
         this.emit('.. insert ( 0,');
         this.visit(c.arguments[0]);
         this.emit(') ) . length');
@@ -522,8 +520,8 @@ export class FacadeConverter extends base.TranspilerBase {
     'Map.delete': (c: ts.CallExpression, context: ts.Expression) => {
       // JS Map.delete(k) returns whether k was present in the map,
       // convert to:
-      // (Map.containsKey(k) && (Map.remove(k) != null || true))
-      // (Map.remove(k) != null || true) is required to always returns true
+      // (Map.containsKey(k) && (Map.remove(k) !== null || true))
+      // (Map.remove(k) !== null || true) is required to always returns true
       // when Map.containsKey(k)
       this.emit('(');
       this.visit(context);
@@ -541,7 +539,7 @@ export class FacadeConverter extends base.TranspilerBase {
         case ts.SyntaxKind.FunctionExpression:
           cb = <ts.FunctionExpression>(c.arguments[0]);
           params = cb.parameters;
-          if (params.length != 2) {
+          if (params.length !== 2) {
             this.reportError(c, 'Map.forEach callback requires exactly two arguments');
             return;
           }
@@ -558,7 +556,7 @@ export class FacadeConverter extends base.TranspilerBase {
         case ts.SyntaxKind.ArrowFunction:
           cb = <ts.ArrowFunction>(c.arguments[0]);
           params = cb.parameters;
-          if (params.length != 2) {
+          if (params.length !== 2) {
             this.reportError(c, 'Map.forEach callback requires exactly two arguments');
             return;
           }
@@ -568,7 +566,7 @@ export class FacadeConverter extends base.TranspilerBase {
           this.emit(',');
           this.visit(params[0]);
           this.emit(')');
-          if (cb.body.kind != ts.SyntaxKind.Block) {
+          if (cb.body.kind !== ts.SyntaxKind.Block) {
             this.emit('=>');
           }
           this.visit(cb.body);
@@ -638,7 +636,7 @@ export class FacadeConverter extends base.TranspilerBase {
       'normalizeBlank': (c: ts.CallExpression, context: ts.Expression) => {
         // normalizeBlank is a noop in Dart, so erase it.
         this.visitList(c.arguments);
-      }
+      },
     },
   };
 

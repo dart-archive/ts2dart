@@ -7,11 +7,11 @@ export default function mkdirP(p: string) {
   p = path.resolve(p);
   p = path.relative('', p);
 
-  var pathToCreate = '';
+  let pathToCreate = '';
   p.split(path.sep).forEach(dirName => {
     pathToCreate = path.join(pathToCreate, dirName);
     if (!fs.existsSync(pathToCreate)) {
       fs.mkdirSync(pathToCreate);
     }
-  })
+  });
 }

@@ -1,5 +1,5 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import {expectTranslate, expectErroneousCode} from './test_support';
+import {expectTranslate} from './test_support';
 
 describe('statements', () => {
   it('translates switch', () => {
@@ -97,9 +97,9 @@ else
   console.log(e, e_stack);
 }`);
   });
-  it('rewrites rethrow to preserve stack trace',
-     () => {
-         expectTranslate('try {} catch (ex) { throw ex; }').to.equal(`try {} catch (ex, ex_stack) {
+  it('rewrites rethrow to preserve stack trace', () => {
+    expectTranslate('try {} catch (ex) { throw ex; }').to.equal(`try {} catch (ex, ex_stack) {
   rethrow;
-}`)});
+}`);
+  });
 });

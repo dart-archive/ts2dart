@@ -14,10 +14,18 @@ var ts = require('gulp-typescript');
 var typescript = require('typescript');
 var style = require('dart-style');
 var which = require('which');
+var tslint = require('gulp-tslint');
 
 gulp.task('test.check-format', function() {
   return gulp.src(['*.js', 'lib/**/*.ts', 'test/**/*.ts'])
       .pipe(formatter.checkFormat('file', clangFormat))
+      .on('warning', onError);
+});
+
+gulp.task('test.check-lint', function() {
+  return gulp.src(['lib/**/*.ts', 'test/**/*.ts'])
+      .pipe(tslint())
+      .pipe(tslint.report('verbose'))
       .on('warning', onError);
 });
 
@@ -94,7 +102,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   // Paths must be relative to our source root, so run with cwd == dir.
   spawn('sh', ['-c', cmd], {stdio: 'inherit', cwd: dir}).on('close', function(code, signal) {
     if (code > 0) {
-      onError(new Error("Failed to transpile " + testfile + '.ts'));
+      onError(new Error('Failed to transpile ' + testfile + '.ts'));
     } else {
       try {
         var opts = {stdio: 'inherit', cwd: dir};
@@ -112,7 +120,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   });
 });
 
-gulp.task('test', ['test.unit', 'test.check-format', 'test.e2e']);
+gulp.task('test', ['test.check-format', 'test.check-lint', 'test.unit', 'test.e2e']);
 
 gulp.task('watch', ['test.unit'], function() {
   failOnError = false;

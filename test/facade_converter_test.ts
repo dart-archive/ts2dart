@@ -1,15 +1,9 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
 import * as fs from 'fs';
-import {
-  parseFiles,
-  expectTranslate,
-  FAKE_MAIN,
-  expectErroneousCode,
-  translateSource
-} from './test_support';
+import {expectTranslate, FAKE_MAIN, translateSource} from './test_support';
 import chai = require('chai');
 
-var es6RuntimeDeclarations = `
+let es6RuntimeDeclarations = `
     interface Iterable<T> {}
     interface Symbol {}
     interface Map<K, V> {
@@ -32,7 +26,7 @@ var es6RuntimeDeclarations = `
 
 
 function getSources(str: string): {[k: string]: string} {
-  var srcs: {[k: string]: string} = {
+  let srcs: {[k: string]: string} = {
     'some/path/to/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
@@ -63,7 +57,7 @@ function getSources(str: string): {[k: string]: string} {
 const COMPILE_OPTS = {
   translateBuiltins: true,
   failFast: true,
-  typingsRoot: 'some/path/to/typings/'
+  typingsRoot: 'some/path/to/typings/',
 };
 
 function expectWithTypes(str: string) {

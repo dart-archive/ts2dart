@@ -1,7 +1,7 @@
 import * as ts from 'typescript';
 import * as base from './base';
 import {Transpiler} from './main';
-import {FacadeConverter} from "./facade_converter";
+import {FacadeConverter} from './facade_converter';
 
 export default class LiteralTranspiler extends base.TranspilerBase {
   constructor(tr: Transpiler, private fc: FacadeConverter) { super(tr); }
@@ -10,14 +10,14 @@ export default class LiteralTranspiler extends base.TranspilerBase {
     switch (node.kind) {
       // Literals.
       case ts.SyntaxKind.NumericLiteral:
-        var sLit = <ts.LiteralExpression>node;
-        this.emit(sLit.getText());
+        let nLit = <ts.LiteralExpression>node;
+        this.emit(nLit.getText());
         break;
       case ts.SyntaxKind.StringLiteral:
-        var sLit = <ts.LiteralExpression>node;
-        var text = JSON.stringify(sLit.text);
+        let sLit = <ts.LiteralExpression>node;
+        let text = JSON.stringify(sLit.text);
         // Escape dollar sign since dart will interpolate in double quoted literal
-        var text = text.replace(/\$/, '\\$');
+        text = text.replace(/\$/, '\\$');
         this.emit(text);
         break;
       case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
@@ -27,7 +27,7 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         this.emitNoSpace(this.escapeTextForTemplateString(node));
         break;
       case ts.SyntaxKind.TemplateExpression:
-        var tmpl = <ts.TemplateExpression>node;
+        let tmpl = <ts.TemplateExpression>node;
         if (tmpl.head) this.visit(tmpl.head);
         if (tmpl.templateSpans) this.visitEach(tmpl.templateSpans);
         break;
@@ -39,7 +39,7 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         this.emitNoSpace(`'''`);
         break;
       case ts.SyntaxKind.TemplateSpan:
-        var span = <ts.TemplateSpan>node;
+        let span = <ts.TemplateSpan>node;
         if (span.expression) {
           // Do not emit extra whitespace inside the string template
           this.emitNoSpace('${');
@@ -65,7 +65,7 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         this.emit('}');
         break;
       case ts.SyntaxKind.PropertyAssignment:
-        var propAssign = <ts.PropertyAssignment>node;
+        let propAssign = <ts.PropertyAssignment>node;
         if (propAssign.name.kind === ts.SyntaxKind.Identifier) {
           // Dart identifiers in Map literals need quoting.
           this.emitNoSpace(' "');
@@ -78,7 +78,7 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         this.visit(propAssign.initializer);
         break;
       case ts.SyntaxKind.ShorthandPropertyAssignment:
-        var shorthand = <ts.ShorthandPropertyAssignment>node;
+        let shorthand = <ts.ShorthandPropertyAssignment>node;
         this.emitNoSpace(' "');
         this.emitNoSpace(shorthand.name.text);
         this.emitNoSpace('"');
@@ -98,9 +98,9 @@ export default class LiteralTranspiler extends base.TranspilerBase {
       case ts.SyntaxKind.RegularExpressionLiteral:
         this.emit('new RegExp (');
         this.emit('r\'');
-        var regExp = (<ts.LiteralExpression>node).text;
-        var slashIdx = regExp.lastIndexOf('/');
-        var flags = regExp.substring(slashIdx + 1);
+        let regExp = (<ts.LiteralExpression>node).text;
+        let slashIdx = regExp.lastIndexOf('/');
+        let flags = regExp.substring(slashIdx + 1);
         regExp = regExp.substring(1, slashIdx);            // cut off /.../ chars.
         regExp = regExp.replace(/'/g, '\' + "\'" + r\'');  // handle nested quotes by concatenation.
         this.emitNoSpace(regExp);

@@ -89,19 +89,19 @@ export class Transpiler {
       this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
     }
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
-    var host = this.createCompilerHost();
+    let host = this.createCompilerHost();
     if (this.options.basePath && destination === undefined) {
       throw new Error(
           'Must have a destination path when a basePath is specified ' + this.options.basePath);
     }
-    var destinationRoot = destination || this.options.basePath || '';
-    var program = ts.createProgram(fileNames, this.getCompilerOptions(), host);
+    let destinationRoot = destination || this.options.basePath || '';
+    let program = ts.createProgram(fileNames, this.getCompilerOptions(), host);
     if (this.options.translateBuiltins) {
       this.fc.setTypeChecker(program.getTypeChecker());
     }
 
     // Only write files that were explicitly passed in.
-    var fileSet: {[s: string]: boolean} = {};
+    let fileSet: {[s: string]: boolean} = {};
     fileNames.forEach((f) => fileSet[f] = true);
 
     this.errors = [];
@@ -110,8 +110,8 @@ export class Transpiler {
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
         .forEach((f: ts.SourceFile) => {
-          var dartCode = this.translate(f);
-          var outputFile = this.getOutputPath(path.resolve(f.fileName), destinationRoot);
+          let dartCode = this.translate(f);
+          let outputFile = this.getOutputPath(path.resolve(f.fileName), destinationRoot);
           mkdirP(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
@@ -122,7 +122,7 @@ export class Transpiler {
     if (this.options.translateBuiltins) {
       this.fc.setTypeChecker(program.getTypeChecker());
     }
-    var paths: {[path: string]: string} = {};
+    let paths: {[path: string]: string} = {};
     this.errors = [];
     program.getSourceFiles()
         .filter(
@@ -134,18 +134,18 @@ export class Transpiler {
   }
 
   private getCompilerOptions() {
-    var opts: ts.CompilerOptions = {};
-    for (var k in COMPILER_OPTIONS) opts[k] = COMPILER_OPTIONS[k];
+    let opts: ts.CompilerOptions = {};
+    for (let k of Object.keys(COMPILER_OPTIONS)) opts[k] = COMPILER_OPTIONS[k];
     opts.rootDir = this.options.basePath;
     return opts;
   }
 
   private createCompilerHost(): ts.CompilerHost {
-    var defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
+    let defaultLibFileName = ts.getDefaultLibFileName(COMPILER_OPTIONS);
     defaultLibFileName = this.normalizeSlashes(defaultLibFileName);
-    var compilerHost: ts.CompilerHost = {
+    let compilerHost: ts.CompilerHost = {
       getSourceFile: (sourceName, languageVersion) => {
-        var sourcePath = sourceName;
+        let sourcePath = sourceName;
         if (sourceName === defaultLibFileName) {
           sourcePath = ts.getDefaultLibFilePath(COMPILER_OPTIONS);
         }
@@ -168,8 +168,8 @@ export class Transpiler {
 
   // Visible for testing.
   getOutputPath(filePath: string, destinationRoot: string): string {
-    var relative = this.getRelativeFileName(filePath);
-    var dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
+    let relative = this.getRelativeFileName(filePath);
+    let dartFile = relative.replace(/.(js|es6|ts)$/, '.dart');
     return this.normalizeSlashes(path.join(destinationRoot, dartFile));
   }
 
@@ -179,12 +179,12 @@ export class Transpiler {
         new Output(sourceFile, this.getRelativeFileName(), this.options.generateSourceMap);
     this.lastCommentIdx = -1;
     this.visit(sourceFile);
-    var result = this.output.getResult();
+    let result = this.output.getResult();
     return this.formatCode(result, sourceFile);
   }
 
   private formatCode(code: string, context: ts.Node) {
-    var result = dartStyle.formatCode(code);
+    let result = dartStyle.formatCode(code);
     if (result.error) {
       this.reportError(context, result.error);
     }
@@ -192,9 +192,9 @@ export class Transpiler {
   }
 
   private checkForErrors(program: ts.Program) {
-    var errors = this.errors;
+    let errors = this.errors;
 
-    var diagnostics = program.getGlobalDiagnostics().concat(program.getSyntacticDiagnostics());
+    let diagnostics = program.getGlobalDiagnostics().concat(program.getSyntacticDiagnostics());
 
     if ((errors.length || diagnostics.length) && this.options.translateBuiltins) {
       // Only report semantic diagnostics if ts2dart failed; this code is not a generic compiler, so
@@ -203,8 +203,8 @@ export class Transpiler {
       diagnostics = diagnostics.concat(program.getSemanticDiagnostics());
     }
 
-    var diagnosticErrs = diagnostics.map((d) => {
-      var msg = '';
+    let diagnosticErrs = diagnostics.map((d) => {
+      let msg = '';
       if (d.file) {
         let pos = d.file.getLineAndCharacterOfPosition(d.start);
         let fn = this.getRelativeFileName(d.file.fileName);
@@ -217,7 +217,7 @@ export class Transpiler {
     if (diagnosticErrs.length) errors = errors.concat(diagnosticErrs);
 
     if (errors.length) {
-      var e = new Error(errors.join('\n'));
+      let e = new Error(errors.join('\n'));
       e.name = 'TS2DartError';
       throw e;
     }
@@ -233,7 +233,7 @@ export class Transpiler {
     if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
       return filePath;  // already relative.
     }
-    var base = this.options.basePath || '';
+    let base = this.options.basePath || '';
     if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
@@ -244,31 +244,31 @@ export class Transpiler {
   emitNoSpace(s: string) { this.output.emitNoSpace(s); }
 
   reportError(n: ts.Node, message: string) {
-    var file = n.getSourceFile() || this.currentFile;
-    var fileName = this.getRelativeFileName(file.fileName);
-    var start = n.getStart(file);
-    var pos = file.getLineAndCharacterOfPosition(start);
+    let file = n.getSourceFile() || this.currentFile;
+    let fileName = this.getRelativeFileName(file.fileName);
+    let start = n.getStart(file);
+    let pos = file.getLineAndCharacterOfPosition(start);
     // Line and character are 0-based.
-    var fullMessage = `${fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`;
+    let fullMessage = `${fileName}:${pos.line + 1}:${pos.character + 1}: ${message}`;
     if (this.options.failFast) throw new Error(fullMessage);
     this.errors.push(fullMessage);
   }
 
   visit(node: ts.Node) {
     this.output.addSourceMapping(node);
-    var comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
+    let comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
     if (comments) {
       comments.forEach((c) => {
         if (c.pos <= this.lastCommentIdx) return;
         this.lastCommentIdx = c.pos;
-        var text = this.currentFile.text.substring(c.pos, c.end);
+        let text = this.currentFile.text.substring(c.pos, c.end);
         this.emitNoSpace('\n');
         this.emit(this.translateComment(text));
         if (c.hasTrailingNewLine) this.emitNoSpace('\n');
       });
     }
 
-    for (var i = 0; i < this.transpilers.length; i++) {
+    for (let i = 0; i < this.transpilers.length; i++) {
       if (this.transpilers[i].visitNode(node)) return;
     }
 
@@ -341,7 +341,7 @@ class Output {
 
   emitNoSpace(str: string) {
     this.result += str;
-    for (var i = 0; i < str.length; i++) {
+    for (let i = 0; i < str.length; i++) {
       if (str[i] === '\n') {
         this.line++;
         this.column = 0;
@@ -351,15 +351,15 @@ class Output {
     }
   }
 
-  getResult(): string { return this.result; }
+  getResult(): string { return this.result + this.generateSourceMapComment(); }
 
   addSourceMapping(n: ts.Node) {
-    if (!this.sourceMap) return;  // source maps disabled.
-    var file = n.getSourceFile() || this.currentFile;
-    var start = n.getStart(file);
-    var pos = file.getLineAndCharacterOfPosition(start);
+    if (!this.generateSourceMap) return;  // source maps disabled.
+    let file = n.getSourceFile() || this.currentFile;
+    let start = n.getStart(file);
+    let pos = file.getLineAndCharacterOfPosition(start);
 
-    var mapping: SourceMap.Mapping = {
+    let mapping: SourceMap.Mapping = {
       original: {line: pos.line + 1, column: pos.character},
       generated: {line: this.line, column: this.column},
       source: this.relativeFileName,
@@ -370,14 +370,14 @@ class Output {
 
   private generateSourceMapComment() {
     if (!this.sourceMap) return '';
-    var base64map = new Buffer(JSON.stringify(this.sourceMap)).toString('base64');
+    let base64map = new Buffer(JSON.stringify(this.sourceMap)).toString('base64');
     return '\n\n//# sourceMappingURL=data:application/json;base64,' + base64map;
   }
 }
 
 // CLI entry point
 if (require.main === module) {
-  var args = require('minimist')(process.argv.slice(2), {base: 'string'});
+  let args = require('minimist')(process.argv.slice(2), {base: 'string'});
   try {
     let transpiler = new Transpiler(args);
     console.log('Transpiling', args._, 'to', args.destination);

@@ -19,7 +19,7 @@ describe('variables', () => {
     expectTranslate('var a = 1, b = 0;').to.equal('var a = 1, b = 0;');
   });
   it('does not support vardecls containing more than one type (implicit or explicit)', () => {
-    var msg = 'Variables in a declaration list of more than one variable cannot by typed';
+    let msg = 'Variables in a declaration list of more than one variable cannot by typed';
     expectErroneousCode('var a: A, untyped;').to.throw(msg);
     expectErroneousCode('var untyped, b: B;').to.throw(msg);
     expectErroneousCode('var n: number, s: string;').to.throw(msg);

@@ -58,14 +58,14 @@ describe('exports', () => {
 });
 
 describe('library name', () => {
-  var transpiler: main.Transpiler;
-  var modTranspiler: ModuleTranspiler;
+  let transpiler: main.Transpiler;
+  let modTranspiler: ModuleTranspiler;
   beforeEach(() => {
     transpiler = new main.Transpiler({failFast: true, generateLibraryName: true, basePath: '/a'});
     modTranspiler = new ModuleTranspiler(transpiler, new FacadeConverter(transpiler), true);
   });
   it('adds a library name', () => {
-    var results = translateSources(
+    let results = translateSources(
         {'/a/b/c.ts': 'var x;'}, {failFast: true, generateLibraryName: true, basePath: '/a'});
     chai.expect(results['/a/b/c.ts']).to.equal(`library b.c;
 

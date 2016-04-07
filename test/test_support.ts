@@ -4,7 +4,6 @@
 import chai = require('chai');
 import fs = require('fs');
 import main = require('../lib/main');
-import path = require('path');
 import ts = require('typescript');
 
 export type StringMap = {
@@ -13,10 +12,10 @@ export type StringMap = {
 export type Input = string | StringMap;
 
 export function expectTranslate(tsCode: Input, options: main.TranspilerOptions = {}) {
-  var result = translateSource(tsCode, options);
+  let result = translateSource(tsCode, options);
   // The Dart formatter is aggressive at terminating statements with \n
   // which clutters the expectation output without providing value.
-  if (result[result.length - 1] == '\n') {
+  if (result[result.length - 1] === '\n') {
     result = result.slice(0, -1);
   }
   return chai.expect(result);
@@ -27,14 +26,14 @@ export function expectErroneousCode(tsCode: Input, options: main.TranspilerOptio
   return chai.expect(() => translateSource(tsCode, options));
 }
 
-var compilerOptions = main.COMPILER_OPTIONS;
-var defaultLibName = ts.getDefaultLibFileName(compilerOptions);
-var libSource = fs.readFileSync(ts.getDefaultLibFilePath(compilerOptions), 'utf-8');
-var libSourceFile: ts.SourceFile;
+let compilerOptions = main.COMPILER_OPTIONS;
+let defaultLibName = ts.getDefaultLibFileName(compilerOptions);
+let libSource = fs.readFileSync(ts.getDefaultLibFilePath(compilerOptions), 'utf-8');
+let libSourceFile: ts.SourceFile;
 
 export function parseFiles(nameToContent: StringMap): ts.Program {
-  var result: string;
-  var compilerHost: ts.CompilerHost = {
+  let result: string;
+  let compilerHost: ts.CompilerHost = {
     getSourceFile: function(sourceName, languageVersion) {
       if (nameToContent.hasOwnProperty(sourceName)) {
         return ts.createSourceFile(
@@ -60,11 +59,11 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
   };
   compilerHost.resolveModuleNames = main.getModuleResolver(compilerHost);
   // Create a program from inputs
-  var entryPoints = Object.keys(nameToContent);
-  var program: ts.Program = ts.createProgram(entryPoints, compilerOptions, compilerHost);
+  let entryPoints = Object.keys(nameToContent);
+  let program: ts.Program = ts.createProgram(entryPoints, compilerOptions, compilerHost);
   if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
-    var first = program.getSyntacticDiagnostics()[0];
+    let first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${nameToContent[entryPoints[0]]}`);
   }
   return program;
@@ -75,7 +74,7 @@ export const FAKE_MAIN = 'angular2/some/main.ts';
 export function translateSources(contents: Input, options: main.TranspilerOptions = {}): StringMap {
   // Default to quick stack traces.
   if (!options.hasOwnProperty('failFast')) options.failFast = true;
-  var namesToContent: StringMap;
+  let namesToContent: StringMap;
   if (typeof contents === 'string') {
     namesToContent = {};
     namesToContent[FAKE_MAIN] = contents;
@@ -83,14 +82,14 @@ export function translateSources(contents: Input, options: main.TranspilerOption
     namesToContent = contents;
   }
   options.enforceUnderscoreConventions = true;
-  var transpiler = new main.Transpiler(options);
-  var program = parseFiles(namesToContent);
+  let transpiler = new main.Transpiler(options);
+  let program = parseFiles(namesToContent);
   return transpiler.translateProgram(program);
 }
 
 
 export function translateSource(contents: Input, options: main.TranspilerOptions = {}): string {
-  var results = translateSources(contents, options);
+  let results = translateSources(contents, options);
   // Return the main outcome, from 'main.ts'.
   return results[FAKE_MAIN];
 }

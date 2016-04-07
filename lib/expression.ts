@@ -9,9 +9,9 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
       case ts.SyntaxKind.BinaryExpression:
-        var binExpr = <ts.BinaryExpression>node;
-        var operatorKind = binExpr.operatorToken.kind;
-        var tokenStr = ts.tokenToString(operatorKind);
+        let binExpr = <ts.BinaryExpression>node;
+        let operatorKind = binExpr.operatorToken.kind;
+        let tokenStr = ts.tokenToString(operatorKind);
         switch (operatorKind) {
           case ts.SyntaxKind.EqualsEqualsEqualsToken:
           case ts.SyntaxKind.ExclamationEqualsEqualsToken:
@@ -34,7 +34,7 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
           case ts.SyntaxKind.LessThanLessThanEqualsToken:
             // In Dart, the bitwise operators are only available on int, so the number types ts2dart
             // deals with have to be converted to int explicitly to match JS's semantics in Dart.
-            if (tokenStr[tokenStr.length - 1] == "=") {
+            if (tokenStr[tokenStr.length - 1] === '=') {
               // For assignments, strip the trailing `=` sign to emit just the operator itself.
               this.visit(binExpr.left);
               this.emit('=');
@@ -63,8 +63,8 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.PrefixUnaryExpression:
-        var prefixUnary = <ts.PrefixUnaryExpression>node;
-        var operator = ts.tokenToString(prefixUnary.operator);
+        let prefixUnary = <ts.PrefixUnaryExpression>node;
+        let operator = ts.tokenToString(prefixUnary.operator);
         this.emit(operator);
 
         if (prefixUnary.operator === ts.SyntaxKind.TildeToken) {
@@ -74,12 +74,12 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.PostfixUnaryExpression:
-        var postfixUnary = <ts.PostfixUnaryExpression>node;
+        let postfixUnary = <ts.PostfixUnaryExpression>node;
         this.visit(postfixUnary.operand);
         this.emit(ts.tokenToString(postfixUnary.operator));
         break;
       case ts.SyntaxKind.ConditionalExpression:
-        var conditional = <ts.ConditionalExpression>node;
+        let conditional = <ts.ConditionalExpression>node;
         this.visit(conditional.condition);
         this.emit('?');
         this.visit(conditional.whenTrue);
@@ -97,14 +97,14 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         break;
 
       case ts.SyntaxKind.ParenthesizedExpression:
-        var parenExpr = <ts.ParenthesizedExpression>node;
+        let parenExpr = <ts.ParenthesizedExpression>node;
         this.emit('(');
         this.visit(parenExpr.expression);
         this.emit(')');
         break;
 
       case ts.SyntaxKind.PropertyAccessExpression:
-        var propAccess = <ts.PropertyAccessExpression>node;
+        let propAccess = <ts.PropertyAccessExpression>node;
         if (propAccess.name.text === 'stack' &&
             this.hasAncestor(propAccess, ts.SyntaxKind.CatchClause)) {
           // Handle `e.stack` accesses in catch clauses by mangling to `e_stack`.
@@ -119,7 +119,7 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.ElementAccessExpression:
-        var elemAccess = <ts.ElementAccessExpression>node;
+        let elemAccess = <ts.ElementAccessExpression>node;
         this.visit(elemAccess.expression);
         this.emit('[');
         this.visit(elemAccess.argumentExpression);

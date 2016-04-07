@@ -1,12 +1,10 @@
 /// <reference path="../typings/chai/chai.d.ts"/>
 /// <reference path="../typings/mocha/mocha.d.ts"/>
 /// <reference path="../typings/source-map/source-map.d.ts"/>
-import SourceMap = require('source-map');
 import chai = require('chai');
 import main = require('../lib/main');
-import ts = require('typescript');
 
-import {expectTranslate, expectErroneousCode, translateSources} from './test_support';
+import {expectTranslate, expectErroneousCode} from './test_support';
 
 describe('main transpiler functionality', () => {
   describe('comments', () => {
@@ -96,7 +94,7 @@ class A {
   describe('errors', () => {
     it('reports multiple errors', () => {
       // Reports both the private field not having an underbar and protected being unsupported.
-      var errorLines = new RegExp(
+      let errorLines = new RegExp(
           'delete operator is unsupported\n' +
           '.*void operator is unsupported');
       expectErroneousCode('delete x["y"]; void z;').to.throw(errorLines);
@@ -114,7 +112,7 @@ class A {
 
   describe('output paths', () => {
     it('writes within the path', () => {
-      var transpiler = new main.Transpiler({basePath: '/a'});
+      let transpiler = new main.Transpiler({basePath: '/a'});
       chai.expect(transpiler.getOutputPath('/a/b/c.js', '/x')).to.equal('/x/b/c.dart');
       chai.expect(transpiler.getOutputPath('b/c.js', '/x')).to.equal('/x/b/c.dart');
       chai.expect(transpiler.getOutputPath('b/c.js', 'x')).to.equal('x/b/c.dart');
@@ -122,12 +120,12 @@ class A {
           .to.throw(/must be located under base/);
     });
     it('defaults to writing to the same location', () => {
-      var transpiler = new main.Transpiler({basePath: undefined});
+      let transpiler = new main.Transpiler({basePath: undefined});
       chai.expect(transpiler.getOutputPath('/a/b/c.js', '/e')).to.equal('/a/b/c.dart');
       chai.expect(transpiler.getOutputPath('b/c.js', '')).to.equal('b/c.dart');
     });
     it('translates .es6, .ts, and .js', () => {
-      var transpiler = new main.Transpiler({basePath: undefined});
+      let transpiler = new main.Transpiler({basePath: undefined});
       ['a.js', 'a.ts', 'a.es6'].forEach(
           (n) => { chai.expect(transpiler.getOutputPath(n, '')).to.equal('a.dart'); });
     });

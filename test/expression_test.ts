@@ -2,7 +2,7 @@
 import {expectTranslate, expectErroneousCode} from './test_support';
 
 function expectTranslates(cases: any) {
-  for (var tsCode in cases) {
+  for (let tsCode of Object.keys(cases)) {
     expectTranslate(tsCode).to.equal(cases[tsCode]);
   }
 }

@@ -5,7 +5,7 @@
     "noEmit": true,
     "noEmitOnError": true,
     "noImplicitAny": true,
-    "noImplicitAny": true
+    "allowUnreachableCode": false
   },
   "exclude": [
     "node_modules",

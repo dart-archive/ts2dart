@@ -13,11 +13,11 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     switch (node.kind) {
       case ts.SyntaxKind.VariableDeclarationList:
         // Note: VariableDeclarationList can only occur as part of a for loop.
-        var varDeclList = <ts.VariableDeclarationList>node;
+        let varDeclList = <ts.VariableDeclarationList>node;
         this.visitList(varDeclList.declarations);
         break;
       case ts.SyntaxKind.VariableDeclaration:
-        var varDecl = <ts.VariableDeclaration>node;
+        let varDecl = <ts.VariableDeclaration>node;
         this.visitVariableDeclarationType(varDecl);
         this.visit(varDecl.name);
         if (varDecl.initializer) {
@@ -27,7 +27,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         break;
 
       case ts.SyntaxKind.ClassDeclaration:
-        var classDecl = <ts.ClassDeclaration>node;
+        let classDecl = <ts.ClassDeclaration>node;
         if (classDecl.modifiers && (classDecl.modifiers.flags & ts.NodeFlags.Abstract)) {
           this.visitClassLike('abstract class', classDecl);
         } else {
@@ -35,7 +35,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.InterfaceDeclaration:
-        var ifDecl = <ts.InterfaceDeclaration>node;
+        let ifDecl = <ts.InterfaceDeclaration>node;
         // Function type interface in an interface with a single declaration
         // of a call signature (http://goo.gl/ROC5jN).
         if (ifDecl.members.length === 1 && ifDecl.members[0].kind === ts.SyntaxKind.CallSignature) {
@@ -46,9 +46,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.HeritageClause:
-        var heritageClause = <ts.HeritageClause>node;
+        let heritageClause = <ts.HeritageClause>node;
         if (heritageClause.token === ts.SyntaxKind.ExtendsKeyword &&
-            heritageClause.parent.kind != ts.SyntaxKind.InterfaceDeclaration) {
+            heritageClause.parent.kind !== ts.SyntaxKind.InterfaceDeclaration) {
           this.emit('extends');
         } else {
           this.emit('implements');
@@ -57,14 +57,14 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.visitList(heritageClause.types);
         break;
       case ts.SyntaxKind.ExpressionWithTypeArguments:
-        var exprWithTypeArgs = <ts.ExpressionWithTypeArguments>node;
+        let exprWithTypeArgs = <ts.ExpressionWithTypeArguments>node;
         this.visit(exprWithTypeArgs.expression);
         this.maybeVisitTypeArguments(exprWithTypeArgs);
         break;
       case ts.SyntaxKind.EnumDeclaration:
-        var decl = <ts.EnumDeclaration>node;
+        let decl = <ts.EnumDeclaration>node;
         // The only legal modifier for an enum decl is const.
-        var isConst = decl.modifiers && (decl.modifiers.flags & ts.NodeFlags.Const);
+        let isConst = decl.modifiers && (decl.modifiers.flags & ts.NodeFlags.Const);
         if (isConst) {
           this.reportError(node, 'const enums are not supported');
         }
@@ -80,18 +80,18 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.emit('}');
         break;
       case ts.SyntaxKind.EnumMember:
-        var member = <ts.EnumMember>node;
+        let member = <ts.EnumMember>node;
         this.visit(member.name);
         if (member.initializer) {
           this.reportError(node, 'enum initializers are not supported');
         }
         break;
       case ts.SyntaxKind.Constructor:
-        var ctorDecl = <ts.ConstructorDeclaration>node;
+        let ctorDecl = <ts.ConstructorDeclaration>node;
         // Find containing class name.
-        var className: ts.Identifier;
-        for (var parent = ctorDecl.parent; parent; parent = parent.parent) {
-          if (parent.kind == ts.SyntaxKind.ClassDeclaration) {
+        let className: ts.Identifier;
+        for (let parent = ctorDecl.parent; parent; parent = parent.parent) {
+          if (parent.kind === ts.SyntaxKind.ClassDeclaration) {
             className = (<ts.ClassDeclaration>parent).name;
             break;
           }
@@ -124,16 +124,16 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.visitFunctionLike(<ts.AccessorDeclaration>node, 'set');
         break;
       case ts.SyntaxKind.FunctionDeclaration:
-        var funcDecl = <ts.FunctionDeclaration>node;
+        let funcDecl = <ts.FunctionDeclaration>node;
         this.visitDecorators(funcDecl.decorators);
         this.visitFunctionLike(funcDecl);
         break;
       case ts.SyntaxKind.ArrowFunction:
-        var arrowFunc = <ts.FunctionExpression>node;
+        let arrowFunc = <ts.FunctionExpression>node;
         // Dart only allows expressions following the fat arrow operator.
         // If the body is a block, we have to drop the fat arrow and emit an
         // anonymous function instead.
-        if (arrowFunc.body.kind == ts.SyntaxKind.Block) {
+        if (arrowFunc.body.kind === ts.SyntaxKind.Block) {
           this.visitFunctionLike(arrowFunc);
         } else {
           this.visitParameters(arrowFunc.parameters);
@@ -142,20 +142,20 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         }
         break;
       case ts.SyntaxKind.FunctionExpression:
-        var funcExpr = <ts.FunctionExpression>node;
+        let funcExpr = <ts.FunctionExpression>node;
         this.visitFunctionLike(funcExpr);
         break;
       case ts.SyntaxKind.PropertySignature:
-        var propSig = <ts.PropertyDeclaration>node;
+        let propSig = <ts.PropertyDeclaration>node;
         this.visitProperty(propSig);
         break;
       case ts.SyntaxKind.MethodSignature:
-        var methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
+        let methodSignatureDecl = <ts.FunctionLikeDeclaration>node;
         this.visitEachIfPresent(methodSignatureDecl.modifiers);
         this.visitFunctionLike(methodSignatureDecl);
         break;
       case ts.SyntaxKind.Parameter:
-        var paramDecl = <ts.ParameterDeclaration>node;
+        let paramDecl = <ts.ParameterDeclaration>node;
         // Property parameters will have an explicit property declaration, so we just
         // need the dart assignment shorthand to reference the property.
         if (this.hasFlag(paramDecl.modifiers, ts.NodeFlags.Public) ||
@@ -228,9 +228,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
      * - A variable declaration list with a single variable can be explicitly typed.
      * - When more than one variable is in the list, all must be implicitly typed.
      */
-    var firstDecl = varDecl.parent.declarations[0];
-    var msg = 'Variables in a declaration list of more than one variable cannot by typed';
-    var isConst = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
+    let firstDecl = varDecl.parent.declarations[0];
+    let msg = 'Variables in a declaration list of more than one variable cannot by typed';
+    let isConst = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
     if (firstDecl === varDecl) {
       if (isConst) this.emit('const');
       if (!varDecl.type) {
@@ -298,13 +298,13 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     }
 
     if (firstInitParamIdx !== 0) {
-      var requiredParams = parameters.slice(0, firstInitParamIdx);
+      let requiredParams = parameters.slice(0, firstInitParamIdx);
       this.visitList(requiredParams);
     }
 
     if (firstInitParamIdx !== parameters.length) {
       if (firstInitParamIdx !== 0) this.emit(',');
-      var positionalOptional = parameters.slice(firstInitParamIdx, parameters.length);
+      let positionalOptional = parameters.slice(firstInitParamIdx, parameters.length);
       this.emit('[');
       this.visitList(positionalOptional);
       this.emit(']');
@@ -318,16 +318,15 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
    * In the special case of property parameters in a constructor, we also allow a parameter to be
    * emitted as a property.
    */
-  private visitProperty(
-      decl: ts.PropertyDeclaration | ts.ParameterDeclaration, isParameter: boolean = false) {
+  private visitProperty(decl: ts.PropertyDeclaration|ts.ParameterDeclaration, isParameter = false) {
     if (!isParameter) this.visitDeclarationMetadata(decl);
-    var containingClass = <base.ClassLike>(isParameter ? decl.parent.parent : decl.parent);
-    var isConstField = this.hasAnnotation(decl.decorators, 'CONST');
+    let containingClass = <base.ClassLike>(isParameter ? decl.parent.parent : decl.parent);
+    let isConstField = this.hasAnnotation(decl.decorators, 'CONST');
+    let hasConstCtor = this.isConst(containingClass);
     if (isConstField) {
       // const implies final
       this.emit('const');
     } else {
-      var hasConstCtor = this.isConst(containingClass);
       if (hasConstCtor) {
         this.emit('final');
       }
@@ -366,17 +365,17 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.visitProperty(param, true);
       }
     };
-    decl.members.filter((m) => m.kind == ts.SyntaxKind.Constructor)
+    decl.members.filter((m) => m.kind === ts.SyntaxKind.Constructor)
         .forEach(
             (ctor) =>
                 (<ts.ConstructorDeclaration>ctor).parameters.forEach(synthesizePropertyParam));
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed
-    if (this.isConst(decl) && !decl.members.some((m) => m.kind == ts.SyntaxKind.Constructor)) {
+    if (this.isConst(decl) && !decl.members.some((m) => m.kind === ts.SyntaxKind.Constructor)) {
       this.emit('const');
       this.fc.visitTypeName(decl.name);
-      this.emit('();')
+      this.emit('();');
     }
     this.emit('}');
   }
@@ -386,10 +385,10 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
 
     decorators.forEach((d) => {
       // Special case @CONST
-      var name = base.ident(d.expression);
+      let name = base.ident(d.expression);
       if (!name && d.expression.kind === ts.SyntaxKind.CallExpression) {
         // Unwrap @CONST()
-        var callExpr = (<ts.CallExpression>d.expression);
+        let callExpr = (<ts.CallExpression>d.expression);
         name = base.ident(callExpr.expression);
       }
       // Make sure these match IGNORED_ANNOTATIONS below.
@@ -413,10 +412,10 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     if (!this.enforceUnderscoreConventions) return;
     // Early return in case this is a decl with no name, such as a constructor
     if (!decl.name) return;
-    var name = base.ident(decl.name);
+    let name = base.ident(decl.name);
     if (!name) return;
-    var isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);
-    var matchesPrivate = !!name.match(/^_/);
+    let isPrivate = this.hasFlag(decl.modifiers, ts.NodeFlags.Private);
+    let matchesPrivate = !!name.match(/^_/);
     if (isPrivate && !matchesPrivate) {
       this.reportError(decl, 'private members must be prefixed with "_"');
     }
@@ -430,7 +429,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     let bp = <ts.BindingPattern>paramDecl.name;
     let typeMap: ts.Map<ts.TypeNode> = {};
     if (paramDecl.type && paramDecl.type.kind === ts.SyntaxKind.TypeLiteral) {
-      for (let tn of(<ts.TypeLiteralNode>paramDecl.type).members) {
+      for (let tn of (<ts.TypeLiteralNode>paramDecl.type).members) {
         if (tn.kind !== ts.SyntaxKind.PropertySignature) {
           this.reportError(tn, 'unsupported named parameter kind ' + tn.kind);
           continue;
@@ -445,7 +444,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         this.reportError(paramDecl, 'initializers for named parameters must be object literals');
         return;
       }
-      for (let i of(<ts.ObjectLiteralExpression>paramDecl.initializer).properties) {
+      for (let i of (<ts.ObjectLiteralExpression>paramDecl.initializer).properties) {
         if (i.kind !== ts.SyntaxKind.PropertyAssignment) {
           this.reportError(i, 'named parameter initializers must be properties, got ' + i.kind);
           continue;

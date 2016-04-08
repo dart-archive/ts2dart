@@ -38,14 +38,14 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
               // For assignments, strip the trailing `=` sign to emit just the operator itself.
               this.visit(binExpr.left);
               this.emit('=');
-              visitAndWrapAsInt(this, binExpr.left);
+              this.visitAndWrapAsInt(binExpr.left);
               this.emit(tokenStr.slice(0, -1));
             } else {
               // normal case (LHS [op])
-              visitAndWrapAsInt(this, binExpr.left);
+              this.visitAndWrapAsInt(binExpr.left);
               this.emit(tokenStr);
             }
-            visitAndWrapAsInt(this, binExpr.right);
+            this.visitAndWrapAsInt(binExpr.right);
             break;
           case ts.SyntaxKind.InKeyword:
             this.reportError(node, 'in operator is unsupported');
@@ -68,7 +68,7 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
         this.emit(operator);
 
         if (prefixUnary.operator === ts.SyntaxKind.TildeToken) {
-          visitAndWrapAsInt(this, prefixUnary.operand);
+          this.visitAndWrapAsInt(prefixUnary.operand);
         } else {
           this.visit(prefixUnary.operand);
         }
@@ -131,10 +131,15 @@ export default class ExpressionTranspiler extends base.TranspilerBase {
     }
     return true;
   }
-}
 
-function visitAndWrapAsInt(visitor: ExpressionTranspiler, ident: ts.Node) {
-  visitor.emit('(');
-  visitor.visit(ident);
-  visitor.emit('as int)');
+  visitAndWrapAsInt(n: ts.Expression) {
+    let lhsIsHexLit = n.kind === ts.SyntaxKind.NumericLiteral;
+    if (lhsIsHexLit) {
+      this.visit(n);
+      return;
+    }
+    this.emit('(');
+    this.visit(n);
+    this.emit('as int)');
+  }
 }

@@ -27,17 +27,7 @@ describe('functions', () => {
   return;
 }`);
   });
-  it('supports named parameters', () => {
-    expectTranslate('function x({a = "x", b}) { return a + b; }').to.equal(`x({a: "x", b}) {
-  return a + b;
-}`);
-  });
-  it('supports types on named parameters', () => {
-    expectTranslate('function x({a = 1, b = 2}: {a: number, b: number} = {}) { return a + b; }')
-        .to.equal(`x({num a: 1, num b: 2}) {
-  return a + b;
-}`);
-  });
+
   it('does not support var args', () => {
     expectErroneousCode('function x(...a: number) { return 42; }')
         .to.throw('rest parameters are unsupported');
@@ -64,6 +54,44 @@ describe('functions', () => {
   });
   it('translates functions taking rest parameters to untyped Function', () => {
     expectTranslate('function f(fn: (...a: string[]) => number) {}').to.equal('f(Function fn) {}');
+  });
+});
+
+describe('named parameters', () => {
+  it('supports named parameters', () => {
+    expectTranslate('function x({a = "x", b}) { return a + b; }', {
+      translateBuiltins: true
+    }).to.equal(`x({a: "x", b}) {
+  return a + b;
+}`);
+  });
+  it('supports types on named parameters', () => {
+    expectTranslate('function x({a = 1, b = 2}: {a: number, b: number} = {}) { return a + b; }', {
+      translateBuiltins: true
+    }).to.equal(`x({num a: 1, num b: 2}) {
+  return a + b;
+}`);
+  });
+  it('supports reference types on named parameters', () => {
+    expectTranslate(
+        'interface Args { a: string; b: number }\n' +
+            'function x({a, b}: Args) { return a + b; }',
+        {translateBuiltins: true})
+        .to.equal(`abstract class Args {
+  String a;
+  num b;
+}
+
+x({String a, num b}) {
+  return a + b;
+}`);
+  });
+  it('fails for non-property types on named parameters', () => {
+    expectErroneousCode(
+        'interface X { a(a: number); }\n' +
+            'function x({a}: X) { return a + b; }',
+        {translateBuiltins: true})
+        .to.throw('X.a used for named parameter definition must be a property');
   });
 });
 

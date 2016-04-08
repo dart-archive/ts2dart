@@ -62,6 +62,9 @@ describe('functions', () => {
       translateBuiltins: true
     }).to.equal('f/*< T, U >*/(dynamic/*= T */ fn(dynamic/*= T */ a, dynamic/*= U */ b)) {}');
   });
+  it('translates functions taking rest parameters to untyped Function', () => {
+    expectTranslate('function f(fn: (...a: string[]) => number) {}').to.equal('f(Function fn) {}');
+  });
 });
 
 describe('generic functions', () => {

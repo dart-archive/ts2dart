@@ -180,9 +180,16 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         if (paramDecl.type && paramDecl.type.kind === ts.SyntaxKind.FunctionType) {
           // Dart uses "returnType paramName ( parameters )" syntax.
           let fnType = <ts.FunctionOrConstructorTypeNode>paramDecl.type;
-          this.visit(fnType.type);
-          this.visit(paramDecl.name);
-          this.visitParameters(fnType.parameters);
+          let hasRestParameter = fnType.parameters.some(p => !!p.dotDotDotToken);
+          if (hasRestParameter) {
+            // Dart does not support rest parameters/varargs, degenerate to just "Function".
+            this.emit('Function');
+            this.visit(paramDecl.name);
+          } else {
+            this.visit(fnType.type);
+            this.visit(paramDecl.name);
+            this.visitParameters(fnType.parameters);
+          }
         } else {
           if (paramDecl.type) this.visit(paramDecl.type);
           this.visit(paramDecl.name);
@@ -192,7 +199,6 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
           this.visit(paramDecl.initializer);
         }
         break;
-
       case ts.SyntaxKind.StaticKeyword:
         this.emit('static');
         break;

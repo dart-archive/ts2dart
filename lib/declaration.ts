@@ -436,37 +436,13 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
   private visitNamedParameter(paramDecl: ts.ParameterDeclaration) {
     this.visitDecorators(paramDecl.decorators);
     let bp = <ts.BindingPattern>paramDecl.name;
-    let typeMap: ts.Map<ts.TypeNode> = {};
-    if (paramDecl.type && paramDecl.type.kind === ts.SyntaxKind.TypeLiteral) {
-      for (let tn of (<ts.TypeLiteralNode>paramDecl.type).members) {
-        if (tn.kind !== ts.SyntaxKind.PropertySignature) {
-          this.reportError(tn, 'unsupported named parameter kind ' + tn.kind);
-          continue;
-        }
-        let pd = <ts.PropertySignature>tn;
-        typeMap[base.ident(pd.name)] = pd.type;
-      }
-    }
-    let initMap: ts.Map<ts.Expression> = {};
-    if (paramDecl.initializer) {
-      if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
-        this.reportError(paramDecl, 'initializers for named parameters must be object literals');
-        return;
-      }
-      for (let i of (<ts.ObjectLiteralExpression>paramDecl.initializer).properties) {
-        if (i.kind !== ts.SyntaxKind.PropertyAssignment) {
-          this.reportError(i, 'named parameter initializers must be properties, got ' + i.kind);
-          continue;
-        }
-        let ole = <ts.PropertyAssignment>i;
-        initMap[base.ident(ole.name)] = ole.initializer;
-      }
-    }
+    let propertyTypes = this.fc.resolvePropertyTypes(paramDecl.type);
+    let initMap = this.getInitializers(paramDecl);
     this.emit('{');
     for (let i = 0; i < bp.elements.length; i++) {
       let elem = bp.elements[i];
-      let type = typeMap[base.ident(elem.name)];
-      if (type) this.visit(type);
+      let propDecl = propertyTypes[base.ident(elem.name)];
+      if (propDecl) this.visit(propDecl.type);
       this.visit(elem.name);
       if (elem.initializer && initMap[base.ident(elem.name)]) {
         this.reportError(elem, 'cannot have both an inner and outer initializer');
@@ -479,6 +455,24 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
       if (i + 1 < bp.elements.length) this.emit(',');
     }
     this.emit('}');
+  }
+
+  private getInitializers(paramDecl: ts.ParameterDeclaration) {
+    let res: ts.Map<ts.Expression> = {};
+    if (!paramDecl.initializer) return res;
+    if (paramDecl.initializer.kind !== ts.SyntaxKind.ObjectLiteralExpression) {
+      this.reportError(paramDecl, 'initializers for named parameters must be object literals');
+      return res;
+    }
+    for (let i of (<ts.ObjectLiteralExpression>paramDecl.initializer).properties) {
+      if (i.kind !== ts.SyntaxKind.PropertyAssignment) {
+        this.reportError(i, 'named parameter initializers must be properties, got ' + i.kind);
+        continue;
+      }
+      let ole = <ts.PropertyAssignment>i;
+      res[base.ident(ole.name)] = ole.initializer;
+    }
+    return res;
   }
 
   /**

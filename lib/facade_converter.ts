@@ -117,6 +117,24 @@ export class FacadeConverter extends base.TranspilerBase {
     this.genericMethodDeclDepth--;
   }
 
+  resolvePropertyTypes(tn: ts.TypeNode): ts.Map<ts.PropertyDeclaration> {
+    let res: ts.Map<ts.PropertyDeclaration> = {};
+    if (!tn || !this.tc) return res;
+
+    let t = this.tc.getTypeAtLocation(tn);
+    for (let sym of this.tc.getPropertiesOfType(t)) {
+      let decl = sym.valueDeclaration || (sym.declarations && sym.declarations[0]);
+      if (decl.kind !== ts.SyntaxKind.PropertyDeclaration &&
+          decl.kind !== ts.SyntaxKind.PropertySignature) {
+        let msg = this.tc.getFullyQualifiedName(sym) +
+            ' used for named parameter definition must be a property';
+        this.reportError(decl, msg);
+        continue;
+      }
+      res[sym.name] = <ts.PropertyDeclaration>decl;
+    }
+    return res;
+  }
 
   /**
    * The Dart Development Compiler (DDC) has a syntax extension that uses comments to emulate

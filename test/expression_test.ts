@@ -31,12 +31,12 @@ describe('expressions', () => {
       'x *= 1': 'x *= 1;',
       'x /= 1': 'x /= 1;',
       'x %= 1': 'x %= 1;',
-      'x <<= 1': 'x = (x as int) << (1 as int);',
-      'x >>= 1': 'x = (x as int) >> (1 as int);',
+      'x <<= 1': 'x = (x as int) << 1;',
+      'x >>= 1': 'x = (x as int) >> 1;',
       //      'x >>>= 1': 'x >>>= 1;', // This doesn't appear to be a valid operator in Dart.
-      'x &= 1': 'x = (x as int) & (1 as int);',
-      'x ^= 1': 'x = (x as int) ^ (1 as int);',
-      'x |= 1': 'x = (x as int) | (1 as int);',
+      'x &= 1': 'x = (x as int) & 1;',
+      'x ^= 1': 'x = (x as int) ^ 1;',
+      'x |= 1': 'x = (x as int) | 1;',
     });
   });
   it('compares', () => {
@@ -55,12 +55,14 @@ describe('expressions', () => {
   });
   it('bit fiddles', () => {
     expectTranslates({
-      '1 & 2': '(1 as int) & (2 as int);',
-      '1 | 2': '(1 as int) | (2 as int);',
-      '1 ^ 2': '(1 as int) ^ (2 as int);',
-      '~1': '~(1 as int);',
-      '1 << 2': '(1 as int) << (2 as int);',
-      '1 >> 2': '(1 as int) >> (2 as int);',
+      'x & 2': '(x as int) & 2;',
+      '1 & 2': '1 & 2;',
+      '1 | 2': '1 | 2;',
+      '1 ^ 2': '1 ^ 2;',
+      '~1': '~1;',
+      '1 << 2': '1 << 2;',
+      '1 >> 2': '1 >> 2;',
+      '0x1 & 0x2': '0x1 & 0x2;',
       //      '1 >>> 2': '1 >>> 2;',  // This doesn't appear to be a valid operator in Dart.
     });
   });

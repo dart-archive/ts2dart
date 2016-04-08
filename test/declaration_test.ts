@@ -58,6 +58,16 @@ describe('classes', () => {
   var x;
 }`);
     });
+    it('supports function typed fields', () => {
+      expectTranslate(
+          'interface FnDef {(y: number): string;}\n' +
+          'class X { x: FnDef; }')
+          .to.equal(`typedef String FnDef(num y);
+
+class X {
+  FnDef x;
+}`);
+    });
     it('supports field initializers', () => {
       expectTranslate('class X { x: number = 42; }').to.equal(`class X {
   num x = 42;

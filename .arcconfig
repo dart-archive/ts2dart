@@ -1,3 +1,8 @@
 {
-  "base": "git:origin/v0.7"
+  "base": "git:origin/v0.7",
+  "phabricator.uri" : "https://reviews.angular.io/",
+  "load": [
+    ".arc/npm-test"
+  ],
+  "unit.engine": "NpmUnitTestEngine"
 }

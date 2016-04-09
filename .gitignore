@@ -9,6 +9,7 @@ logs
 pids
 *.pid
 *.seed
+.phutil_module_cache
 
 # Type definitions installed with tsd
 typings

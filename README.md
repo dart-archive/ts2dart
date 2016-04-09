@@ -1,8 +1,7 @@
 # TypeScript to Dart transpiler [![Build Status](https://travis-ci.org/angular/ts2dart.svg?branch=master)](https://travis-ci.org/angular/ts2dart)
 
-
-ts2dart is a TypeScript to Dart transpiler. It's in its very early days and under heavy development,
-not ready for production use.
+ts2dart is a TypeScript to Dart transpiler. It's mainly used to translate Angular 2 from TypeScript
+to Dart for its Dart user base.
 
 ## Installation
 
@@ -15,3 +14,15 @@ not ready for production use.
 - `gulp test.e2e` executes the e2e tests,
 - `gulp test.check-format` checks the source code formatting using `clang-format`,
 - `gulp test` runs unit tests, e2e tests and checks the source code formatting.
+
+## Phabricator Reviews
+
+You can send pull requests via Github, or by creating a Phabricator diff on
+https://reviews.angular.io. Both are fine, though Phabricator has a nicer code review UI.
+
+To create a Phabricator diff:
+
+- create an account on https://reviews.angular.io
+- install [Arcanist](https://secure.phabricator.com/book/phabricator/article/arcanist/)
+- run `arc diff` to upload a diff (= pull request). This will also run all tests.
+- get it reviewed by entering a "Reviewer", e.g. "mprobst", "alexeagle", "viks", ...

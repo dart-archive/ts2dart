@@ -455,7 +455,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     for (let i = 0; i < bp.elements.length; i++) {
       let elem = bp.elements[i];
       let propDecl = propertyTypes[base.ident(elem.name)];
-      if (propDecl) this.visit(propDecl.type);
+      if (propDecl && propDecl.type) this.visit(propDecl.type);
       this.visit(elem.name);
       if (elem.initializer && initMap[base.ident(elem.name)]) {
         this.reportError(elem, 'cannot have both an inner and outer initializer');

@@ -75,14 +75,21 @@ describe('named parameters', () => {
   it('supports reference types on named parameters', () => {
     expectTranslate(
         'interface Args { a: string; b: number }\n' +
-            'function x({a, b}: Args) { return a + b; }',
+            'function x({a, b, c}: Args) { return a + b; }',
         {translateBuiltins: true})
         .to.equal(`abstract class Args {
   String a;
   num b;
 }
 
-x({String a, num b}) {
+x({String a, num b, c}) {
+  return a + b;
+}`);
+  });
+  it('supports declared, untyped named parameters', () => {
+    expectTranslate('function x({a, b}: {a: number, b}) { return a + b; }', {
+      translateBuiltins: true
+    }).to.equal(`x({num a, b}) {
   return a + b;
 }`);
   });

@@ -41,6 +41,12 @@ describe('functions', () => {
     expectTranslate('var a = (p = null) => isBlank(p)')
         .to.equal('var a = ([p = null]) => isBlank(p);');
   });
+  it('translates types on function expressions', () => {
+    expectTranslate('let a = function(p: string): string { return p; };')
+        .to.equal(`var a = /* String */ (String p) {
+  return p;
+};`);
+  });
   it('supports function parameters', () => {
     expectTranslate('function f(fn: (a: A, b: B) => C) {}').to.equal('f(C fn(A a, B b)) {}');
   });

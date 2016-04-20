@@ -255,8 +255,10 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     this.fc.pushTypeParameterNames(fn);
     try {
       if (fn.type) {
-        if (fn.kind === ts.SyntaxKind.ArrowFunction) {
-          // Type is silently dropped for arrow functions, not supported in Dart.
+        if (fn.kind === ts.SyntaxKind.ArrowFunction ||
+            fn.kind === ts.SyntaxKind.FunctionExpression) {
+          // The return type is silently dropped for function expressions (including arrow
+          // functions), it is not supported in Dart.
           this.emit('/*');
           this.visit(fn.type);
           this.emit('*/');

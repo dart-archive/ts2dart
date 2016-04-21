@@ -332,6 +332,10 @@ main() {
         it('translates CONST_EXPR(...) to const (...)', () => {
           expectWithTypes(
               'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
+              'const x = CONST_EXPR(1);')
+              .to.equal('const x = 1;');
+          expectWithTypes(
+              'import {CONST_EXPR} from "angular2/src/facade/lang";\n' +
               'const x = CONST_EXPR([]);')
               .to.equal('const x = const [];');
           expectWithTypes(

@@ -236,11 +236,22 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
      */
     let firstDecl = varDecl.parent.declarations[0];
     let msg = 'Variables in a declaration list of more than one variable cannot by typed';
-    let isConst = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
+    let isFinal = this.hasFlag(varDecl.parent, ts.NodeFlags.Const);
+    let isConst = false;
+    if (isFinal && varDecl.initializer) {
+      // "const" in TypeScript/ES6 corresponds to "final" in Dart, i.e. reference constness.
+      // If a "const" variable is immediately initialized to a CONST_EXPR(), special case it to be
+      // a deeply const constant, and generate "const ...".
+      isConst = this.fc.isConstCall(varDecl.initializer);
+    }
     if (firstDecl === varDecl) {
-      if (isConst) this.emit('const');
+      if (isConst) {
+        this.emit('const');
+      } else if (isFinal) {
+        this.emit('final');
+      }
       if (!varDecl.type) {
-        if (!isConst) this.emit('var');
+        if (!isFinal) this.emit('var');
       } else if (varDecl.parent.declarations.length > 1) {
         this.reportError(varDecl, msg);
       } else {

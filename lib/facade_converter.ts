@@ -306,8 +306,9 @@ export class FacadeConverter extends base.TranspilerBase {
         <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
   }
 
-  isConstCall(node: ts.CallExpression): boolean {
-    return node && base.ident(node.expression) === 'CONST_EXPR';
+  isConstCall(node: ts.Expression): boolean {
+    return node && node.kind === ts.SyntaxKind.CallExpression &&
+        base.ident((<ts.CallExpression>node).expression) === 'CONST_EXPR';
   }
 
   private emitMethodCall(name: string, args?: ts.Expression[]) {

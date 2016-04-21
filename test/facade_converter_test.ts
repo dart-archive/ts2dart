@@ -166,6 +166,9 @@ num y = x.fold(0, (a, b) => a + b);`);
 num y = x.fold(null, (a, b) => a + b);`);
     });
 
+    it('translates string methoids',
+       () => { expectErroneousWithType(`var x = 'asd'.substr(0, 1);`).to.throw(/use substring/); });
+
     it('translates map operations to dartisms', () => {
       expectWithTypes('function f() { var x = new Map<string, string>(); x.set("k", "v"); }')
           .to.equal(`f() {

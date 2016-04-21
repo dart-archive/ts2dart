@@ -514,6 +514,12 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emitMethodCall('allMatches', c.arguments);
       this.emitMethodCall('toList');
     },
+    'String.substr': (c: ts.CallExpression, context: ts.Expression) => {
+      this.reportError(
+          c, 'substr is unsupported, use substring (but beware of the different semantics!)');
+      this.visit(context);
+      this.emitMethodCall('substr', c.arguments);
+    },
   });
 
   private es6Collections: ts.Map<CallHandler> = {

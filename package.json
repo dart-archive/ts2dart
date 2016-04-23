@@ -12,7 +12,7 @@
     "minimist": "^1.1.1",
     "source-map": "^0.4.2",
     "source-map-support": "^0.3.1",
-    "typescript": "mprobst/TypeScript#pathMappingModuleResolution"
+    "typescript": "v1.9.0-dev.20160409"
   },
   "devDependencies": {
     "chai": "^2.1.1",

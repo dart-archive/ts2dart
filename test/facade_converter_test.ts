@@ -166,6 +166,11 @@ num y = x.fold(0, (a, b) => a + b);`);
 num y = x.fold(null, (a, b) => a + b);`);
     });
 
+    it('translates console.log', () => {
+      expectWithTypes(`console.log(1);`).to.equal('print(1);');
+      expectWithTypes(`console.log(1, 2);`).to.equal('print([1, 2].join(" "));');
+    });
+
     it('translates string methoids',
        () => { expectErroneousWithType(`var x = 'asd'.substr(0, 1);`).to.throw(/use substring/); });
 
@@ -293,9 +298,9 @@ Future<dynamic> x = (() {
 })();
 void fn() {
   x.then((v) {
-    console.log(v);
+    print(v);
   }).catchError((err) {
-    console.log(err);
+    print(err);
   });
 }`);
       expectWithTypes(
@@ -306,9 +311,9 @@ void fn() {
 dynamic /* () => Promise<number> */ fn;
 main() {
   fn().then((v) {
-    console.log(v);
+    print(v);
   }).catchError((err) {
-    console.log(err);
+    print(err);
   });
 }`);
       expectWithTypes(
@@ -319,9 +324,9 @@ main() {
 dynamic /* () => Promise<number> */ fn;
 main() {
   fn().then((v) {
-    console.log(v);
+    print(v);
   }).catchError((err) {
-    console.log(err);
+    print(err);
   });
 }`);
     });

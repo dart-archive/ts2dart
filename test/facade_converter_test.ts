@@ -237,6 +237,17 @@ var y = x.length;`);
   var x = new RegExp(r'a');
   x.hasMatch("a");
 }`);
+    expectWithTypes('function f() { var result = /a(.)/g.exec("ab")[1]; }').to.equal(`f() {
+  var result = new RegExp(r'a(.)').firstMatch("ab")[1];
+}`);
+    expectWithTypes('function f() { let groups = /a(.)/g.exec("ab"); }').to.equal(`f() {
+  var groups = ((match) => new List.generate(
+      1 + match.groupCount, match.group))(new RegExp(r'a(.)').firstMatch("ab"));
+}`);
+    expectErroneousWithType('function f() { var x = /a(.)/g; x.exec("ab")[1]; }')
+        .to.throw(
+            'exec is only supported on regexp literals, ' +
+            'to avoid side-effect of multiple calls on global regexps.');
   });
 
   describe('promises', () => {

@@ -31,6 +31,10 @@ describe('imports', () => {
   });
   it('fails for empty import specs',
      () => { expectErroneousCode('import {} from "baz";').to.throw(/empty import list/); });
+  it('translates angular/ references to angular2/', () => {
+    expectTranslate(`import {foo} from '@angular/foo';`)
+        .to.equal(`import "package:angular2/foo.dart" show foo;`);
+  });
 });
 
 describe('exports', () => {

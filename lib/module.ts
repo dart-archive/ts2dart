@@ -122,7 +122,9 @@ export default class ModuleTranspiler extends base.TranspilerBase {
       // Strip './' to be more Dart-idiomatic.
       text = text.substring(2);
     } else if (!text.match(/^\.\.\//)) {
-      // Unprefixed imports are package imports.
+      // Replace '@angular' with 'angular2' for Dart.
+      text = text.replace(/^@angular\//, 'angular2/');
+      // Unprefixed/absolute imports are package imports.
       text = 'package:' + text;
     }
     this.emit(JSON.stringify(text + '.dart'));

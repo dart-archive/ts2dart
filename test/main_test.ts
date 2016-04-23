@@ -119,9 +119,9 @@ class A {
       chai.expect(() => transpiler.getOutputPath('/outside/b/c.js', '/x'))
           .to.throw(/must be located under base/);
     });
-    it('defaults to writing to the same location', () => {
+    it('defaults to writing to the full path', () => {
       let transpiler = new main.Transpiler({basePath: undefined});
-      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/e')).to.equal('/a/b/c.dart');
+      chai.expect(transpiler.getOutputPath('/a/b/c.js', '/e')).to.equal('/e/a/b/c.dart');
       chai.expect(transpiler.getOutputPath('b/c.js', '')).to.equal('b/c.dart');
     });
     it('translates .es6, .ts, and .js', () => {

@@ -26,6 +26,8 @@ export interface TranspilerOptions {
   generateLibraryName?: boolean;
   /** Whether to generate source maps. */
   generateSourceMap?: boolean;
+  /** A tsconfig.json to use to configure TypeScript compilation. */
+  tsconfig?: string;
   /**
    * A base path to relativize absolute file paths against. This is useful for library name
    * generation (see above) and nicer file names in error messages.
@@ -89,13 +91,39 @@ export class Transpiler {
       this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
     }
     fileNames = fileNames.map((f) => this.normalizeSlashes(f));
-    let host = this.createCompilerHost();
+
+    let host: ts.CompilerHost;
+    let compilerOpts: ts.CompilerOptions;
+    if (this.options.tsconfig) {
+      let {config, error} =
+          ts.readConfigFile(this.options.tsconfig, (f) => fs.readFileSync(f, 'utf-8'));
+      if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
+      let {options, errors} = ts.convertCompilerOptionsFromJson(
+          config.compilerOptions, path.dirname(this.options.tsconfig));
+      if (errors && errors.length) {
+        throw new Error(errors.map((d) => this.diagnosticToString(d)).join('\n'));
+      }
+      host = ts.createCompilerHost(options, /*setParentNodes*/ true);
+      compilerOpts = options;
+      if (compilerOpts.rootDir != null && this.options.basePath == null) {
+        // Use the tsconfig's rootDir if basePath is not set.
+        this.options.basePath = compilerOpts.rootDir;
+      }
+      if (compilerOpts.outDir != null && destination == null) {
+        destination = compilerOpts.outDir;
+        console.log('dest', destination);
+      }
+    } else {
+      host = this.createCompilerHost();
+      compilerOpts = this.getCompilerOptions();
+    }
+
     if (this.options.basePath && destination === undefined) {
       throw new Error(
           'Must have a destination path when a basePath is specified ' + this.options.basePath);
     }
     let destinationRoot = destination || this.options.basePath || '';
-    let program = ts.createProgram(fileNames, this.getCompilerOptions(), host);
+    let program = ts.createProgram(fileNames, compilerOpts, host);
     if (this.options.translateBuiltins) {
       this.fc.setTypeChecker(program.getTypeChecker());
     }
@@ -103,15 +131,15 @@ export class Transpiler {
     // Only write files that were explicitly passed in.
     let fileSet: {[s: string]: boolean} = {};
     fileNames.forEach((f) => fileSet[f] = true);
-
     this.errors = [];
+
     program.getSourceFiles()
         .filter((sourceFile) => fileSet[sourceFile.fileName])
         // Do not generate output for .d.ts files.
         .filter((sourceFile: ts.SourceFile) => !sourceFile.fileName.match(/\.d\.ts$/))
         .forEach((f: ts.SourceFile) => {
           let dartCode = this.translate(f);
-          let outputFile = this.getOutputPath(path.resolve(f.fileName), destinationRoot);
+          let outputFile = this.getOutputPath(f.fileName, destinationRoot);
           mkdirP(path.dirname(outputFile));
           fs.writeFileSync(outputFile, dartCode);
         });
@@ -175,8 +203,8 @@ export class Transpiler {
 
   private translate(sourceFile: ts.SourceFile): string {
     this.currentFile = sourceFile;
-    this.output =
-        new Output(sourceFile, this.getRelativeFileName(), this.options.generateSourceMap);
+    this.output = new Output(
+        sourceFile, this.getRelativeFileName(sourceFile.fileName), this.options.generateSourceMap);
     this.lastCommentIdx = -1;
     this.visit(sourceFile);
     let result = this.output.getResult();
@@ -203,17 +231,7 @@ export class Transpiler {
       diagnostics = diagnostics.concat(program.getSemanticDiagnostics());
     }
 
-    let diagnosticErrs = diagnostics.map((d) => {
-      let msg = '';
-      if (d.file) {
-        let pos = d.file.getLineAndCharacterOfPosition(d.start);
-        let fn = this.getRelativeFileName(d.file.fileName);
-        msg += ` ${fn}:${pos.line + 1}:${pos.character + 1}`;
-      }
-      msg += ': ';
-      msg += ts.flattenDiagnosticMessageText(d.messageText, '\n');
-      return msg;
-    });
+    let diagnosticErrs = diagnostics.map((d) => this.diagnosticToString(d));
     if (diagnosticErrs.length) errors = errors.concat(diagnosticErrs);
 
     if (errors.length) {
@@ -223,21 +241,33 @@ export class Transpiler {
     }
   }
 
+  private diagnosticToString(diagnostic: ts.Diagnostic): string {
+    let msg = '';
+    if (diagnostic.file) {
+      let pos = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+      let fn = this.getRelativeFileName(diagnostic.file.fileName);
+      msg += ` ${fn}:${pos.line + 1}:${pos.character + 1}`;
+    }
+    msg += ': ';
+    msg += ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+    return msg;
+  }
+
   /**
    * Returns `filePath`, relativized to the program's `basePath`.
-   * @param filePath Optional path to relativize, defaults to the current file's path.
+   * @param filePath path to relativize.
    */
-  getRelativeFileName(filePath?: string) {
-    if (filePath === undefined) filePath = path.resolve(this.currentFile.fileName);
-    // TODO(martinprobst): Use path.isAbsolute on node v0.12.
-    if (this.normalizeSlashes(path.resolve('/x/', filePath)) !== filePath) {
-      return filePath;  // already relative.
-    }
+  getRelativeFileName(filePath: string) {
     let base = this.options.basePath || '';
-    if (filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
+    if (filePath[0] === '/' && filePath.indexOf(base) !== 0 && !filePath.match(/\.d\.ts$/)) {
       throw new Error(`Files must be located under base, got ${filePath} vs ${base}`);
     }
-    return this.normalizeSlashes(path.relative(base, filePath));
+    let rel = path.relative(base, filePath);
+    if (rel.indexOf('../') === 0) {
+      // filePath is outside of rel, just use it directly.
+      rel = filePath;
+    }
+    return this.normalizeSlashes(rel);
   }
 
   emit(s: string) { this.output.emit(s); }

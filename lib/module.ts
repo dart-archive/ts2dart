@@ -11,13 +11,14 @@ export default class ModuleTranspiler extends base.TranspilerBase {
   visitNode(node: ts.Node): boolean {
     switch (node.kind) {
       case ts.SyntaxKind.SourceFile:
+        let sf = <ts.SourceFile>node;
         if (this.generateLibraryName) {
           this.emit('library');
-          this.emit(this.getLibraryName());
+          this.emit(this.getLibraryName(sf.fileName));
           this.emit(';');
         }
-        this.fc.emitExtraImports(<ts.SourceFile>node);
-        ts.forEachChild(node, this.visit.bind(this));
+        this.fc.emitExtraImports(sf);
+        ts.forEachChild(sf, this.visit.bind(this));
         break;
       case ts.SyntaxKind.EndOfFileToken:
         ts.forEachChild(node, this.visit.bind(this));
@@ -149,7 +150,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
        'while with')
           .split(/ /);
 
-  getLibraryName(nameForTest?: string) {
+  getLibraryName(nameForTest: string) {
     let fileName = this.getRelativeFileName(nameForTest);
     let parts = fileName.split('/');
     return parts.filter((p) => p.length > 0)

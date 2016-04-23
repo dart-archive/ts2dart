@@ -518,14 +518,38 @@ export class FacadeConverter extends base.TranspilerBase {
       }
       this.emit(')');
     },
+    'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
+      if (context.kind !== ts.SyntaxKind.RegularExpressionLiteral) {
+        // Fail if the exec call isn't made directly on a regexp literal.
+        // Multiple exec calls on the same global regexp have side effects
+        // (each return the next match), which we can't reproduce with a simple
+        // Dart RegExp (users should switch to some facade / wrapper instead).
+        this.reportError(
+            c, 'exec is only supported on regexp literals, ' +
+                'to avoid side-effect of multiple calls on global regexps.');
+      }
+      if (c.parent.kind === ts.SyntaxKind.ElementAccessExpression) {
+        // The result of the exec call is used for immediate indexed access:
+        // this use-case can be accommodated by RegExp.firstMatch, which returns
+        // a Match instance with operator[] which returns groups (special index
+        // 0 returns the full text of the match).
+        this.visit(context);
+        this.emitMethodCall('firstMatch', c.arguments);
+      } else {
+        // In the general case, we want to return a List. To transform a Match
+        // into a List of its groups, we alias it in a local closure that we
+        // call with the Match value. We are then able to use the group method
+        // to generate a List large enough to hold groupCount groups + the
+        // full text of the match at special group index 0.
+        this.emit('((match) => new List.generate(1 + match.groupCount, match.group))(');
+        this.visit(context);
+        this.emitMethodCall('firstMatch', c.arguments);
+        this.emit(')');
+      }
+    },
     'RegExp.test': (c: ts.CallExpression, context: ts.Expression) => {
       this.visit(context);
       this.emitMethodCall('hasMatch', c.arguments);
-    },
-    'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('allMatches', c.arguments);
-      this.emitMethodCall('toList');
     },
     'String.substr': (c: ts.CallExpression, context: ts.Expression) => {
       this.reportError(

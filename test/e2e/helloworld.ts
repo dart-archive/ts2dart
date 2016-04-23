@@ -29,7 +29,8 @@ function main(): void {
   });
   t.test('regexp', function() {
     t.expect(/o\./g.test('fo.o'), t.equals(true));
-    t.expect(/o/g.exec('fo.o').length, t.equals(2));
+    t.expect(/o/g.exec('fo.o').length, t.equals(1));
+    t.expect(/a(b)/g.exec('ab').length, t.equals(2));
   });
   t.test('const expr', function() { t.expect(SOME_ARRAY[0], t.equals(1)); });
   t.test('generic types fn', function() { t.expect(callOne((a) => a, 1), t.equals(1)); });

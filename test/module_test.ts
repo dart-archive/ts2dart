@@ -78,6 +78,8 @@ var x;
   });
   it('leaves relative paths alone',
      () => { chai.expect(modTranspiler.getLibraryName('a/b')).to.equal('a.b'); });
+  it('strips leading @ signs',
+     () => { chai.expect(modTranspiler.getLibraryName('@a/b')).to.equal('a.b'); });
   it('handles reserved words', () => {
     chai.expect(modTranspiler.getLibraryName('/a/for/in/do/x')).to.equal('_for._in._do.x');
   });

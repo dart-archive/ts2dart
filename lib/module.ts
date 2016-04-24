@@ -156,6 +156,7 @@ export default class ModuleTranspiler extends base.TranspilerBase {
     fileName = this.getRelativeFileName(fileName);
     let parts = fileName.split('/');
     return parts.filter((p) => p.length > 0)
+        .map((p) => p.replace(/^@/, ''))
         .map((p) => p.replace(/[^\w.]/g, '_'))
         .map((p) => p.replace(/\.[jt]s$/g, ''))
         .map((p) => ModuleTranspiler.DART_RESERVED_WORDS.indexOf(p) !== -1 ? '_' + p : p)

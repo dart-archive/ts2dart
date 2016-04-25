@@ -307,12 +307,35 @@ export class FacadeConverter extends base.TranspilerBase {
   }
 
   isInsideConstExpr(node: ts.Node): boolean {
-    return this.isConstCall(
-        <ts.CallExpression>this.getAncestor(node, ts.SyntaxKind.CallExpression));
+    while (node.parent) {
+      if (this.isConstExpr(node)) return true;
+      node = node.parent;
+    }
+    return false;
   }
 
-  isConstCall(node: ts.Expression): boolean {
-    return node && node.kind === ts.SyntaxKind.CallExpression &&
+  /**
+   * isConstExpr returns true if the passed in expression itself is a const expression. const
+   * expressions are marked by the special comment @ts2dart_const (expr), or by the special
+   * function call CONST_EXPR.
+   */
+  isConstExpr(node: ts.Node): boolean {
+    if (!node) return false;
+
+    if (node.kind === ts.SyntaxKind.ParenthesizedExpression) {
+      let text = node.getFullText();
+      let comments = ts.getLeadingCommentRanges(text, 0);
+      if (comments) {
+        for (let c of comments) {
+          let commentText = text.substring(c.pos, c.end);
+          if (commentText.indexOf('@ts2dart_const') !== -1) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return node.kind === ts.SyntaxKind.CallExpression &&
         base.ident((<ts.CallExpression>node).expression) === 'CONST_EXPR';
   }
 

@@ -394,6 +394,15 @@ const x = const <num, String>{};`);
               .to.equal(`const MY_MAP = const <String, num>{};`);
         });
 
+        it('translates comment /* @ts2dart_const */ (...) to const (...)', () => {
+          expectWithTypes('const x = /* @ts2dart_const */ (1);').to.equal('const x = (1);');
+          expectWithTypes(`const x = /* @ts2dart_const */ ([]);`).to.equal('const x = (const []);');
+          // Nested parenthesized expressions.
+          expectWithTypes(`const x = /* @ts2dart_const */ ([([1])]);`).to.equal(`const x = (const [
+  (const [1])
+]);`);
+        });
+
         it('translates forwardRef(() => T) to T',
            () => {
              expectWithTypes(

@@ -121,7 +121,7 @@ gulp.task('test.e2e', ['test.compile'], function(done) {
   });
 });
 
-gulp.task('test.tsc_e2e', function(done) {
+gulp.task('test.tsc_e2e', ['test.compile'], function(done) {
   // Test that "tsconfig.json" is read correctly.
   var outDir = (__dirname.replace(/\\/g, '/') + '/build/tsc_e2e');
   if (fs.existsSync(outDir)) fsx.removeSync(outDir);
@@ -136,7 +136,8 @@ gulp.task('test.tsc_e2e', function(done) {
       return;
     }
     var content = fs.readFileSync(path.join(outDir, 'p1/user.dart'), 'utf-8');
-    if (!content.match(/library p1\.user/) || !content.match(/import "package:mapped\/dep.dart"/)) {
+    if (!content.match(/library p1\.user/) || !content.match(/import "package:mapped\/dep.dart"/) ||
+        !content.match(/Future/)) {
       throw new Error('incorrect content in p1.dart:\n' + content)
     }
   });

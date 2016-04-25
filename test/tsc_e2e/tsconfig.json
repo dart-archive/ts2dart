@@ -7,6 +7,7 @@
     "noEmitOnError": true,
     "paths": {"mapped/*": ["map_target/*"]},
     "rootDir": ".",
-    "outDir": "../../build/tsc_e2e"
+    "outDir": "../../build/tsc_e2e",
+    "target": "ES6"
   }
 }

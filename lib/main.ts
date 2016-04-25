@@ -125,7 +125,8 @@ export class Transpiler {
     let destinationRoot = destination || this.options.basePath || '';
     let program = ts.createProgram(fileNames, compilerOpts, host);
     if (this.options.translateBuiltins) {
-      this.fc.setTypeChecker(program.getTypeChecker());
+      this.fc.initializeTypeBasedConversion(
+          program.getTypeChecker(), host.getDefaultLibFileName(compilerOpts));
     }
 
     // Only write files that were explicitly passed in.
@@ -148,7 +149,8 @@ export class Transpiler {
 
   translateProgram(program: ts.Program): {[path: string]: string} {
     if (this.options.translateBuiltins) {
-      this.fc.setTypeChecker(program.getTypeChecker());
+      this.fc.initializeTypeBasedConversion(
+          program.getTypeChecker(), ts.getDefaultLibFileName(program.getCompilerOptions()));
     }
     let paths: {[path: string]: string} = {};
     this.errors = [];

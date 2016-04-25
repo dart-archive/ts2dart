@@ -25,6 +25,7 @@ function merge(...args: {[key: string]: any}[]): {[key: string]: any} {
 
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
+  private defaultLibLocation: string;
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
   private typingsRootRegex: RegExp;
@@ -39,6 +40,11 @@ export class FacadeConverter extends base.TranspilerBase {
     this.typingsRootRegex = new RegExp('^' + typingsRoot.replace('.', '\\.'));
   }
 
+  initializeTypeBasedConversion(tc: ts.TypeChecker, defaultLibLocation: string) {
+    this.tc = tc;
+    this.defaultLibLocation = defaultLibLocation;
+  }
+
   private extractPropertyNames(m: ts.Map<ts.Map<any>>, candidates: {[k: string]: boolean}) {
     for (let fileName of Object.keys(m)) {
       const file = m[fileName];
@@ -47,8 +53,6 @@ export class FacadeConverter extends base.TranspilerBase {
           .forEach((propName) => candidates[propName] = true);
     }
   }
-
-  setTypeChecker(tc: ts.TypeChecker) { this.tc = tc; }
 
   maybeHandleCall(c: ts.CallExpression): boolean {
     if (!this.tc) return false;
@@ -266,7 +270,9 @@ export class FacadeConverter extends base.TranspilerBase {
       decl = symbol.declarations[0];
     }
 
-    const fileName = decl.getSourceFile().fileName;
+    let fileName = decl.getSourceFile().fileName;
+    if (fileName === this.defaultLibLocation) fileName = 'lib';
+
     const canonicalFileName = this.getRelativeFileName(fileName)
                                   .replace(/(\.d)?\.ts$/, '')
                                   .replace(FACADE_NODE_MODULES_PREFIX, '')

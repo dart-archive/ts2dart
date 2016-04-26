@@ -74,14 +74,6 @@ export class TranspilerBase {
     return n && (n.flags & flag) !== 0 || false;
   }
 
-  isConst(decl: ClassLike) {
-    return this.hasAnnotation(decl.decorators, 'CONST') ||
-        (<ts.NodeArray<ts.Declaration>>decl.members).some((m) => {
-          if (m.kind !== ts.SyntaxKind.Constructor) return false;
-          return this.hasAnnotation(m.decorators, 'CONST');
-        });
-  }
-
   maybeDestructureIndexType(node: ts.TypeLiteralNode): [ts.TypeNode, ts.TypeNode] {
     let members = node.members;
     if (members.length !== 1 || members[0].kind !== ts.SyntaxKind.IndexSignature) {

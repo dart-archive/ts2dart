@@ -119,7 +119,7 @@ export default class CallTranspiler extends base.TranspilerBase {
     let errorThisAssignment = 'assignments in const constructors must assign into this.';
 
     let parent = <base.ClassLike>ctor.parent;
-    let parentIsConst = this.isConst(parent);
+    let parentIsConst = this.fc.isConstClass(parent);
     let superCall: ts.CallExpression;
     let expressions: ts.Expression[] = [];
     // Find super() calls and (if in a const ctor) collect assignment expressions (not statements!)

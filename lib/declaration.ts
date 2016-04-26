@@ -98,7 +98,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
         }
         if (!className) this.reportError(ctorDecl, 'cannot find outer class node');
         this.visitDeclarationMetadata(ctorDecl);
-        if (this.isConst(<base.ClassLike>ctorDecl.parent)) {
+        if (this.fc.isConstClass(<base.ClassLike>ctorDecl.parent)) {
           this.emit('const');
         }
         this.visit(className);
@@ -340,8 +340,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
   private visitProperty(decl: ts.PropertyDeclaration|ts.ParameterDeclaration, isParameter = false) {
     if (!isParameter) this.visitDeclarationMetadata(decl);
     let containingClass = <base.ClassLike>(isParameter ? decl.parent.parent : decl.parent);
-    let isConstField = this.hasAnnotation(decl.decorators, 'CONST');
-    let hasConstCtor = this.isConst(containingClass);
+    let isConstField =
+        this.fc.hasConstComment(decl) || this.hasAnnotation(decl.decorators, 'CONST');
+    let hasConstCtor = this.fc.isConstClass(containingClass);
     if (isConstField) {
       // const implies final
       this.emit('const');
@@ -392,7 +393,7 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
     this.visitEachIfPresent(decl.members);
 
     // Generate a constructor to host the const modifier, if needed
-    if (this.isConst(decl) &&
+    if (this.fc.isConstClass(decl) &&
         !(<ts.NodeArray<ts.Declaration>>decl.members)
              .some((m) => m.kind === ts.SyntaxKind.Constructor)) {
       this.emit('const');

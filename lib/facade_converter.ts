@@ -314,6 +314,14 @@ export class FacadeConverter extends base.TranspilerBase {
     return false;
   }
 
+  isConstClass(decl: base.ClassLike) {
+    return this.hasConstComment(decl) || this.hasAnnotation(decl.decorators, 'CONST') ||
+        (<ts.NodeArray<ts.Declaration>>decl.members).some((m) => {
+          if (m.kind !== ts.SyntaxKind.Constructor) return false;
+          return this.hasAnnotation(m.decorators, 'CONST');
+        });
+  }
+
   /**
    * isConstExpr returns true if the passed in expression itself is a const expression. const
    * expressions are marked by the special comment @ts2dart_const (expr), or by the special
@@ -322,21 +330,25 @@ export class FacadeConverter extends base.TranspilerBase {
   isConstExpr(node: ts.Node): boolean {
     if (!node) return false;
 
-    if (node.kind === ts.SyntaxKind.ParenthesizedExpression) {
-      let text = node.getFullText();
-      let comments = ts.getLeadingCommentRanges(text, 0);
-      if (comments) {
-        for (let c of comments) {
-          let commentText = text.substring(c.pos, c.end);
-          if (commentText.indexOf('@ts2dart_const') !== -1) {
-            return true;
-          }
-        }
-      }
+    if (node.kind === ts.SyntaxKind.ParenthesizedExpression && this.hasConstComment(node)) {
+      return true;
     }
 
     return node.kind === ts.SyntaxKind.CallExpression &&
         base.ident((<ts.CallExpression>node).expression) === 'CONST_EXPR';
+  }
+
+  hasConstComment(node: ts.Node): boolean {
+    let text = node.getFullText();
+    let comments = ts.getLeadingCommentRanges(text, 0);
+    if (!comments) return false;
+    for (let c of comments) {
+      let commentText = text.substring(c.pos, c.end);
+      if (commentText.indexOf('@ts2dart_const') !== -1) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private emitMethodCall(name: string, args?: ts.Expression[]) {

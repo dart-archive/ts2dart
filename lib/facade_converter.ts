@@ -674,10 +674,12 @@ export class FacadeConverter extends base.TranspilerBase {
   };
   private es6PromisesProp: ts.Map<PropertyHandler> = {
     'resolve': (p: ts.PropertyAccessExpression) => {
+      this.emit('new ');
       this.visit(p.expression);
       this.emit('.value');
     },
     'reject': (p: ts.PropertyAccessExpression) => {
+      this.emit('new ');
       this.visit(p.expression);
       this.emit('.error');
     },

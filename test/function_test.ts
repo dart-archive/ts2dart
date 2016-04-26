@@ -11,6 +11,10 @@ describe('functions', () => {
         .to.equal(`x(p1, [a = 42, b = 1, p2]) {
   return 42;
 }`);
+    expectTranslate('function x(a = [], b = {}, c = new C()) { return 42; }')
+        .to.equal(`x([a = const [], b = const {}, c = const C()]) {
+  return 42;
+}`);
   });
   it('translates optional parameters', () => {
     expectTranslate('function x(a?: number, b?: number) { return 42; }')

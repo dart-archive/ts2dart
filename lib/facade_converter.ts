@@ -308,6 +308,11 @@ export class FacadeConverter extends base.TranspilerBase {
 
   isInsideConstExpr(node: ts.Node): boolean {
     while (node.parent) {
+      if (node.parent.kind === ts.SyntaxKind.Parameter &&
+          (node.parent as ts.ParameterDeclaration).initializer === node) {
+        // initializers of parameters must be const in Dart.
+        return true;
+      }
       if (this.isConstExpr(node)) return true;
       node = node.parent;
     }

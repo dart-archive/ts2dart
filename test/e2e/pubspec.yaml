@@ -1,5 +1,5 @@
-name: e2e  
-description: Transpiled end-to-end tests for ts2dart.  
+name: e2e
+description: Transpiled end-to-end tests for ts2dart.
 
 dependencies:
-  test: 0.12.8
+  test: 0.12.13

@@ -330,7 +330,7 @@ export class FacadeConverter extends base.TranspilerBase {
   isConstExpr(node: ts.Node): boolean {
     if (!node) return false;
 
-    if (node.kind === ts.SyntaxKind.ParenthesizedExpression && this.hasConstComment(node)) {
+    if (this.hasConstComment(node)) {
       return true;
     }
 

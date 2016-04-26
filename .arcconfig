@@ -1,4 +1,5 @@
 {
+  "base": "git:origin/master",
   "phabricator.uri" : "https://reviews.angular.io/",
   "load": [
     ".arc/npm-test"

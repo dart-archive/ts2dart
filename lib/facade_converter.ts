@@ -306,6 +306,16 @@ export class FacadeConverter extends base.TranspilerBase {
             `Please add type declarations to disambiguate.`);
   }
 
+  private static DECLARATIONS: {[k: number]: boolean} = {
+    [ts.SyntaxKind.ClassDeclaration]: true,
+    [ts.SyntaxKind.FunctionDeclaration]: true,
+    [ts.SyntaxKind.InterfaceDeclaration]: true,
+    [ts.SyntaxKind.MethodDeclaration]: true,
+    [ts.SyntaxKind.PropertyDeclaration]: true,
+    [ts.SyntaxKind.PropertyDeclaration]: true,
+    [ts.SyntaxKind.VariableDeclaration]: true,
+  };
+
   isInsideConstExpr(node: ts.Node): boolean {
     while (node.parent) {
       if (node.parent.kind === ts.SyntaxKind.Parameter &&
@@ -315,6 +325,11 @@ export class FacadeConverter extends base.TranspilerBase {
       }
       if (this.isConstExpr(node)) return true;
       node = node.parent;
+      if (FacadeConverter.DECLARATIONS[node.kind]) {
+        // Stop walking upwards when hitting a declaration - @ts2dart_const should only propagate
+        // to the immediate declaration it applies to (but should be transitive in expressions).
+        return false;
+      }
     }
     return false;
   }

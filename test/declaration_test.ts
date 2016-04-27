@@ -171,15 +171,17 @@ class X {
   final bool _marbles;
   const X(this.foo, num b, [this._marbles = true]);
 }`);
-      expectTranslate(
-          '/* @ts2dart_const */ class X { ' +
-          'constructor(public foo: string) {} }')
-          .to.equal(`/* @ts2dart_const */
+      expectTranslate(`/* @ts2dart_const */ class X {
+  constructor(public foo: string) {}
+  foo() { return new Bar(); }
+}`).to.equal(`/* @ts2dart_const */
 class X {
   final String foo;
   const X(this.foo);
+  foo() {
+    return new Bar();
+  }
 }`);
-
     });
   });
 });

@@ -42,17 +42,13 @@ export interface TranspilerOptions {
    * Enforce conventions of public/private keyword and underscore prefix
    */
   enforceUnderscoreConventions?: boolean;
-  /**
-   * Sets a root path to look for typings used by the facade converter.
-   */
-  typingsRoot?: string;
 }
 
 export const COMPILER_OPTIONS: ts.CompilerOptions = {
   allowNonTsExtensions: true,
   experimentalDecorators: true,
   module: ts.ModuleKind.CommonJS,
-  target: ts.ScriptTarget.ES5,
+  target: ts.ScriptTarget.ES6,
 };
 
 export class Transpiler {
@@ -69,7 +65,7 @@ export class Transpiler {
 
   constructor(private options: TranspilerOptions = {}) {
     // TODO: Remove the angular2 default when angular uses typingsRoot.
-    this.fc = new FacadeConverter(this, options.typingsRoot || 'angular2/typings/');
+    this.fc = new FacadeConverter(this);
     this.transpilers = [
       new CallTranspiler(this, this.fc),  // Has to come before StatementTranspiler!
       new DeclarationTranspiler(this, this.fc, options.enforceUnderscoreConventions),
@@ -111,7 +107,6 @@ export class Transpiler {
       }
       if (compilerOpts.outDir != null && destination == null) {
         destination = compilerOpts.outDir;
-        console.log('dest', destination);
       }
     } else {
       host = this.createCompilerHost();
@@ -125,8 +120,7 @@ export class Transpiler {
     let destinationRoot = destination || this.options.basePath || '';
     let program = ts.createProgram(fileNames, compilerOpts, host);
     if (this.options.translateBuiltins) {
-      this.fc.initializeTypeBasedConversion(
-          program.getTypeChecker(), host.getDefaultLibFileName(compilerOpts));
+      this.fc.initializeTypeBasedConversion(program.getTypeChecker(), compilerOpts, host);
     }
 
     // Only write files that were explicitly passed in.
@@ -147,10 +141,10 @@ export class Transpiler {
     this.checkForErrors(program);
   }
 
-  translateProgram(program: ts.Program): {[path: string]: string} {
+  translateProgram(program: ts.Program, host: ts.CompilerHost): {[path: string]: string} {
     if (this.options.translateBuiltins) {
       this.fc.initializeTypeBasedConversion(
-          program.getTypeChecker(), ts.getDefaultLibFileName(program.getCompilerOptions()));
+          program.getTypeChecker(), program.getCompilerOptions(), host);
     }
     let paths: {[path: string]: string} = {};
     this.errors = [];

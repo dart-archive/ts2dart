@@ -1,37 +1,11 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import * as fs from 'fs';
 import {expectTranslate, FAKE_MAIN, translateSource} from './test_support';
 import chai = require('chai');
 
-let es6RuntimeDeclarations = `
-    interface Iterable<T> {}
-    interface Symbol {}
-    interface Map<K, V> {
-      get(key: K): V;
-      has(key: K): boolean;
-      set(key: K, value: V): Map<K, V>;
-      size: number;
-      delete(key: K): boolean;
-      forEach(callbackfn: (value: V, index: K, map: Map<K, V>) => void, thisArg?: any): void;
-    }
-    interface Array<T> {
-      find(predicate: (value: T, index: number, obj: Array<T>) => boolean, thisArg?: any): T;
-    }
-    declare var Map: {
-      new<K, V>(): Map<any, any>;
-      prototype: Map<any, any>;
-    };
-    declare var Symbol;
-    `;
-
-
 function getSources(str: string): {[k: string]: string} {
   let srcs: {[k: string]: string} = {
-    'some/path/to/typings/es6-shim/es6-shim': es6RuntimeDeclarations,
     'angular2/src/core/di/forward_ref.d.ts': `
         export declare function forwardRef<T>(x: T): T;`,
-    'some/path/to/typings/es6-promise/es6-promise.d.ts':
-        fs.readFileSync('typings/es6-promise/es6-promise.d.ts', 'utf-8'),
     'node_modules/rxjs/Observable.d.ts': `
         export declare class Observable {}`,
     'angular2/src/facade/async.ts': `

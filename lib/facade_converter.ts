@@ -1,5 +1,6 @@
 import * as base from './base';
 import * as ts from 'typescript';
+import * as path from 'path';
 import {Transpiler} from './main';
 
 type CallHandler = (c: ts.CallExpression, context: ts.Expression) => void;
@@ -10,7 +11,7 @@ type Set = {
 
 const FACADE_DEBUG = false;
 
-const FACADE_NODE_MODULES_PREFIX = /^(\.\.\/)*node_modules\//;
+const DEFAULT_LIB_MARKER = '__ts2dart_default_lib';
 
 function merge(...args: {[key: string]: any}[]): {[key: string]: any} {
   let returnObject: {[key: string]: any} = {};
@@ -22,27 +23,29 @@ function merge(...args: {[key: string]: any}[]): {[key: string]: any} {
   return returnObject;
 }
 
-
 export class FacadeConverter extends base.TranspilerBase {
   private tc: ts.TypeChecker;
   private defaultLibLocation: string;
   private candidateProperties: {[propertyName: string]: boolean} = {};
   private candidateTypes: {[typeName: string]: boolean} = {};
-  private typingsRootRegex: RegExp;
   private genericMethodDeclDepth = 0;
 
-  constructor(transpiler: Transpiler, typingsRoot = '') {
+  constructor(transpiler: Transpiler) {
     super(transpiler);
+
     this.extractPropertyNames(this.callHandlers, this.candidateProperties);
     this.extractPropertyNames(this.propertyHandlers, this.candidateProperties);
-    this.extractPropertyNames(this.TS_TO_DART_TYPENAMES, this.candidateTypes);
-
-    this.typingsRootRegex = new RegExp('^' + typingsRoot.replace('.', '\\.'));
+    this.extractPropertyNames(this.tsToDartTypeNames, this.candidateTypes);
   }
 
-  initializeTypeBasedConversion(tc: ts.TypeChecker, defaultLibLocation: string) {
+  initializeTypeBasedConversion(
+      tc: ts.TypeChecker, opts: ts.CompilerOptions, host: ts.CompilerHost) {
     this.tc = tc;
-    this.defaultLibLocation = defaultLibLocation;
+    this.defaultLibLocation = ts.getDefaultLibFilePath(opts).replace(/\.d\.ts$/, '');
+    this.resolveModuleNames(opts, host, this.callHandlers);
+    this.resolveModuleNames(opts, host, this.propertyHandlers);
+    this.resolveModuleNames(opts, host, this.tsToDartTypeNames);
+    this.resolveModuleNames(opts, host, this.callHandlerReplaceNew);
   }
 
   private extractPropertyNames(m: ts.Map<ts.Map<any>>, candidates: {[k: string]: boolean}) {
@@ -51,6 +54,27 @@ export class FacadeConverter extends base.TranspilerBase {
       Object.keys(file)
           .map((propName) => propName.substring(propName.lastIndexOf('.') + 1))
           .forEach((propName) => candidates[propName] = true);
+    }
+  }
+
+  private resolveModuleNames(
+      opts: ts.CompilerOptions, host: ts.CompilerHost, m: ts.Map<ts.Map<any>>) {
+    for (let mn of Object.keys(m)) {
+      let actual: string;
+      let absolute: string;
+      if (mn === DEFAULT_LIB_MARKER) {
+        actual = this.defaultLibLocation;
+      } else {
+        let resolved = ts.resolveModuleName(mn, '', opts, host);
+        if (!resolved.resolvedModule) continue;
+        actual = resolved.resolvedModule.resolvedFileName.replace(/(\.d)?\.ts$/, '');
+        // TypeScript's resolution returns relative paths here, but uses absolute ones in
+        // SourceFile.fileName later. Make sure to hit both use cases.
+        absolute = path.resolve(actual);
+      }
+      if (FACADE_DEBUG) console.log('Resolved module', mn, '->', actual);
+      m[actual] = m[mn];
+      if (absolute) m[absolute] = m[mn];
     }
   }
 
@@ -185,7 +209,7 @@ export class FacadeConverter extends base.TranspilerBase {
       }
       let fileAndName = this.getFileAndName(typeName, symbol);
       if (fileAndName) {
-        let fileSubs = this.TS_TO_DART_TYPENAMES[fileAndName.fileName];
+        let fileSubs = this.tsToDartTypeNames[fileAndName.fileName];
         if (fileSubs && fileSubs.hasOwnProperty(fileAndName.qname)) {
           this.emit(fileSubs[fileAndName.qname]);
           return;
@@ -222,7 +246,6 @@ export class FacadeConverter extends base.TranspilerBase {
       ident = base.ident(expr);
       if (!this.candidateProperties.hasOwnProperty(ident)) return {};
       symbol = this.tc.getSymbolAtLocation(expr);
-      if (FACADE_DEBUG) console.error('s:', symbol);
 
       if (!symbol) {
         this.reportMissingType(c, ident);
@@ -237,7 +260,6 @@ export class FacadeConverter extends base.TranspilerBase {
       if (!this.candidateProperties.hasOwnProperty(ident)) return {};
 
       symbol = this.tc.getSymbolAtLocation(pa);
-      if (FACADE_DEBUG) console.error('s:', symbol);
 
       // Error will be reported by PropertyAccess handling below.
       if (!symbol) return {};
@@ -270,13 +292,8 @@ export class FacadeConverter extends base.TranspilerBase {
       decl = symbol.declarations[0];
     }
 
-    let fileName = decl.getSourceFile().fileName;
-    if (fileName === this.defaultLibLocation) fileName = 'lib';
-
-    const canonicalFileName = this.getRelativeFileName(fileName)
-                                  .replace(/(\.d)?\.ts$/, '')
-                                  .replace(FACADE_NODE_MODULES_PREFIX, '')
-                                  .replace(this.typingsRootRegex, '');
+    const canonicalFileName =
+        decl.getSourceFile().fileName.replace(/(\.d)?\.ts$/, '').replace(/(\.d)?\.ts$/, '');
 
     let qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,
@@ -284,20 +301,15 @@ export class FacadeConverter extends base.TranspilerBase {
     if (symbol.flags & (ts.SymbolFlags.Class | ts.SymbolFlags.Function | ts.SymbolFlags.Variable)) {
       qname = symbol.getName();
     }
-    if (FACADE_DEBUG) console.error('fn:', fileName, 'cfn:', canonicalFileName, 'qn:', qname);
+    if (FACADE_DEBUG) console.error('cfn:', canonicalFileName, 'qn:', qname);
     return {fileName: canonicalFileName, qname};
   }
 
-  private isNamedType(node: ts.Node, fileName: string, qname: string): boolean {
+  private isNamedDefaultLibType(node: ts.Node, qname: string): boolean {
     let symbol = this.tc.getTypeAtLocation(node).getSymbol();
     if (!symbol) return false;
     let actual = this.getFileAndName(node, symbol);
-    if (fileName === 'lib' && !(actual.fileName === 'lib' || actual.fileName === 'lib.es6')) {
-      return false;
-    } else {
-      if (fileName !== actual.fileName) return false;
-    }
-    return qname === actual.qname;
+    return actual.fileName === this.defaultLibLocation && qname === actual.qname;
   }
 
   private reportMissingType(n: ts.Node, ident: string) {
@@ -406,9 +418,8 @@ export class FacadeConverter extends base.TranspilerBase {
     'Location': 'dynamic',
   };
 
-  private TS_TO_DART_TYPENAMES: ts.Map<ts.Map<string>> = {
-    'lib': this.stdlibTypeReplacements,
-    'lib.es6': this.stdlibTypeReplacements,
+  private tsToDartTypeNames: ts.Map<ts.Map<string>> = {
+    [DEFAULT_LIB_MARKER]: this.stdlibTypeReplacements,
     'angular2/src/facade/lang': {'Date': 'DateTime'},
 
     'rxjs/Observable': {'Observable': 'Stream'},
@@ -480,144 +491,6 @@ export class FacadeConverter extends base.TranspilerBase {
       this.emit('})()');
     },
   };
-
-  private stdlibHandlers: ts.Map<CallHandler> = merge(this.es6Promises, {
-    'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('add', c.arguments);
-    },
-    'Array.pop': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('removeLast');
-    },
-    'Array.shift': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emit('. removeAt ( 0 )');
-    },
-    'Array.unshift': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emit('(');
-      this.visit(context);
-      if (c.arguments.length === 1) {
-        this.emit('.. insert ( 0,');
-        this.visit(c.arguments[0]);
-        this.emit(') ) . length');
-      } else {
-        this.emit('.. insertAll ( 0, [');
-        this.visitList(c.arguments);
-        this.emit(']) ) . length');
-      }
-    },
-    'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('map', c.arguments);
-      this.emitMethodCall('toList');
-    },
-    'Array.filter': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('where', c.arguments);
-      this.emitMethodCall('toList');
-    },
-    'Array.some': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('any', c.arguments);
-    },
-    'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
-    },
-    'Array.splice': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emitCall('ListWrapper.splice', [context, ...c.arguments]);
-    },
-    'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emit('( new List . from (');
-      this.visit(context);
-      this.emit(')');
-      c.arguments.forEach(arg => {
-        if (!this.isNamedType(arg, 'lib', 'Array')) {
-          this.reportError(arg, 'Array.concat only takes Array arguments');
-        }
-        this.emit('.. addAll (');
-        this.visit(arg);
-        this.emit(')');
-      });
-      this.emit(')');
-    },
-    'Array.join': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      if (c.arguments.length) {
-        this.emitMethodCall('join', c.arguments);
-      } else {
-        this.emit('. join ( "," )');
-      }
-    },
-    'Array.reduce': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-
-      if (c.arguments.length >= 2) {
-        this.emitMethodCall('fold', [c.arguments[1], c.arguments[0]]);
-      } else {
-        this.emit('. fold ( null ,');
-        this.visit(c.arguments[0]);
-        this.emit(')');
-      }
-    },
-    'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emit('( (');
-      this.visitList(c.arguments);  // Should only be 1.
-      this.emit(')');
-      this.emit('is List');
-      this.emit(')');
-    },
-    'Console.log': (c: ts.CallExpression, context: ts.Expression) => {
-      this.emit('print(');
-      if (c.arguments.length === 1) {
-        this.visit(c.arguments[0]);
-      } else {
-        this.emit('[');
-        this.visitList(c.arguments);
-        this.emit('].join(" ")');
-      }
-      this.emit(')');
-    },
-    'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
-      if (context.kind !== ts.SyntaxKind.RegularExpressionLiteral) {
-        // Fail if the exec call isn't made directly on a regexp literal.
-        // Multiple exec calls on the same global regexp have side effects
-        // (each return the next match), which we can't reproduce with a simple
-        // Dart RegExp (users should switch to some facade / wrapper instead).
-        this.reportError(
-            c, 'exec is only supported on regexp literals, ' +
-                'to avoid side-effect of multiple calls on global regexps.');
-      }
-      if (c.parent.kind === ts.SyntaxKind.ElementAccessExpression) {
-        // The result of the exec call is used for immediate indexed access:
-        // this use-case can be accommodated by RegExp.firstMatch, which returns
-        // a Match instance with operator[] which returns groups (special index
-        // 0 returns the full text of the match).
-        this.visit(context);
-        this.emitMethodCall('firstMatch', c.arguments);
-      } else {
-        // In the general case, we want to return a List. To transform a Match
-        // into a List of its groups, we alias it in a local closure that we
-        // call with the Match value. We are then able to use the group method
-        // to generate a List large enough to hold groupCount groups + the
-        // full text of the match at special group index 0.
-        this.emit('((match) => new List.generate(1 + match.groupCount, match.group))(');
-        this.visit(context);
-        this.emitMethodCall('firstMatch', c.arguments);
-        this.emit(')');
-      }
-    },
-    'RegExp.test': (c: ts.CallExpression, context: ts.Expression) => {
-      this.visit(context);
-      this.emitMethodCall('hasMatch', c.arguments);
-    },
-    'String.substr': (c: ts.CallExpression, context: ts.Expression) => {
-      this.reportError(
-          c, 'substr is unsupported, use substring (but beware of the different semantics!)');
-      this.visit(context);
-      this.emitMethodCall('substr', c.arguments);
-    },
-  });
 
   private es6Collections: ts.Map<CallHandler> = {
     'Map.set': (c: ts.CallExpression, context: ts.Expression) => {
@@ -710,17 +583,150 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
 
+  private stdlibHandlers: ts.Map<CallHandler> = merge(this.es6Promises, this.es6Collections, {
+    'Array.push': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('add', c.arguments);
+    },
+    'Array.pop': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('removeLast');
+    },
+    'Array.shift': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emit('. removeAt ( 0 )');
+    },
+    'Array.unshift': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emit('(');
+      this.visit(context);
+      if (c.arguments.length === 1) {
+        this.emit('.. insert ( 0,');
+        this.visit(c.arguments[0]);
+        this.emit(') ) . length');
+      } else {
+        this.emit('.. insertAll ( 0, [');
+        this.visitList(c.arguments);
+        this.emit(']) ) . length');
+      }
+    },
+    'Array.map': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('map', c.arguments);
+      this.emitMethodCall('toList');
+    },
+    'Array.filter': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('where', c.arguments);
+      this.emitMethodCall('toList');
+    },
+    'Array.some': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('any', c.arguments);
+    },
+    'Array.slice': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emitCall('ListWrapper.slice', [context, ...c.arguments]);
+    },
+    'Array.splice': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emitCall('ListWrapper.splice', [context, ...c.arguments]);
+    },
+    'Array.concat': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emit('( new List . from (');
+      this.visit(context);
+      this.emit(')');
+      c.arguments.forEach(arg => {
+        if (!this.isNamedDefaultLibType(arg, 'Array')) {
+          this.reportError(arg, 'Array.concat only takes Array arguments');
+        }
+        this.emit('.. addAll (');
+        this.visit(arg);
+        this.emit(')');
+      });
+      this.emit(')');
+    },
+    'Array.join': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      if (c.arguments.length) {
+        this.emitMethodCall('join', c.arguments);
+      } else {
+        this.emit('. join ( "," )');
+      }
+    },
+    'Array.reduce': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+
+      if (c.arguments.length >= 2) {
+        this.emitMethodCall('fold', [c.arguments[1], c.arguments[0]]);
+      } else {
+        this.emit('. fold ( null ,');
+        this.visit(c.arguments[0]);
+        this.emit(')');
+      }
+    },
+    'ArrayConstructor.isArray': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emit('( (');
+      this.visitList(c.arguments);  // Should only be 1.
+      this.emit(')');
+      this.emit('is List');
+      this.emit(')');
+    },
+    'Console.log': (c: ts.CallExpression, context: ts.Expression) => {
+      this.emit('print(');
+      if (c.arguments.length === 1) {
+        this.visit(c.arguments[0]);
+      } else {
+        this.emit('[');
+        this.visitList(c.arguments);
+        this.emit('].join(" ")');
+      }
+      this.emit(')');
+    },
+    'RegExp.exec': (c: ts.CallExpression, context: ts.Expression) => {
+      if (context.kind !== ts.SyntaxKind.RegularExpressionLiteral) {
+        // Fail if the exec call isn't made directly on a regexp literal.
+        // Multiple exec calls on the same global regexp have side effects
+        // (each return the next match), which we can't reproduce with a simple
+        // Dart RegExp (users should switch to some facade / wrapper instead).
+        this.reportError(
+            c, 'exec is only supported on regexp literals, ' +
+                'to avoid side-effect of multiple calls on global regexps.');
+      }
+      if (c.parent.kind === ts.SyntaxKind.ElementAccessExpression) {
+        // The result of the exec call is used for immediate indexed access:
+        // this use-case can be accommodated by RegExp.firstMatch, which returns
+        // a Match instance with operator[] which returns groups (special index
+        // 0 returns the full text of the match).
+        this.visit(context);
+        this.emitMethodCall('firstMatch', c.arguments);
+      } else {
+        // In the general case, we want to return a List. To transform a Match
+        // into a List of its groups, we alias it in a local closure that we
+        // call with the Match value. We are then able to use the group method
+        // to generate a List large enough to hold groupCount groups + the
+        // full text of the match at special group index 0.
+        this.emit('((match) => new List.generate(1 + match.groupCount, match.group))(');
+        this.visit(context);
+        this.emitMethodCall('firstMatch', c.arguments);
+        this.emit(')');
+      }
+    },
+    'RegExp.test': (c: ts.CallExpression, context: ts.Expression) => {
+      this.visit(context);
+      this.emitMethodCall('hasMatch', c.arguments);
+    },
+    'String.substr': (c: ts.CallExpression, context: ts.Expression) => {
+      this.reportError(
+          c, 'substr is unsupported, use substring (but beware of the different semantics!)');
+      this.visit(context);
+      this.emitMethodCall('substr', c.arguments);
+    },
+  });
+
   private callHandlerReplaceNew: ts.Map<ts.Map<boolean>> = {
-    'es6-promise/es6-promise': {'Promise': true},
-    'es6-shim/es6-shim': {'Promise': true},
+    [DEFAULT_LIB_MARKER]: {'Promise': true},
   };
 
   private callHandlers: ts.Map<ts.Map<CallHandler>> = {
-    'lib': this.stdlibHandlers,
-    'lib.es6': this.stdlibHandlers,
-    'es6-promise/es6-promise': this.es6Promises,
-    'es6-shim/es6-shim': merge(this.es6Promises, this.es6Collections),
-    'es6-collections/es6-collections': this.es6Collections,
+    [DEFAULT_LIB_MARKER]: this.stdlibHandlers,
     'angular2/manual_typings/globals': this.es6Collections,
     'angular2/src/facade/collection': {
       'Map': (c: ts.CallExpression, context: ts.Expression): boolean => {
@@ -769,12 +775,12 @@ export class FacadeConverter extends base.TranspilerBase {
     },
   };
   private es6PromisesProp: ts.Map<PropertyHandler> = {
-    'resolve': (p: ts.PropertyAccessExpression) => {
+    'PromiseConstructor.resolve': (p: ts.PropertyAccessExpression) => {
       this.emit('new ');
       this.visit(p.expression);
       this.emit('.value');
     },
-    'reject': (p: ts.PropertyAccessExpression) => {
+    'PromiseConstructor.reject': (p: ts.PropertyAccessExpression) => {
       this.emit('new ');
       this.visit(p.expression);
       this.emit('.error');
@@ -782,8 +788,6 @@ export class FacadeConverter extends base.TranspilerBase {
   };
 
   private propertyHandlers: ts.Map<ts.Map<PropertyHandler>> = {
-    'es6-shim/es6-shim': this.es6CollectionsProp,
-    'es6-collections/es6-collections': this.es6CollectionsProp,
-    'es6-promise/es6-promise': this.es6PromisesProp,
+    [DEFAULT_LIB_MARKER]: merge(this.es6CollectionsProp, this.es6PromisesProp),
   };
 }

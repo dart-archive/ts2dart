@@ -27,11 +27,11 @@ export function expectErroneousCode(tsCode: Input, options: main.TranspilerOptio
 }
 
 let compilerOptions = main.COMPILER_OPTIONS;
-let defaultLibName = ts.getDefaultLibFileName(compilerOptions);
+let defaultLibPath = ts.getDefaultLibFilePath(compilerOptions);
 let libSource = fs.readFileSync(ts.getDefaultLibFilePath(compilerOptions), 'utf-8');
 let libSourceFile: ts.SourceFile;
 
-export function parseFiles(nameToContent: StringMap): ts.Program {
+export function parseFiles(nameToContent: StringMap): [ts.Program, ts.CompilerHost] {
   let result: string;
   let compilerHost: ts.CompilerHost = {
     getSourceFile: function(sourceName, languageVersion) {
@@ -39,7 +39,7 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
         return ts.createSourceFile(
             sourceName, nameToContent[sourceName], compilerOptions.target, true);
       }
-      if (sourceName === defaultLibName) {
+      if (sourceName === defaultLibPath) {
         if (!libSourceFile) {
           // Cache to avoid excessive test times.
           libSourceFile = ts.createSourceFile(sourceName, libSource, compilerOptions.target, true);
@@ -51,7 +51,8 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
     writeFile: function(name, text, writeByteOrderMark) { result = text; },
     fileExists: (sourceName) => { return !!nameToContent[sourceName]; },
     readFile: (filename): string => { throw new Error('unexpected call to readFile'); },
-    getDefaultLibFileName: () => defaultLibName,
+    getDefaultLibLocation: () => defaultLibPath,
+    getDefaultLibFileName: () => defaultLibPath,
     useCaseSensitiveFileNames: () => false,
     getCanonicalFileName: (filename) => '../' + filename,
     getCurrentDirectory: () => '',
@@ -66,7 +67,7 @@ export function parseFiles(nameToContent: StringMap): ts.Program {
     let first = program.getSyntacticDiagnostics()[0];
     throw new Error(`${first.start}: ${first.messageText} in ${nameToContent[entryPoints[0]]}`);
   }
-  return program;
+  return [program, compilerHost];
 }
 
 export const FAKE_MAIN = 'angular2/some/main.ts';
@@ -83,8 +84,8 @@ export function translateSources(contents: Input, options: main.TranspilerOption
   }
   options.enforceUnderscoreConventions = true;
   let transpiler = new main.Transpiler(options);
-  let program = parseFiles(namesToContent);
-  return transpiler.translateProgram(program);
+  let [program, host] = parseFiles(namesToContent);
+  return transpiler.translateProgram(program, host);
 }
 
 

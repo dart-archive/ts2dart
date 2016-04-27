@@ -254,10 +254,10 @@ var y = x.length;`);
     it('translates into Futures', () => {
       expectWithTypes('let x: Promise = Promise.resolve(1);').to.equal(`import "dart:async";
 
-Future x = Future.value(1);`);
+Future x = new Future.value(1);`);
       expectWithTypes('let x: Promise = Promise.reject(1);').to.equal(`import "dart:async";
 
-Future x = Future.error(1);`);
+Future x = new Future.error(1);`);
       expectWithTypes('let x: Promise = new Promise((resolve) => {resolve(1);});')
           .to.equal(`import "dart:async";
 

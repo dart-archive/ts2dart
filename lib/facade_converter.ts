@@ -89,16 +89,17 @@ export class FacadeConverter extends base.TranspilerBase {
   maybeHandleProvider(ole: ts.ObjectLiteralExpression): boolean {
     if (!this.hasMarkerComment(ole, TS2DART_PROVIDER_COMMENT)) return false;
     let classParam: ts.Expression;
-    for (let e of ole.properties) {
+    let remaining = ole.properties.filter((e) => {
       if (e.kind !== ts.SyntaxKind.PropertyAssignment) {
         this.reportError(e, TS2DART_PROVIDER_COMMENT + ' elements must be property assignments');
-        return false;
       }
       if ('provide' === base.ident(e.name)) {
         classParam = (e as ts.PropertyAssignment).initializer;
-        // Keep iterating to check all elements for PropertyAssignment.
+        return false;
       }
-    }
+      return true;  // include below.
+    });
+
     if (!classParam) {
       this.reportError(ole, 'missing provide: element');
       return false;
@@ -106,15 +107,15 @@ export class FacadeConverter extends base.TranspilerBase {
 
     this.emit('const Provider(');
     this.visit(classParam);
-    if (ole.properties.length > 1) {
+    if (remaining.length > 0) {
       this.emit(',');
-      for (let i = 1; i < ole.properties.length; i++) {
-        let e = ole.properties[i];
+      for (let i = 0; i < remaining.length; i++) {
+        let e = remaining[i];
         if (e.kind !== ts.SyntaxKind.PropertyAssignment) this.visit(e.name);
         this.emit(base.ident(e.name));
         this.emit(':');
         this.visit((e as ts.PropertyAssignment).initializer);
-        if ((i + 1) < ole.properties.length) this.emit(',');
+        if ((i + 1) < remaining.length) this.emit(',');
       }
       this.emit(')');
     }
@@ -177,7 +178,7 @@ export class FacadeConverter extends base.TranspilerBase {
     // Support for importing "Provider" in case /* @ts2dart_Provider */ comments are present.
     if (n.kind === ts.SyntaxKind.ImportDeclaration) {
       // See if there is already code importing 'Provider' from angular2/core.
-      let id = <ts.ImportDeclaration>n;
+      let id = n as ts.ImportDeclaration;
       if ((id.moduleSpecifier as ts.StringLiteral).text === 'angular2/core') {
         if (id.importClause.namedBindings.kind === ts.SyntaxKind.NamedImports) {
           let ni = id.importClause.namedBindings as ts.NamedImports;
@@ -358,8 +359,7 @@ export class FacadeConverter extends base.TranspilerBase {
       decl = symbol.declarations[0];
     }
 
-    const canonicalFileName =
-        decl.getSourceFile().fileName.replace(/(\.d)?\.ts$/, '').replace(/(\.d)?\.ts$/, '');
+    const canonicalFileName = decl.getSourceFile().fileName.replace(/(\.d)?\.ts$/, '');
 
     let qname = this.tc.getFullyQualifiedName(symbol);
     // Some Qualified Names include their file name. Might be a bug in TypeScript,

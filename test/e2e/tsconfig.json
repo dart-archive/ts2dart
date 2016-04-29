@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "noEmit": true,
+    "noEmitOnError": true,
+    "rootDir": ".",
+    "outDir": "../../build/e2e",
+    "target": "ES6"
+  }
+}

@@ -1,5 +1,4 @@
 /// <reference path="./test.d.ts"/>
-/// <reference path="./typings/es6-promise/es6-promise.d.ts"/>
 import t = require('test/test');
 import {MyClass, MySubclass, SOME_ARRAY} from './lib';
 

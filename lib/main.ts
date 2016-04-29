@@ -86,7 +86,7 @@ export class Transpiler {
     if (this.options.basePath) {
       this.options.basePath = this.normalizeSlashes(path.resolve(this.options.basePath));
     }
-    fileNames = fileNames.map((f) => this.normalizeSlashes(f));
+    fileNames = fileNames.map((f) => this.normalizeSlashes(path.resolve(f)));
 
     let host: ts.CompilerHost;
     let compilerOpts: ts.CompilerOptions;
@@ -112,6 +112,7 @@ export class Transpiler {
       host = this.createCompilerHost();
       compilerOpts = this.getCompilerOptions();
     }
+    if (this.options.basePath) this.options.basePath = path.resolve(this.options.basePath);
 
     if (this.options.basePath && destination === undefined) {
       throw new Error(

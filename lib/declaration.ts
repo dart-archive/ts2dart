@@ -242,7 +242,9 @@ export default class DeclarationTranspiler extends base.TranspilerBase {
       // "const" in TypeScript/ES6 corresponds to "final" in Dart, i.e. reference constness.
       // If a "const" variable is immediately initialized to a CONST_EXPR(), special case it to be
       // a deeply const constant, and generate "const ...".
-      isConst = this.fc.isConstCall(varDecl.initializer);
+      isConst = varDecl.initializer.kind === ts.SyntaxKind.StringLiteral ||
+          varDecl.initializer.kind === ts.SyntaxKind.NumericLiteral ||
+          this.fc.isConstCall(varDecl.initializer);
     }
     if (firstDecl === varDecl) {
       if (isConst) {

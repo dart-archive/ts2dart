@@ -444,3 +444,24 @@ var y = X.get({"a": 1}, "a");`);
     });
   });
 });
+
+describe('@ts2dart_Provider', () => {
+  it('transforms expressions', () => {
+    expectWithTypes(`
+var x = /* @ts2dart_Provider */ {
+  provide: SomeThing, useClass: XHRImpl, multi: true
+};`)
+        .to.equal(`import "package:angular2/core.dart" show Provider;
+
+var x = const Provider(SomeThing, useClass: XHRImpl, multi: true);`);
+  });
+
+  it('does not add multiple imports', () => {
+    expectWithTypes(`
+import {Provider} from 'angular2/core';
+var x = /* @ts2dart_Provider */ {provide: SomeThing, useClass: X};`)
+        .to.equal(`import "package:angular2/core.dart" show Provider;
+
+var x = const Provider(SomeThing, useClass: X);`);
+  });
+});

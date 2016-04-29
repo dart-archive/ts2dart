@@ -12,6 +12,8 @@ type Set = {
 const FACADE_DEBUG = false;
 
 const DEFAULT_LIB_MARKER = '__ts2dart_default_lib';
+const PROVIDER_IMPORT_MARKER = '__ts2dart_has_provider_import';
+const TS2DART_PROVIDER_COMMENT = '@ts2dart_Provider';
 
 function merge(...args: {[key: string]: any}[]): {[key: string]: any} {
   let returnObject: {[key: string]: any} = {};
@@ -78,6 +80,47 @@ export class FacadeConverter extends base.TranspilerBase {
     }
   }
 
+  /**
+   * To avoid strongly referencing the Provider class (which could bloat binary size), Angular 2
+   * write providers as object literals. However the Dart transformers don't recognize this, so
+   * ts2dart translates the special syntax `/* @ts2dart_Provider * / {provide: Class, param1: ...}`
+   * into `const Provider(Class, param1: ...)`.
+   */
+  maybeHandleProvider(ole: ts.ObjectLiteralExpression): boolean {
+    if (!this.hasMarkerComment(ole, TS2DART_PROVIDER_COMMENT)) return false;
+    let classParam: ts.Expression;
+    for (let e of ole.properties) {
+      if (e.kind !== ts.SyntaxKind.PropertyAssignment) {
+        this.reportError(e, TS2DART_PROVIDER_COMMENT + ' elements must be property assignments');
+        return false;
+      }
+      if ('provide' === base.ident(e.name)) {
+        classParam = (e as ts.PropertyAssignment).initializer;
+        // Keep iterating to check all elements for PropertyAssignment.
+      }
+    }
+    if (!classParam) {
+      this.reportError(ole, 'missing provide: element');
+      return false;
+    }
+
+    this.emit('const Provider(');
+    this.visit(classParam);
+    if (ole.properties.length > 1) {
+      this.emit(',');
+      for (let i = 1; i < ole.properties.length; i++) {
+        let e = ole.properties[i];
+        if (e.kind !== ts.SyntaxKind.PropertyAssignment) this.visit(e.name);
+        this.emit(base.ident(e.name));
+        this.emit(':');
+        this.visit((e as ts.PropertyAssignment).initializer);
+        if ((i + 1) < ole.properties.length) this.emit(',');
+      }
+      this.emit(')');
+    }
+    return true;
+  }
+
   maybeHandleCall(c: ts.CallExpression): boolean {
     if (!this.tc) return false;
     let {context, symbol} = this.getCallInformation(c);
@@ -129,6 +172,29 @@ export class FacadeConverter extends base.TranspilerBase {
           emitted[toEmit] = true;
         }
       }
+    }
+
+    // Support for importing "Provider" in case /* @ts2dart_Provider */ comments are present.
+    if (n.kind === ts.SyntaxKind.ImportDeclaration) {
+      // See if there is already code importing 'Provider' from angular2/core.
+      let id = <ts.ImportDeclaration>n;
+      if ((id.moduleSpecifier as ts.StringLiteral).text === 'angular2/core') {
+        if (id.importClause.namedBindings.kind === ts.SyntaxKind.NamedImports) {
+          let ni = id.importClause.namedBindings as ts.NamedImports;
+          for (let nb of ni.elements) {
+            if (base.ident(nb.name) === 'Provider') {
+              emitted[PROVIDER_IMPORT_MARKER] = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (!emitted[PROVIDER_IMPORT_MARKER] && this.hasMarkerComment(n, TS2DART_PROVIDER_COMMENT)) {
+      // if 'Provider' has not been imported yet, and there's a @ts2dart_Provider, add it.
+      this.emit(`import "package:angular2/core.dart" show Provider;`);
+      emitted[PROVIDER_IMPORT_MARKER] = true;
     }
 
     n.getChildren(sourceFile)
@@ -370,13 +436,15 @@ export class FacadeConverter extends base.TranspilerBase {
         base.ident((<ts.CallExpression>node).expression) === 'CONST_EXPR';
   }
 
-  hasConstComment(node: ts.Node): boolean {
+  hasConstComment(node: ts.Node): boolean { return this.hasMarkerComment(node, '@ts2dart_const'); }
+
+  private hasMarkerComment(node: ts.Node, markerText: string): boolean {
     let text = node.getFullText();
     let comments = ts.getLeadingCommentRanges(text, 0);
     if (!comments) return false;
     for (let c of comments) {
       let commentText = text.substring(c.pos, c.end);
-      if (commentText.indexOf('@ts2dart_const') !== -1) {
+      if (commentText.indexOf(markerText) !== -1) {
         return true;
       }
     }

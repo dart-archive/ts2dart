@@ -57,8 +57,9 @@ export default class LiteralTranspiler extends base.TranspilerBase {
         this.emit(']');
         break;
       case ts.SyntaxKind.ObjectLiteralExpression:
-        if (this.shouldBeConst(node)) this.emit('const');
         let ole = <ts.ObjectLiteralExpression>node;
+        if (this.fc.maybeHandleProvider(ole)) return true;
+        if (this.shouldBeConst(node)) this.emit('const');
         this.handleReifiedMap(ole);
         this.emit('{');
         this.visitList(ole.properties);

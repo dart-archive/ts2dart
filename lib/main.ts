@@ -282,25 +282,27 @@ export class Transpiler {
 
   visit(node: ts.Node) {
     this.output.addSourceMapping(node);
-    let comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
-    if (comments) {
-      comments.forEach((c) => {
-        if (c.pos <= this.lastCommentIdx) return;
-        this.lastCommentIdx = c.pos;
-        let text = this.currentFile.text.substring(c.pos, c.end);
-        this.emitNoSpace('\n');
-        this.emit(this.translateComment(text));
-        if (c.hasTrailingNewLine) this.emitNoSpace('\n');
-      });
-    }
+    try {
+      let comments = ts.getLeadingCommentRanges(this.currentFile.text, node.getFullStart());
+      if (comments) {
+        comments.forEach((c) => {
+          if (c.pos <= this.lastCommentIdx) return;
+          this.lastCommentIdx = c.pos;
+          let text = this.currentFile.text.substring(c.pos, c.end);
+          this.emitNoSpace('\n');
+          this.emit(this.translateComment(text));
+          if (c.hasTrailingNewLine) this.emitNoSpace('\n');
+        });
+      }
 
-    for (let i = 0; i < this.transpilers.length; i++) {
-      if (this.transpilers[i].visitNode(node)) return;
+      for (let i = 0; i < this.transpilers.length; i++) {
+        if (this.transpilers[i].visitNode(node)) return;
+      }
+      this.reportError(
+          node, `Unsupported node type ${(<any>ts).SyntaxKind[node.kind]}: ${node.getFullText()}`);
+    } catch (e) {
+      this.reportError(node, 'ts2dart crashed ' + e.stack);
     }
-
-    this.reportError(
-        node,
-        'Unsupported node type ' + (<any>ts).SyntaxKind[node.kind] + ': ' + node.getFullText());
   }
 
   private normalizeSlashes(path: string) { return path.replace(/\\/g, '/'); }

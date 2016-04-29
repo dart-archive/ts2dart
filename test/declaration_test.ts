@@ -28,8 +28,11 @@ describe('variables', () => {
 
   it('supports const', () => {
     // NB: const X = CONST_EXPR(1); is translated as deep-const, see tests in facade_converter_test.
-    expectTranslate('const A = 1, B = 2;').to.equal('final A = 1, B = 2;');
-    expectTranslate('const A: number = 1;').to.equal('final num A = 1;');
+    // Arbitrary expressions translate const ==> final...
+    expectTranslate('const A = 1 + 2;').to.equal('final A = 1 + 2;');
+    // ... but literals are special cased to be deep const.
+    expectTranslate('const A = 1, B = 2;').to.equal('const A = 1, B = 2;');
+    expectTranslate('const A: number = 1;').to.equal('const num A = 1;');
   });
 });
 

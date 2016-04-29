@@ -65,7 +65,8 @@ export function parseFiles(nameToContent: StringMap): [ts.Program, ts.CompilerHo
   if (program.getSyntacticDiagnostics().length > 0) {
     // Throw first error.
     let first = program.getSyntacticDiagnostics()[0];
-    throw new Error(`${first.start}: ${first.messageText} in ${nameToContent[entryPoints[0]]}`);
+    let src = nameToContent[entryPoints[entryPoints.length - 1]];
+    throw new Error(`${first.start}: ${first.messageText} in ${src}`);
   }
   return [program, compilerHost];
 }

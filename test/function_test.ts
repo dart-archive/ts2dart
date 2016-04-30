@@ -119,6 +119,19 @@ describe('generic functions', () => {
     }).to.equal(`List<dynamic/*= T */ > sort/*< T, U >*/(List<dynamic/*= T */ > xs) {
   return xs;
 }`);
+    expectTranslate('function inGeneric<T, U>(x: T, y: Y<U>): T { return x; }', {
+      translateBuiltins: true
+    }).to.equal(`dynamic/*= T */ inGeneric/*< T, U >*/(
+    dynamic/*= T */ x, Y<dynamic/*= U */ > y) {
+  return x;
+}`);
+    expectTranslate('class X { sort<T, U>(xs: T[]): T[] { return xs; } }', {
+      translateBuiltins: true
+    }).to.equal(`class X {
+  List<dynamic/*= T */ > sort/*< T, U >*/(List<dynamic/*= T */ > xs) {
+    return xs;
+  }
+}`);
   });
   it('replaces type usage sites, but not idents', () => {
     expectTranslate(

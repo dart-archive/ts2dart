@@ -250,7 +250,11 @@ export class FacadeConverter extends base.TranspilerBase {
     if (symbol !== t.symbol) return false;
 
     // Check that the Type Parameter has been declared by a function declaration.
-    return symbol.declarations.some(d => d.parent.kind === ts.SyntaxKind.FunctionDeclaration);
+    return symbol.declarations.some(
+        // Constructors are handled separately.
+        d => d.parent.kind === ts.SyntaxKind.FunctionDeclaration ||
+            d.parent.kind === ts.SyntaxKind.MethodDeclaration ||
+            d.parent.kind === ts.SyntaxKind.MethodSignature);
   }
 
   visitTypeName(typeName: ts.EntityName) {

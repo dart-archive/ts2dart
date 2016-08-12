@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 require('source-map-support').install();
 import {SourceMapGenerator} from 'source-map';
 import * as fs from 'fs';

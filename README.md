@@ -3,6 +3,11 @@
 ts2dart is a TypeScript to Dart transpiler. It's mainly used to translate Angular 2 from TypeScript
 to Dart for its Dart user base.
 
+## Usage
+
+- To install as Command Line Tool execute: `npm i -g ts2dart`
+- One installed you could run it doing: `ts2dart inputFile.ts`
+
 ## Installation
 
 - execute `npm i` to install the dependencies,

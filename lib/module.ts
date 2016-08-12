@@ -1,7 +1,8 @@
 import * as ts from 'typescript';
+
 import * as base from './base';
-import {Transpiler} from './main';
 import {FacadeConverter} from './facade_converter';
+import {Transpiler} from './main';
 
 export default class ModuleTranspiler extends base.TranspilerBase {
   constructor(tr: Transpiler, private fc: FacadeConverter, private generateLibraryName: boolean) {

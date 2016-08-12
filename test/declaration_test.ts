@@ -1,5 +1,5 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import {expectTranslate, expectErroneousCode} from './test_support';
+import {expectErroneousCode, expectTranslate} from './test_support';
 
 describe('variables', () => {
   it('should print variable declaration with initializer',

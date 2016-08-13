@@ -6,7 +6,7 @@ to Dart for its Dart user base.
 ## Usage
 
 - To install as Command Line Tool execute: `npm i -g ts2dart`
-- One installed you could run it doing: `ts2dart inputFile.ts`
+- Once installed you could run it doing: `ts2dart inputFile.ts`
 
 ## Installation
 

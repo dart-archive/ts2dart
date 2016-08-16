@@ -1,5 +1,6 @@
 /// <reference path="../typings/mocha/mocha.d.ts"/>
-import {expectTranslate, FAKE_MAIN, translateSource} from './test_support';
+import {FAKE_MAIN, expectTranslate, translateSource} from './test_support';
+
 import chai = require('chai');
 
 function getSources(str: string): {[k: string]: string} {

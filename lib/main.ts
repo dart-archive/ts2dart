@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 require('source-map-support').install();
 import {SourceMapGenerator} from 'source-map';
 import * as fs from 'fs';
@@ -405,9 +407,37 @@ class Output {
   }
 }
 
+function showHelp() {
+  console.log(`
+Usage: ts2dart [input-files] [arguments]
+
+  --help                            show this dialog
+  
+  --failFast                        Fail on the first error, do not collect multiple. Allows easier debugging 
+                                    as stack traces lead directly to the offending line
+                          
+  --generateLibraryName             Whether to generate 'library a.b.c;' names from relative file paths.
+  
+  --generateSourceMap               Whether to generate source maps.
+  
+  --tsconfig                        A tsconfig.json to use to configure TypeScript compilation.
+  
+  --basePath                        A base path to relativize absolute file paths against. This
+                                    is useful for library name generation (see above) and nicer
+                                    file names in error messages.
+                          
+  --translateBuiltins               Translate calls to builtins, i.e. seemlessly convert from \` Array\` to \` List\`,
+                                    and convert the corresponding methods. Requires type checking.
+                                    
+  --enforceUnderscoreConventions    Enforce conventions of public/private keyword and underscore prefix
+`);
+  process.exit(0);
+}
+
 // CLI entry point
 if (require.main === module) {
   let args = require('minimist')(process.argv.slice(2), {base: 'string'});
+  if (args.help) showHelp();
   try {
     let transpiler = new Transpiler(args);
     console.error('Transpiling', args._, 'to', args.destination);

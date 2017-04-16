@@ -79,4 +79,12 @@ f() {}`);
   static const foo = 1;
 }`);
   });
+  it('should strip "Annotation" in constructor names', () => {
+  expectTranslate('@CONST class FooAnnotation { constructor() {} }')
+      .to.equal(' @ CONST const class Foo { Foo( ) { } }');
+  });
+  it('should strip "Annotation" in type checks', () => {
+  expectTranslate('x instanceof FooAnnotation;')
+      .to.equal(' x is Foo ;');
+  });
 });
